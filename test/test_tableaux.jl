@@ -1,12 +1,11 @@
 using IMEXRK
 using Base.Test
 
-
 # standard Tableau indexing
 let
     t = typeof(Tableau(((1, 2),   #a
-                        (3, 4)),    
-                        (5, 6),   #b 
+                        (3, 4)),
+                        (5, 6),   #b
                         (7, 8),   #b̂
                         (9, 0)))  #c
 
@@ -28,14 +27,14 @@ end
 # IMEX tableau indexing
 let
     tᴵ = Tableau(((1, 2),  #a
-                  (3, 4)),   
-                  (5, 6),  #b 
+                  (3, 4)),
+                  (5, 6),  #b
                   (7, 8),  #b̂
                   (9, 0))  #c
 
     tᴱ = Tableau(((11, 12),  #a
-                  (13, 14)),   
-                  (15, 16),  #b 
+                  (13, 14)),
+                  (15, 16),  #b
                   (17, 18),  #b̂
                   (19, 10))  #c
 
@@ -66,4 +65,3 @@ let
     @test t[Val{:cᴱ}, 1   ] == 19
     @test t[Val{:cᴱ}, 2   ] == 10
 end
-
