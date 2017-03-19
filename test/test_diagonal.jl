@@ -12,7 +12,7 @@ using IMEXRK
     @test nonstiff(f) == g
 
     # 
-    @test A_mul_B!(A, [1.0], [0.0]) == [0.5]
+    @test A_mul_B!(stiff(f), [1.0], [0.0]) == [0.5]
 
     # 
     @test ImcA!(stiff(f), 0.1, [1.0], [0.0]) == [1/0.95]
