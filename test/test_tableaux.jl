@@ -1,6 +1,20 @@
 using IMEXRK
 using Base.Test
 
+# conversion/promotion
+let
+    t = Tableau(((1, 2),
+                 (3, 4)),
+                 (5, 6),
+                 (7, 8),
+                 (9, 0.0))
+    @test eltype(t) == Float64
+    
+    ti = convert(Tableau{Int}, t)
+    @test eltype(ti) == Int
+    typeof(typeof(ti)[Val{:a}, 1, 1]) == Int
+end
+
 # standard Tableau indexing
 let
     t = typeof(Tableau(((1, 2),   #a
@@ -10,7 +24,7 @@ let
                         (9, 0)))  #c
 
     @test nstages(t) == 2
-
+    
     @test t[Val{:a}, 1, 1] == 1
     @test t[Val{:a}, 1, 2] == 2
     @test t[Val{:a}, 2, 1] == 3

@@ -4,25 +4,51 @@ export Tableau,
        IMEXRKCB3c, 
        IMEXRKCB3e 
 
+import Base: convert, getindex, eltype
+
 # TODO
 # ~ add isembedded
 
 # Tableau coefficients are defined in the type parameter
-immutable Tableau{a_, b_, b̂_, c_} 
-    # N enforces consistent sizes of the input
-    Tableau{N}(a::NTuple{N, NTuple{N}}, b::NTuple{N}, b̂::NTuple{N}, c::NTuple{N}) = new()
+struct Tableau{T, a, b, b̂, c, N} 
+    Tableau{T, a, b, b̂, c, N}(::NTuple{N, NTuple{N, T}}, 
+                              ::NTuple{N, T}, 
+                              ::NTuple{N, T}, 
+                              ::NTuple{N, T}) where {T, a, b, b̂, c, N} = new()
 end
 
-Tableau(a, b, b̂, c) = Tableau{a, b, b̂, c}(a, b, b̂, c)
+# find common type that holds all elements
+promote_tuple_type(a::Number) = typeof(a)
+promote_tuple_type(a::Tuple) = promote_type(map(promote_tuple_type, a)...)
+
+# convert a tuple such that all elements have type T
+convert_tuple{T}(::Type{T}, a::Number) = T(a)
+convert_tuple{T}(::Type{T}, a::Tuple) = (map(el->convert_tuple(T, el), a)...)
+
+function Tableau{N}(a::NTuple{N, NTuple{N, Number}}, 
+                    b::NTuple{N, Number}, 
+                    b̂::NTuple{N, Number}, 
+                    c::NTuple{N, Number})
+    T = promote_tuple_type((a, b, b̂, c))
+    Tableau{T, a, b, b̂, c, N}(convert_tuple(T, (a, b, b̂, c))...)
+end
+
+function convert{S, T, a, b, b̂, c, N}(::Type{Tableau{S}}, ::Tableau{T, a, b, b̂, c, N}) 
+    tab = convert_tuple(S, (a, b, b̂, c))
+    Tableau{S, tab..., N}(tab...)
+end
+
+# 
+eltype{T, a, b, b̂, c, N}(::Type{Tableau{T, a, b, b̂, c, N}}) = T
 
 # number of stages
-nstages{a, b, b̂, c}(::Type{Tableau{a, b, b̂, c}}) = length(a)
+nstages{T, a, b, b̂, c, N}(::Type{Tableau{T, a, b, b̂, c, N}}) = N
 
 # get coefficients of the tableau
-Base.getindex{a, b, b̂, c}(::Type{Tableau{a, b, b̂, c}}, ::Type{Val{:a}}, i::Integer, j::Integer) = a[i][j]
-Base.getindex{a, b, b̂, c}(::Type{Tableau{a, b, b̂, c}}, ::Type{Val{:b}}, i::Integer)             = b[i]
-Base.getindex{a, b, b̂, c}(::Type{Tableau{a, b, b̂, c}}, ::Type{Val{:b̂}}, i::Integer)             = b̂[i]
-Base.getindex{a, b, b̂, c}(::Type{Tableau{a, b, b̂, c}}, ::Type{Val{:c}}, i::Integer)             = c[i]
+getindex{T, a, b, b̂, c, N}(::Type{Tableau{T, a, b, b̂, c, N}}, ::Type{Val{:a}}, i::Integer, j::Integer) = a[i][j]
+getindex{T, a, b, b̂, c, N}(::Type{Tableau{T, a, b, b̂, c, N}}, ::Type{Val{:b}}, i::Integer)             = b[i]
+getindex{T, a, b, b̂, c, N}(::Type{Tableau{T, a, b, b̂, c, N}}, ::Type{Val{:b̂}}, i::Integer)             = b̂[i]
+getindex{T, a, b, b̂, c, N}(::Type{Tableau{T, a, b, b̂, c, N}}, ::Type{Val{:c}}, i::Integer)             = c[i]
 
 # Tableau for IMEX scheme
 immutable IMEXTableau{Tᴵ<:Tableau, Tᴱ<:Tableau} end
@@ -32,14 +58,14 @@ IMEXTableau{T<:Tableau, S<:Tableau}(tᴵ::T, tᴱ::S) = IMEXTableau{typeof(tᴵ)
 nstages{Tᴵ<:Tableau, Tᴱ<:Tableau}(::Type{IMEXTableau{Tᴵ, Tᴱ}}) = nstages(Tᴵ)
 
 # get coefficients of the tableau
-Base.getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:aᴵ}}, i::Integer, j::Integer) = Tᴵ[Val{:a}, i, j]
-Base.getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:bᴵ}}, i::Integer) = Tᴵ[Val{:b}, i]
-Base.getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:b̂ᴵ}}, i::Integer) = Tᴵ[Val{:b̂}, i]
-Base.getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:cᴵ}}, i::Integer) = Tᴵ[Val{:c}, i]
-Base.getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:aᴱ}}, i::Integer, j::Integer) = Tᴱ[Val{:a}, i, j]
-Base.getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:bᴱ}}, i::Integer) = Tᴱ[Val{:b}, i]
-Base.getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:b̂ᴱ}}, i::Integer) = Tᴱ[Val{:b̂}, i]
-Base.getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:cᴱ}}, i::Integer) = Tᴱ[Val{:c}, i]
+getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:aᴵ}}, i::Integer, j::Integer) = Tᴵ[Val{:a}, i, j]
+getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:bᴵ}}, i::Integer) = Tᴵ[Val{:b}, i]
+getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:b̂ᴵ}}, i::Integer) = Tᴵ[Val{:b̂}, i]
+getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:cᴵ}}, i::Integer) = Tᴵ[Val{:c}, i]
+getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:aᴱ}}, i::Integer, j::Integer) = Tᴱ[Val{:a}, i, j]
+getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:bᴱ}}, i::Integer) = Tᴱ[Val{:b}, i]
+getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:b̂ᴱ}}, i::Integer) = Tᴱ[Val{:b̂}, i]
+getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:cᴱ}}, i::Integer) = Tᴱ[Val{:c}, i]
 
 
 # Tableaux from Cavaglieri and Bewley 2015
