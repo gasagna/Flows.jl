@@ -1,3 +1,5 @@
+__precompile__()
+
 module IMEXRK
 include("tableaux.jl")
 include("system.jl")
