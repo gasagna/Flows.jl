@@ -2,8 +2,6 @@ using Base.Test
 using IMEXRK
 
 @testset "linear system" begin
-
-
     # make system
     g(t, x, ẋ) = (ẋ .= -0.5.*x; ẋ)
     A = Diagonal([-0.5])
@@ -24,6 +22,9 @@ using IMEXRK
     @test ((ϕ(x) - exp(-3))/exp(-3))[1] < 4e-8
     @test ((ϕ(x) - exp(-4))/exp(-4))[1] < 4e-8
     @test ((ϕ(x) - exp(-5))/exp(-5))[1] < 4e-8
+
+    # try giving a different input
+    @test_throws MethodError ϕ([1])
 end
 
 @testset "time step" begin
