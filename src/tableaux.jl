@@ -1,8 +1,4 @@
-export Tableau,
-       IMEXTableau,
-       nstages
-
-import Base: convert, getindex, eltype
+import Base: getindex
 
 # NOTES
 # ~ most of these are defined for ::Type{Tableau} because we have encoded
@@ -42,10 +38,8 @@ getindex{a, b, b̂, c, N}(::Type{Tableau{a, b, b̂, c, N}}, ::Type{Val{:b}}, i::
 getindex{a, b, b̂, c, N}(::Type{Tableau{a, b, b̂, c, N}}, ::Type{Val{:b̂}}, i::Integer)             = b̂[i]
 getindex{a, b, b̂, c, N}(::Type{Tableau{a, b, b̂, c, N}}, ::Type{Val{:c}}, i::Integer)             = c[i]
 
-# Todo
-# ~ add convert from one to the other
 
-# Tableau for IMEX scheme
+# ~~ Tableau for IMEX schemes ~~~
 immutable IMEXTableau{Tᴵ<:Tableau, Tᴱ<:Tableau} end
 
 IMEXTableau(tᴵ::Tableau, tᴱ::Tableau) = IMEXTableau{typeof(tᴵ), typeof(tᴱ)}()
@@ -64,9 +58,10 @@ getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{
 getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:cᴱ}}, i::Integer) = Tᴱ[Val{:c}, i]
 
 
-export IMEXRKCB3c, IMEXRKCB3e
 
 # Tableaux from Cavaglieri and Bewley 2015
+export IMEXRKCB3c, IMEXRKCB3e
+
 # ~ RKW3
 const RKW3 = Tableau(((0//1,  0//1,  0//1),
                       (8//15, 0//1 , 0//1),
