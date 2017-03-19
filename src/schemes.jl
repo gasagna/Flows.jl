@@ -42,8 +42,8 @@ function _step!{T<:IMEXRK3R2R}(I::Type{T}, g, A, t, Δt, x)
         bᴱk    = tab[Val{:bᴱ}, k]
         bᴵk    = tab[Val{:bᴵ}, k]
         cᴱk    = tab[Val{:cᴱ}, k]
-        # b̂ᴱk    = T(tab[Val{:b̂ᴱ}, k])
-        # b̂ᴵk    = T(tab[Val{:b̂ᴵ}, k])
+        # b̂ᴱk    = tab[Val{:b̂ᴱ}, k]
+        # b̂ᴵk    = tab[Val{:b̂ᴵ}, k]
         if k == 1
             push!(expr.args, :(y .= x))
         else
@@ -70,13 +70,11 @@ function _step!{T<:IMEXRK3R2R}(I::Type{T}, g, A, t, Δt, x)
         aᴵkk != 0 && push!(expr.args, :(@inbounds @simd for i in eachindex(w); w[i] += $aᴵkk*Δt*z[i]; end))
         push!(expr.args, :(g(t + $cᴱk*Δt, w, y)))
 
-        # bᴵk != 0 &&
-        push!(expr.args, :(@inbounds @simd for i in eachindex(x); x[i] += $bᴵk*Δt*z[i]; end))
-        # bᴱk != 0 &&
-        push!(expr.args, :(@inbounds @simd for i in eachindex(x); x[i] += ($bᴱk*Δt)*y[i]; end))
+        bᴵk != 0 && push!(expr.args, :(@inbounds @simd for i in eachindex(x); x[i] += $bᴵk*Δt*z[i]; end))
+        bᴱk != 0 && push!(expr.args, :(@inbounds @simd for i in eachindex(x); x[i] += $bᴱk*Δt*y[i]; end))
 
-        # b̂ᴵk != 0 && push!(expr.args, :(x̂ .+= ($b̂ᴵk*Δt).*z))
-        # b̂ᴱk != 0 && push!(expr.args, :(x̂ .+= ($b̂ᴱk*Δt).*y))
+        # b̂ᴵk != 0 && push!(expr.args, :(@inbounds @simd for i in eachindex(x̂); x̂[i] += $b̂ᴵk*Δt*z[i]; end))
+        # b̂ᴱk != 0 && push!(expr.args, :(@inbounds @simd for i in eachindex(x̂); x̂[i] += $b̂ᴱk*Δt*y[i]; end))
         push!(expr_all.args, expr)
     end
     expr_all
