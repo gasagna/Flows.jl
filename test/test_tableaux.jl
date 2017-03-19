@@ -1,18 +1,24 @@
 using IMEXRK
 using Base.Test
 
+
+@testset "convert_tuple" begin
+    typeof(IMEXRK.convert_tuple(Float64, 1)) == Float64
+    typeof(IMEXRK.convert_tuple(Float64, (1, 1))) == Float64
+    typeof(IMEXRK.convert_tuple(Float64, ((1, 1), (1, 1)))) == Float64
+end
+
 # conversion/promotion
-let
+@testset "To Float64" begin
     t = Tableau(((1, 2),
                  (3, 4)),
                  (5, 6),
                  (7, 8),
                  (9, 0.0))
-    @test eltype(t) == Float64
-    
-    ti = convert(Tableau{Int}, t)
-    @test eltype(ti) == Int
-    typeof(typeof(ti)[Val{:a}, 1, 1]) == Int
+    @test typeof(typeof(t)[Val{:a}, 1, 1]) == Float64
+    @test typeof(typeof(t)[Val{:b}, 1])    == Float64
+    @test typeof(typeof(t)[Val{:b̂}, 1])    == Float64
+    @test typeof(typeof(t)[Val{:c}, 1])    == Float64
 end
 
 # standard Tableau indexing
@@ -24,7 +30,7 @@ let
                         (9, 0)))  #c
 
     @test nstages(t) == 2
-    
+
     @test t[Val{:a}, 1, 1] == 1
     @test t[Val{:a}, 1, 2] == 2
     @test t[Val{:a}, 2, 1] == 3

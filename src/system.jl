@@ -5,7 +5,7 @@ export AbstractIMEXSystem, stiff, nonstiff, ImcA!
 # Concrete implementations of this type can be defined for example
 # to allocate specific temporaries, if required. Concrete implementation
 # must implement:
-# 
+#
 #     A = stiff(::AbstractIMEXSystem)
 #     g = nostiff(::AbstractIMEXSystem)
 #
@@ -13,7 +13,7 @@ export AbstractIMEXSystem, stiff, nonstiff, ImcA!
 #
 #    Base.A_mul_B!(A, x::AbstractVector, y::AbstractVector)
 #   ImcA!(A, c::Real, y::AbstractVector, z::AbstractVector)
-# 
+#
 # whereas g must be callable, with signature
 #    g(t, x, xdot)
 abstract type AbstractIMEXSystem{G, M<:AbstractMatrix} end

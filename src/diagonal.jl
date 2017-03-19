@@ -1,6 +1,6 @@
 export DiagonalIMEXSystem
 
-# Dynamical system in which the stiff part is a diagonal linear operator  
+# Dynamical system in which the stiff part is a diagonal linear operator
 struct DiagonalIMEXSystem{G, D} <: AbstractIMEXSystem{G, Diagonal}
     g::G
     A::D
