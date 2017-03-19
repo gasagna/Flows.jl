@@ -17,7 +17,7 @@ function forwmap!{Tab, S}(f::AbstractIMEXSystem, T::Real, Δt::Real, scheme::IME
     # the system by `T`
     function wrapped(x::S)
         # set time to zero. Change this for non-autonomous systems.
-        t = zero(T)
+        t = zero(Δt) 
         # loop
         while true
             # obtain next time step
