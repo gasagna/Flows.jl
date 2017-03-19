@@ -1,4 +1,5 @@
 using IMEXRK
+import IMEXRK: Tableau, IMEXTableau, nstages
 using Base.Test
 
 
