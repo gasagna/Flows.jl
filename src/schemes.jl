@@ -90,13 +90,13 @@ function _step!{T<:IMEXRK3R2R}(I::Type{T}, g, A, t, Δt, x)
             bᴵkm1  = tab[Val{:bᴵ}, k-1]
             bᴱkm1  = tab[Val{:bᴱ}, k-1]
             (aᴵkkm1 - bᴵkm1) == 0 && (aᴱkkm1 - bᴱkm1) == 0 &&
-                push!(expr.args, :(@inbounds @simd for i in eachindex(y); y[i] = x[i]; end))
+                push!(expr.args, :(@over_i y[i] = x[i]))
             (aᴵkkm1 - bᴵkm1) == 0 && (aᴱkkm1 - bᴱkm1) != 0 &&
-                push!(expr.args, :(@inbounds @simd for i in eachindex(y); y[i] = x[i] + $(aᴱkkm1 - bᴱkm1)*Δt*y[i]; end))
+                push!(expr.args, :(@over_i y[i] = x[i] + $(aᴱkkm1 - bᴱkm1)*Δt*y[i]))
             (aᴵkkm1 - bᴵkm1) != 0 && (aᴱkkm1 - bᴱkm1) == 0 &&
-                push!(expr.args, :(@inbounds @simd for i in eachindex(y); y[i] = x[i] + $(aᴵkkm1 - bᴵkm1)*Δt*z[i]; end))
+                push!(expr.args, :(@over_i y[i] = x[i] + $(aᴵkkm1 - bᴵkm1)*Δt*z[i]))
             (aᴵkkm1 - bᴵkm1) != 0 && (aᴱkkm1 - bᴱkm1) != 0 &&
-                push!(expr.args, :(@inbounds @simd for i in eachindex(y); y[i] = x[i] + $(aᴵkkm1 - bᴵkm1)*Δt*z[i] + $(aᴱkkm1 - bᴱkm1)*Δt*y[i]; end))
+                push!(expr.args, :(@over_i y[i] = x[i] + $(aᴵkkm1 - bᴵkm1)*Δt*z[i] + $(aᴱkkm1 - bᴱkm1)*Δt*y[i]))
         end
         # compute z = A*y then
         # compute z = (I-cA)⁻¹*(A*y) in place
@@ -104,16 +104,16 @@ function _step!{T<:IMEXRK3R2R}(I::Type{T}, g, A, t, Δt, x)
         push!(expr.args, :(ImcA!(A, $aᴵkk*Δt, z, z)))
 
         # w is the temporary input @inbounds @simd for g - output in y
-        push!(expr.args, :(@inbounds @simd for i in eachindex(w); w[i] = y[i]; end))
-        aᴵkk != 0 && push!(expr.args, :(@inbounds @simd for i in eachindex(w); w[i] += $aᴵkk*Δt*z[i]; end))
+        push!(expr.args, :(@over_i w[i] = y[i]))
+        aᴵkk != 0 && push!(expr.args, :(@over_i w[i] += $aᴵkk*Δt*z[i]))
         push!(expr.args, :(g(t + $cᴱk*Δt, w, y)))
 
-        bᴵk != 0 && push!(expr.args, :(@inbounds @simd for i in eachindex(x); x[i] += $bᴵk*Δt*z[i]; end))
-        bᴱk != 0 && push!(expr.args, :(@inbounds @simd for i in eachindex(x); x[i] += $bᴱk*Δt*y[i]; end))
+        bᴵk != 0 && push!(expr.args, :(@over_i x[i] += $bᴵk*Δt*z[i]))
+        bᴱk != 0 && push!(expr.args, :(@over_i x[i] += $bᴱk*Δt*y[i]))
 
         if isembedded(I)
-            b̂ᴵk != 0 && push!(expr.args, :(@inbounds @simd for i in eachindex(x̂); x̂[i] += $b̂ᴵk*Δt*z[i]; end))
-            b̂ᴱk != 0 && push!(expr.args, :(@inbounds @simd for i in eachindex(x̂); x̂[i] += $b̂ᴱk*Δt*y[i]; end))
+            b̂ᴵk != 0 && push!(expr.args, :(@over_i x̂[i] += $b̂ᴵk*Δt*z[i]))
+            b̂ᴱk != 0 && push!(expr.args, :(@over_i x̂[i] += $b̂ᴱk*Δt*y[i]))
         end
         push!(expr_all.args, expr)
     end
