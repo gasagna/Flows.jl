@@ -1,4 +1,5 @@
+include("test_tableaux.jl")
+include("test_diagonal.jl")
 include("test_schemes.jl")
 include("test_integrator.jl")
-include("test_diagonal.jl")
-include("test_tableaux.jl")
+include("test_macro.jl")
