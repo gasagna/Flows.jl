@@ -1,10 +1,27 @@
 export IMEXRKScheme, IMEXRK3R2R
 
+"""
+    Type that holds information about the particular scheme and 
+    implementation, manages the additional storage required for the
+    scheme and for the lower-order embedded scheme if that is available.
 
-# Type definition
-# E : Bool, whether we have to calculate the embedded scheme too
-# T : IMEXTableau
-# S : AbstractVector, the type of the storage
+    One should not use this type directly. The aliases, providing a 
+    specific implementation should be used instead.
+
+    Type parameters
+    ---------------
+    T : IMEXTableau - the tableau of the scheme
+    S : AbstractVector, the type of the storage
+    E : Bool, whether we have to calculate the embedded scheme too. If false
+              code blocks that calculate the next state based on the embedded
+              scheme are elided from generation.
+    CODE : Symbol, the code of the particular implementation used, e.g. _3R2R
+              for the three register implementation of 2R scheme. This is
+              the only parameter used for dispatch, because for each 
+              implementation, i.e. for each CODE there is a particular 
+              definition of the method _step!.
+
+"""
 struct IMEXRKScheme{T<:IMEXTableau, S<:AbstractVector, E, CODE}
     storage::Vector{S}
     # internal constructor allocates the storage
@@ -13,14 +30,23 @@ struct IMEXRKScheme{T<:IMEXTableau, S<:AbstractVector, E, CODE}
     end
 end
 
-# External constructor. Adds one storage for embedded schemes
+"""
+    IMEXRKScheme(tab, x, N, code, embed=false)
+
+Construct an IMEX scheme, using tableau `tab`, where `N` items similar to `x` 
+are used for storage. The scheme is parametrised by `code`, that is used for 
+dispatching to a particular implementation of the `_step!` method. If `embed`
+is true, the embedded scheme is activate, and the next state calculated by the
+embedded scheme can be found in the last storage element of the scheme, after
+`_step!` has been called to go the the next state.
+"""
 IMEXRKScheme(tab::IMEXTableau, x::AbstractVector, N::Integer, code::Symbol, embed::Bool=false) =
     IMEXRKScheme{typeof(tab), typeof(x), embed, code}(x, embed ? N+1 : N)
 
-# get the tableau
+""" Get the tableau of the scheme """
 tableau{T, S, E, CODE}(::Type{IMEXRKScheme{T, S, E, CODE}}) = T
 
-# whether the embedded scheme is active or not
+""" Whether the embedded scheme is active or not """
 isembedded{T, S, E, CODE}(::Type{IMEXRKScheme{T, S, E, CODE}}) = E
 
 

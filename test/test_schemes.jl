@@ -30,7 +30,7 @@ end
     g(t, x, ẋ) = (ẋ .= 0.5.*x; ẋ)
     A = Diagonal([0.5])
 
-    # test scheme that have embedded scheme
+    # test only schemes that have embedded scheme
     for scheme in [IMEXRK3R2R(IMEXRKCB3c, [1.0], true)]
         for Δt = [5^(-i) for i in linspace(1, 4.7, 10)]
             # step forward
