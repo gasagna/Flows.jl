@@ -123,6 +123,9 @@ end
 # ~~
 
 # each IMEXRKScheme implements a _step! method that will be called here by dispatch
-@generated function step!(I::IMEXRKScheme, g, A::AbstractMatrix, t::Real, Δt::Real, x::AbstractVector)
+@generated function step!{T, S, E, CODE}(I::IMEXRKScheme{T, S, E, CODE}, 
+                                         g, 
+                                         A::AbstractMatrix, 
+                                         t::Real, Δt::Real, x::S)
     _step!(I, g, A, t, Δt, x)
 end
