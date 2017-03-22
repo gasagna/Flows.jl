@@ -36,9 +36,17 @@ for scheme in [IMEXRK3R2R(IMEXRKCB3e, x₀, false),
                IMEXRK3R2R(IMEXRKCB3c, x₀, false),
                IMEXRK4R3R(IMEXRKCB4,  x₀, false)]
 
+    # get map
     ϕ = forwmap!(f, 10, 1e-3, scheme)
-    @time ϕ(x₀)
-    @time ϕ(x₀)
-    @time ϕ(x₀)
-    @show @allocated ϕ(x₀)
+    
+    # warm up
+    ϕ(x₀)
+
+    # measure time and allocations
+    t = @elapsed   ϕ(x₀)
+    a = @allocated ϕ(x₀)
+
+    # check
+    @test t < 0.4
+    @test a == 0
 end
