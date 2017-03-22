@@ -120,7 +120,89 @@ function _step!{T<:IMEXRK3R2R}(I::Type{T}, g, A, t, Δt, x)
     expr_all
 end
 
-# ~~
+# ~~ IMEXRK4R3R ~~
+# Four-register implementation of [3R] IMEXRK schemes from section 1.2.3 of CB 2015
+IMEXRK4R3R{T, S, E} = IMEXRKScheme{T, S, E, :_4R3R}
+IMEXRK4R3R(tab::IMEXTableau, x::AbstractVector, embed::Bool=false) = 
+    IMEXRKScheme(tab, x, 4, :_4R3R, embed)
+
+function _step!{T<:IMEXRK4R3R}(I::Type{T}, g, A, t, Δt, x)
+    # extract tableau
+    tab = tableau(T)
+
+    # start building expression
+    expr_all = Expr(:block)
+
+    # hoist temporaries out
+    push!(expr_all.args, :(y  = I.storage[1]))
+    push!(expr_all.args, :(zᴵ = I.storage[2]))
+    push!(expr_all.args, :(zᴱ = I.storage[3]))
+    push!(expr_all.args, :(w  = I.storage[4]))
+
+    if isembedded(I)
+        push!(expr_all.args, :(x̂ = I.storage[5]))
+        push!(expr_all.args, :(x̂ .= x))
+    end
+
+    # loop over stages
+    for k = 1:nstages(tab)
+        expr = Expr(:block)
+        aᴵkk = tab[Val{:aᴵ}, k, k]
+        bᴱk  = tab[Val{:bᴱ}, k]
+        bᴵk  = tab[Val{:bᴵ}, k]
+        cᴱk  = tab[Val{:cᴱ}, k]
+        b̂ᴱk  = tab[Val{:b̂ᴱ}, k]
+        b̂ᴵk  = tab[Val{:b̂ᴵ}, k]
+        if k == 1
+            push!(expr.args, :(@over_i  y[i] = x[i]))
+            push!(expr.args, :(@over_i zᴵ[i] = x[i]))
+            push!(expr.args, :(@over_i zᴱ[i] = x[i]))
+        else
+            aᴱkkm1 = tab[Val{:aᴱ}, k, k-1]
+            aᴱkkm1 == 0 && push!(expr.args, :(@over_i zᴱ[i] = y[i]))
+            aᴱkkm1 != 0 && push!(expr.args, :(@over_i zᴱ[i] = y[i] + $aᴱkkm1*Δt*zᴱ[i]))
+            if k < nstages(tab)
+                aᴵkpkm1 = tab[Val{:aᴵ}, k+1, k-1]
+                aᴱkpkm1 = tab[Val{:aᴱ}, k+1, k-1]
+                bᴵkm1   = tab[Val{:bᴵ}, k-1]
+                bᴱkm1   = tab[Val{:bᴱ}, k-1]
+                
+                c1 =  aᴵkpkm1 - bᴵkm1
+                c2 = (aᴱkpkm1 - bᴱkm1)/aᴱkkm1
+                c1 == 0 && c2 == 0 && 
+                    push!(expr.args, :(@over_i y[i] = x[i]))
+                c1 == 0 && c2 != 0 && 
+                    push!(expr.args, :(@over_i y[i] = x[i] + $c2*(zᴱ[i] - y[i])))
+                c1 != 0 && c2 == 0 && 
+                    push!(expr.args, :(@over_i y[i] = x[i] + $c1*Δt*zᴵ[i]))
+                c1 != 0 && c2 != 0 && 
+                    push!(expr.args, :(@over_i y[i] = x[i] + $c1*Δt*zᴵ[i] + $c2*(zᴱ[i] - y[i])))
+            end
+            aᴵkkm1 = tab[Val{:aᴵ}, k, k-1]
+            aᴵkkm1 != 0 && push!(expr.args, :(@over_i zᴱ[i] = zᴱ[i] + $aᴵkkm1*Δt*zᴵ[i]))
+        end
+        # compute w = A*zᴱ then
+        # compute z = (I-cA)⁻¹*w in place
+        push!(expr.args, :(A_mul_B!(A, zᴱ, w)))
+        push!(expr.args, :(ImcA!(A, $aᴵkk*Δt, w, zᴵ)))
+
+        # w is the temporary input for g - output in zᴱ
+        push!(expr.args, :(@over_i w[i] = zᴱ[i]))
+        aᴵkk != 0 && push!(expr.args, :(@over_i w[i] += $aᴵkk*Δt*zᴵ[i]))
+
+        push!(expr.args, :(g(t + $cᴱk*Δt, w, zᴱ)))
+
+        bᴵk != 0 && push!(expr.args, :(@over_i x[i] += $bᴵk*Δt*zᴵ[i]))
+        bᴱk != 0 && push!(expr.args, :(@over_i x[i] += $bᴱk*Δt*zᴱ[i]))
+
+        if isembedded(I)
+            b̂ᴵk != 0 && push!(expr.args, :(@over_i x̂[i] += $b̂ᴵk*Δt*zᴵ[i]))
+            b̂ᴱk != 0 && push!(expr.args, :(@over_i x̂[i] += $b̂ᴱk*Δt*zᴱ[i]))
+        end
+        push!(expr_all.args, expr)
+    end
+    expr_all
+end
 
 # each IMEXRKScheme implements a _step! method that will be called here by dispatch
 @generated function step!{T, S, E, CODE}(I::IMEXRKScheme{T, S, E, CODE}, 
