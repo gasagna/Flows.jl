@@ -26,7 +26,7 @@ struct IMEXRKScheme{T<:IMEXTableau, S<:AbstractVector, E, CODE}
     storage::Vector{S}
     # internal constructor allocates the storage
     function IMEXRKScheme{T, S, E, CODE}(x::S, N::Int) where {T, S, E, CODE}
-        new(S[similar(x) for i = 1:N])
+        new(S[zero(x) for i = 1:N])
     end
 end
 
