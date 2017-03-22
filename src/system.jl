@@ -9,16 +9,35 @@ export AbstractIMEXSystem, stiff, nonstiff, ImcA!
 #     A = stiff(::AbstractIMEXSystem)
 #     g = nostiff(::AbstractIMEXSystem)
 #
-# where A will be a subtype of matrix and implements the following methods
+# where A implements the following methods
 #
 #    Base.A_mul_B!(A, x::AbstractVector, y::AbstractVector)
 #   ImcA!(A, c::Real, y::AbstractVector, z::AbstractVector)
 #
 # whereas g must be callable, with signature
 #    g(t, x, xdot)
-abstract type AbstractIMEXSystem{G, M<:AbstractMatrix} end
+abstract type AbstractIMEXSystem{G, A} end
 
-# concrete subtypes will satisfy this interface
+# Concrete subtypes will satisfy this interface
+
+"""
+    stiff(f)
+
+Return the stiff part of the system.
+"""
 function stiff(::AbstractIMEXSystem) end
+
+"""
+    nonstiff(f)
+
+Return the nonstiff part of the system.
+"""    
 function nonstiff(::AbstractIMEXSystem) end
-function ImcA!(A::AbstractMatrix, c::Real, y::AbstractVector, z::AbstractVector) end
+
+"""
+    ImcA!(A, c, y, z)
+
+Helper function for solving linear systems associated to 3R2R/4R3R 
+schemes. Returns `z` such that `(I-cA)z = y`. 
+"""
+function ImcA!(A, c::Real, y::AbstractVector, z::AbstractVector) end
