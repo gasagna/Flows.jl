@@ -1,4 +1,4 @@
-export IMEXRKScheme, IMEXRK3R2R
+export IMEXRKScheme, IMEXRK3R2R, IMEXRK4R3R, isembedded
 
 """
     Type that holds information about the particular scheme and 
@@ -48,6 +48,7 @@ tableau{T, S, E, CODE}(::Type{IMEXRKScheme{T, S, E, CODE}}) = T
 
 """ Whether the embedded scheme is active or not """
 isembedded{T, S, E, CODE}(::Type{IMEXRKScheme{T, S, E, CODE}}) = E
+isembedded{T, S, E, CODE}(::IMEXRKScheme{T, S, E, CODE}) = E
 
 
 # ~~ IMEXRK3R2R ~~
