@@ -32,11 +32,13 @@ srand(0)
 x₀ = 1e-2*randn(Nₓ)
 
 # define scheme
-scheme = IMEXRK3R2R(IMEXRKCB3e, x₀)
+for scheme in [IMEXRK3R2R(IMEXRKCB3e, x₀, false),
+               IMEXRK3R2R(IMEXRKCB3c, x₀, false),
+               IMEXRK4R3R(IMEXRKCB4,  x₀, false)]
 
-# get flow
-for Δt = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
-    ϕ = forwmap!(f, 10, Δt, scheme)
-    x = ϕ(copy(x₀))
-    @show sum(abs2, x)
+    ϕ = forwmap!(f, 10, 1e-3, scheme)
+    @time ϕ(x₀)
+    @time ϕ(x₀)
+    @time ϕ(x₀)
+    @show @allocated ϕ(x₀)
 end
