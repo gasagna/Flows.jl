@@ -142,7 +142,7 @@ function _step!{T<:IMEXRK4R3R}(I::Type{T}, g, A, t, Δt, x)
 
     if isembedded(I)
         push!(expr_all.args, :(x̂ = I.storage[5]))
-        push!(expr_all.args, :(x̂ .= x))
+        push!(expr_all.args, :(@over_i x̂[i] = x[i]))
     end
 
     # loop over stages
