@@ -11,7 +11,7 @@ function ImcA!(A, c::Real, y::T, z::T) where T end
 
 # Provide interface for systems where the stiff operator is 
 # defined as a `Diagonal` matrix object from base Julia. 
-function ImcA!(A::Diagonal, c::Real, y::T, z::T) where T
+function ImcA!(A::Diagonal, c::Real, y::T, z::T) where T <: AbstractVector
     length(linearindices(y)) == 
         length(linearindices(z)) == 
             size(A, 1) || throw(DimensionMismatch("wrong input size"))
