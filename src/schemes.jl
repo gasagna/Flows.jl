@@ -71,7 +71,7 @@ function _step!{T<:IMEXRK3R2R}(I::Type{T}, g, A, t, Δt, x)
 
     if isembedded(I)
         push!(expr_all.args, :(x̂ = I.storage[4]))
-        push!(expr_all.args, :(x̂ .= x))
+        push!(expr_all.args, :(@over_i x̂[i] = x[i]))
     end
 
     # loop over stages
@@ -84,7 +84,7 @@ function _step!{T<:IMEXRK3R2R}(I::Type{T}, g, A, t, Δt, x)
         b̂ᴱk    = tab[Val{:b̂ᴱ}, k]
         b̂ᴵk    = tab[Val{:b̂ᴵ}, k]
         if k == 1
-            push!(expr.args, :(y .= x))
+            push!(expr.args, :(@over_i y[i] = x[i]))
         else
             aᴵkkm1 = tab[Val{:aᴵ}, k, k-1]
             aᴱkkm1 = tab[Val{:aᴱ}, k, k-1]
