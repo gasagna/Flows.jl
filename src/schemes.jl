@@ -11,7 +11,7 @@ export IMEXRKScheme, IMEXRK3R2R, IMEXRK4R3R, isembedded
     Type parameters
     ---------------
     T : IMEXTableau - the tableau of the scheme
-    S : AbstractVector, the type of the storage
+    S : the type of the storage
     E : Bool, whether we have to calculate the embedded scheme too. If false
               code blocks that calculate the next state based on the embedded
               scheme are elided from generation.
@@ -22,7 +22,7 @@ export IMEXRKScheme, IMEXRK3R2R, IMEXRK4R3R, isembedded
               definition of the method _step!.
 
 """
-struct IMEXRKScheme{T<:IMEXTableau, S<:AbstractVector, E, CODE}
+struct IMEXRKScheme{T<:IMEXTableau, S, E, CODE}
     storage::Vector{S}
     # internal constructor allocates the storage
     function IMEXRKScheme{T, S, E, CODE}(x::S, N::Int) where {T, S, E, CODE}
@@ -40,7 +40,7 @@ is true, the embedded scheme is activate, and the next state calculated by the
 embedded scheme can be found in the last storage element of the scheme, after
 `_step!` has been called to go the the next state.
 """
-IMEXRKScheme(tab::IMEXTableau, x::AbstractVector, N::Integer, code::Symbol, embed::Bool=false) =
+IMEXRKScheme(tab::IMEXTableau, x, N::Integer, code::Symbol, embed::Bool=false) =
     IMEXRKScheme{typeof(tab), typeof(x), embed, code}(x, embed ? N+1 : N)
 
 """ Get the tableau of the scheme """
@@ -54,7 +54,7 @@ isembedded{T, S, E, CODE}(::IMEXRKScheme{T, S, E, CODE}) = E
 # ~~ IMEXRK3R2R ~~
 # Three-register implementation of [2R] IMEXRK schemes from section 1.2.1 of CB 2015
 IMEXRK3R2R{T, S, E} = IMEXRKScheme{T, S, E, :_3R2R}
-IMEXRK3R2R(tab::IMEXTableau, x::AbstractVector, embed::Bool=false) = 
+IMEXRK3R2R(tab::IMEXTableau, x, embed::Bool=false) = 
     IMEXRKScheme(tab, x, 3, :_3R2R, embed)
 
 function _step!{T<:IMEXRK3R2R}(I::Type{T}, g, A, t, Δt, x)
@@ -124,7 +124,7 @@ end
 # ~~ IMEXRK4R3R ~~
 # Four-register implementation of [3R] IMEXRK schemes from section 1.2.3 of CB 2015
 IMEXRK4R3R{T, S, E} = IMEXRKScheme{T, S, E, :_4R3R}
-IMEXRK4R3R(tab::IMEXTableau, x::AbstractVector, embed::Bool=false) = 
+IMEXRK4R3R(tab::IMEXTableau, x, embed::Bool=false) = 
     IMEXRKScheme(tab, x, 4, :_4R3R, embed)
 
 function _step!{T<:IMEXRK4R3R}(I::Type{T}, g, A, t, Δt, x)
