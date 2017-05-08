@@ -1,3 +1,6 @@
+using Base.Test
+using IMEXRKCB
+
 include("test_tableaux.jl")
 include("test_diagonal.jl")
 include("test_schemes.jl")

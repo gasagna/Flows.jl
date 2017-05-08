@@ -1,5 +1,5 @@
 using Base.Test
-using IMEXRK
+using IMEXRKCB
 
 # test for kuramoto-sivashinsky
 

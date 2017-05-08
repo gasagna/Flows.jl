@@ -1,6 +1,3 @@
-using Base.Test
-using IMEXRK
-
 @testset "verify interface" begin
     
     g(t, x, ẋ) = (ẋ .= 0.5*x; ẋ)

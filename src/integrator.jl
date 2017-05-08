@@ -13,7 +13,7 @@ be of a type with the storage defined in `scheme`.
 """
 function forwmap!(f::AbstractIMEXSystem, T::Real, Δt::Real, scheme::IMEXRKScheme)
     @argcheck T  > 0
-    @argcheck ΔT > 0
+    @argcheck Δt > 0
     # the returned function will work in place and will propagate forward
     # the system by `T`
     function wrapped(x::AbstractVector)

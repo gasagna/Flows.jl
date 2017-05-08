@@ -1,6 +1,3 @@
-using Base.Test
-using IMEXRK
-
 @testset "linear system" begin
 
     # define linear system
@@ -17,7 +14,7 @@ using IMEXRK
 
             # step forward
             x = [1.0]
-            IMEXRK.step!(scheme, g, A, 0., Δt, x)
+            IMEXRKCB.step!(scheme, g, A, 0., Δt, x)
 
             # check error decays with expected power
             err = abs(x[1] - exp(Δt))

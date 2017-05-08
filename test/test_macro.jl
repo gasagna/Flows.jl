@@ -1,14 +1,9 @@
-using Base.Test
-import IMEXRK: @over_i
-
-
 @testset "basic" begin
     x = [0, 0]
     y = [1, 2]
     @over_i x[i] = 2 * y[i]
     @test x == [2, 4]
 end
-
 
 @testset "operators" begin
     x = [0, 0]

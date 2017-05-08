@@ -1,3 +1,5 @@
+export @over_i
+
 macro over_i(expr)
     # Accepts expressions of the form
     # x[i] = ...

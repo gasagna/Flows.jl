@@ -1,12 +1,9 @@
-using IMEXRK
-import IMEXRK: Tableau, IMEXTableau, nstages
-using Base.Test
-
+import IMEXRKCB: Tableau, IMEXTableau, nstages
 
 @testset "convert_tuple" begin
-    typeof(IMEXRK.convert_tuple(Float64, 1)) == Float64
-    typeof(IMEXRK.convert_tuple(Float64, (1, 1))) == Float64
-    typeof(IMEXRK.convert_tuple(Float64, ((1, 1), (1, 1)))) == Float64
+    typeof(IMEXRKCB.convert_tuple(Float64, 1)) == Float64
+    typeof(IMEXRKCB.convert_tuple(Float64, (1, 1))) == Float64
+    typeof(IMEXRKCB.convert_tuple(Float64, ((1, 1), (1, 1)))) == Float64
 end
 
 # conversion/promotion

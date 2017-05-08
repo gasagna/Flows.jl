@@ -1,6 +1,3 @@
-using Base.Test
-using IMEXRK
-
 @testset "forwmap!" begin
     # make system
     g(t, x, ẋ) = (ẋ .= -0.5.*x; ẋ)
@@ -31,6 +28,6 @@ using IMEXRK
 end
 
 @testset "time step" begin
-    @test IMEXRK.next_Δt(0.0, 1.0, 0.1) == 0.1
-    @test IMEXRK.next_Δt(0.0, 1.0, 1.1) == 1.0
+    @test IMEXRKCB.next_Δt(0.0, 1.0, 0.1) == 0.1
+    @test IMEXRKCB.next_Δt(0.0, 1.0, 1.1) == 1.0
 end
