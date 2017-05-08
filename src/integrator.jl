@@ -27,7 +27,7 @@ function forwmap!(g, A, T::Real, Δt::Real, scheme::IMEXRKScheme)
     @argcheck Δt > 0
     # the returned function will work in place and will propagate forward
     # the system by `T`
-    function wrapped(x)
+    function wrapped(x, monitors::Monitor...)
         # set time to zero. Change this for non-autonomous systems.
         t = zero(Δt) 
         # loop
@@ -38,6 +38,9 @@ function forwmap!(g, A, T::Real, Δt::Real, scheme::IMEXRKScheme)
             # step forward
             step!(scheme, g, A, t, Δt⁺, x)
             t += Δt⁺
+
+            # push a new sample to all monitors
+            push!(monitors, x, t)
 
             # stop when we reach final time.
             if t ≥ T 
