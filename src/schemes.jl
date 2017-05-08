@@ -101,7 +101,7 @@ function _step!{T<:IMEXRK3R2R}(I::Type{T}, g, A, t, Δt, x)
         end
         # compute z = A*y then
         # compute z = (I-cA)⁻¹*(A*y) in place
-        push!(expr.args, :(A_mul_B!(A, y, z)))
+        push!(expr.args, :(A_mul_B!(z, A, y)))
         push!(expr.args, :(ImcA!(A, $aᴵkk*Δt, z, z)))
 
         # w is the temporary input for g - output in y
@@ -184,7 +184,7 @@ function _step!{T<:IMEXRK4R3R}(I::Type{T}, g, A, t, Δt, x)
         end
         # compute w = A*zᴱ then
         # compute z = (I-cA)⁻¹*w in place
-        push!(expr.args, :(A_mul_B!(A, zᴱ, w)))
+        push!(expr.args, :(A_mul_B!(w, A, zᴱ)))
         push!(expr.args, :(ImcA!(A, $aᴵkk*Δt, w, zᴵ)))
 
         # w is the temporary input for g - output in zᴱ
