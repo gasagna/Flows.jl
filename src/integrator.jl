@@ -27,7 +27,7 @@ function forwmap!(g, A, T::Real, Δt::Real, scheme::IMEXRKScheme)
     @argcheck Δt > 0
     # the returned function will work in place and will propagate forward
     # the system by `T`
-    function wrapped(x::AbstractVector)
+    function wrapped(x)
         # set time to zero. Change this for non-autonomous systems.
         t = zero(Δt) 
         # loop
