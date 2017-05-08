@@ -1,8 +1,4 @@
-using Base.Test
-using IMEXRKCB
-
-# test for kuramoto-sivashinsky
-
+# test for kuramoto-sivashinsky equation
 const Nₓ = 32
 const ν = (2π/39)^2
 
@@ -24,9 +20,6 @@ function g(t::Real, x::AbstractVector, ẋ::AbstractVector)
     ẋ
 end
 
-# define system
-f = DiagonalIMEXSystem(g, A)
-
 # initial condition
 srand(0)
 x₀ = 1e-2*randn(Nₓ)
@@ -37,7 +30,7 @@ for scheme in [IMEXRK3R2R(IMEXRKCB3e, x₀, false),
                IMEXRK4R3R(IMEXRKCB4,  x₀, false)]
 
     # get map
-    ϕ = forwmap!(f, 10, 1e-3, scheme)
+    ϕ = forwmap!(g, A, 10, 1e-3, scheme)
     
     # warm up
     ϕ(x₀)

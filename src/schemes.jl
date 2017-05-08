@@ -26,7 +26,7 @@ struct IMEXRKScheme{T<:IMEXTableau, S<:AbstractVector, E, CODE}
     storage::Vector{S}
     # internal constructor allocates the storage
     function IMEXRKScheme{T, S, E, CODE}(x::S, N::Int) where {T, S, E, CODE}
-        new(S[zero(x) for i = 1:N])
+        new(S[similar(x) for i = 1:N])
     end
 end
 
@@ -104,7 +104,7 @@ function _step!{T<:IMEXRK3R2R}(I::Type{T}, g, A, t, Δt, x)
         push!(expr.args, :(A_mul_B!(A, y, z)))
         push!(expr.args, :(ImcA!(A, $aᴵkk*Δt, z, z)))
 
-        # w is the temporary input @inbounds @simd for g - output in y
+        # w is the temporary input for g - output in y
         push!(expr.args, :(@over_i w[i] = y[i]))
         aᴵkk != 0 && push!(expr.args, :(@over_i w[i] += $aᴵkk*Δt*z[i]))
         push!(expr.args, :(g(t + $cᴱk*Δt, w, y)))
@@ -208,7 +208,7 @@ end
 # each IMEXRKScheme implements a _step! method that will be called here by dispatch
 @generated function step!{T, S, E, CODE}(I::IMEXRKScheme{T, S, E, CODE}, 
                                          g, 
-                                         A::AbstractMatrix, 
+                                         A, 
                                          t::Real, Δt::Real, x::S)
     _step!(I, g, A, t, Δt, x)
 end

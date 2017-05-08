@@ -2,7 +2,6 @@
     # make system
     g(t, x, ẋ) = (ẋ .= -0.5.*x; ẋ)
     A = Diagonal([-0.5])
-    f = DiagonalIMEXSystem(g, A)
 
     # vector
     x = [1.0]
@@ -13,7 +12,7 @@
                    IMEXRK4R3R(IMEXRKCB4,  x, false)]
 
         # forward map
-        ϕ = forwmap!(f, 1.0, 0.01123, scheme)
+        ϕ = forwmap!(g, A, 1.0, 0.01123, scheme)
 
         # check relative error
         @test ((ϕ(x) - exp(-1))/exp(-1))[1] < 4.95e-8

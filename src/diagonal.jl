@@ -1,18 +1,5 @@
-export DiagonalIMEXSystem
-
-# Dynamical system in which the stiff part is a diagonal linear operator
-struct DiagonalIMEXSystem{G, D} <: AbstractIMEXSystem{G, Diagonal}
-    g::G
-    A::D
-end
-
-# The following four functions are required to make DiagonalIMEXSystem
-# work with the rest of the code. In general other subtypes of AbstractIMEXSystem
-# should define these four functions.
-
-# Return stiff and non stiff parts
-stiff(d::DiagonalIMEXSystem) = d.A
-nonstiff(d::DiagonalIMEXSystem) = d.g
+# Provide interface for systems where the stiff operator is defined as a 
+# `Diagonal` matrix object from base Julia
 
 # Calculate matrix vector product y = A*x
 function Base.A_mul_B!(A::Diagonal, x::AbstractVector, y::AbstractVector)
