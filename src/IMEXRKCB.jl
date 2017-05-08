@@ -1,6 +1,6 @@
 __precompile__()
 
-module IMEXRK
+module IMEXRKCB
 include("macro.jl")
 include("tableaux.jl")
 include("system.jl")
