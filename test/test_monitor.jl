@@ -28,3 +28,19 @@ end
     @test m1.samples == [0.0, 1.0, 2.0, 3.0]
     @test m2.samples == [0.0, 1.0, 4.0, 9.0]
 end
+
+@testset "iteration    " begin
+    m = Monitor([1.0], x->x[1])
+    
+    # push data to monitor
+    for i = 1:10
+        push!(m, Float64[i], 0.1*i)
+    end
+
+    # iterate over monitor content
+    for (i, (t, sample)) in enumerate(m)
+        @test t == 0.1*i
+        @test sample == i
+    end
+
+end

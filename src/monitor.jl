@@ -1,10 +1,13 @@
 export Monitor
 
-struct Monitor{T, F}
+struct Monitor{T, F} <: AbstractVector{Tuple{Float64, T}}
     f::F
     samples::Vector{T}
     times::Vector{Float64}
 end
+
+Base.size(m::Monitor) = (length(m.times), )
+Base.getindex(m::Monitor, i::Int) = (m.times[i], m.samples[i])
 
 function Monitor(x, f)
     # get the type of the output
