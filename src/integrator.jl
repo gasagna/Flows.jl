@@ -1,5 +1,3 @@
-using ArgCheck
-
 export forwmap!
 
 """
@@ -23,8 +21,8 @@ which operates in place, overwriting its argument. The input argument `x` should
 be of a type with the storage defined in `scheme`.
 """
 function forwmap!(g, A, T::Real, Δt::Real, scheme::IMEXRKScheme)
-    @argcheck T  > 0
-    @argcheck Δt > 0
+    T  > 0 || throw(ArgumentError("T must be greater than 0, got $T"))
+    Δt > 0 || throw(ArgumentError("Δt must be greater than 0, got $Δt"))
     # the returned function will work in place and will propagate forward
     # the system by `T`
     function wrapped(x, monitors::Monitor...)
