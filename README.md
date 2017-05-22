@@ -1,20 +1,13 @@
 # IMEXRKCB.jl
 
-This repository contains an efficient Julia implementation of three of the eight low-storage implicit-explicit Runge-Kutta time integration 
-schemes recently developed by Daniele Cavaglieri & Tom Bewley, CB ([JCP, 286, pp. 172-193, 2015](http://www.sciencedirect.com/science/article/pii/S0021999115000352)).
-These schemes are particularly suited for high-dimensional systems with stiff behaviour, such as systems arising from the discretisations of the Navier-Stokes
-equations for turbulent flow simulation. 
+This repository contains an efficient Julia implementation of three of the eight low-storage implicit-explicit Runge-Kutta time integration schemes recently developed by Daniele Cavaglieri & Tom Bewley ([JCP, 286, pp. 172-193, 2015](http://www.sciencedirect.com/science/article/pii/S0021999115000352)). These schemes are particularly suited for high-dimensional systems with stiff behaviour, such as systems arising from the discretisations of the Navier-Stokes equations for turbulent flow simulation. 
 
-More specifically, the third-order accurate schemes __IMEXRKCB3e__ and __IMEXRKCB3c__ are available using the three-register implementation of [2R] IMEXRK 
-schemes, while the fourth-order accurate __IMEXRKCB4__ scheme is available using the four-register implementation for [3R] schemes. These three also have 
-embedded schemes for local error estimation that can be enabled if required. However, no step-size control feature is currently implemented.
-The code provides the basic building blocks to construct more advanced time integrators. Only low-level primitives are defined in this package.
+More specifically, the third-order accurate schemes __IMEXRKCB3e__ and __IMEXRKCB3c__ are available using the three-register implementation of [2R] IMEXRK schemes, while the fourth-order accurate __IMEXRKCB4__ scheme is available using the four-register implementation for [3R] schemes. These three also have embedded schemes for local error estimation that can be enabled if required. However, no step-size control feature is currently implemented. 
 
 ## Usage ##
 
 ### Definition of the state ###
-We use duck-typing throughout to impose as little restriction as possible on user types. The state type can be anything, not simply a vector,
-but it must implement a basic indexing interface. For example, assume the state is represented by
+We use duck-typing throughout to impose as little restriction as possible on user types. The state type can be anything, not simply a vector, but it must implement a basic indexing interface. For example, assume the state is represented by
 ```julia
 struct FooBar
     data        # actual state variables, e.g. a vector, matrix, shared array...
@@ -52,14 +45,13 @@ The third order integration schemes are constructed using
 ```julia
 scheme = IMEXRK3R2R(IMEXRKCB3e, x, false),
 ```
-where the first argument is a tableau (IMEXRKCB3e/IMEXRKCB3e for IMEXRK3R2R implementations), 
-`x` is an object of type `FooBar` (used to allocate internal storage for the scheme) and the last argument is a boolean 
-to activate the embedded scheme.
+where the first argument is a tableau (IMEXRKCB3e/IMEXRKCB3e for three register implementations of 2R scheme), `x` is an object of type `FooBar` (used to allocate internal storage for the scheme) and the last argument is a boolean flag to activate the embedded scheme. When this is activated, the state calculate by the embedded scheme at the end of a time step can be read from `scheme.storage[5]`. 
 
-The fourth order scheme is constructed using 
+The fourth order scheme (using a four register implementation of the 3R scheme) is constructed using 
 ```julia
 scheme = IMEXRK4R3R(IMEXRKCB4, x, false),
 ```
+*Do not mix implementations and schemes*, as it leads to wrong integration result.
 
 ### Time stepping ###
 A time step is calculated with
@@ -68,5 +60,5 @@ step!(scheme, g, A, t, Δt, x)
 ```
 where `x` will be overwritten with the state at the end of the time step, from time `t` to time `t+Δt`. Note that 
 this function does not allocate extra memory. All the required storage for the step is allocated at the time of 
-constructing `scheme`.
+constructing `scheme`. This is the only building block provided in this package. More advanced integrators can be built using this low-level primitive..
 
