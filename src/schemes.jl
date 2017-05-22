@@ -1,4 +1,4 @@
-export IMEXRKScheme, IMEXRK3R2R, IMEXRK4R3R, isembedded
+export IMEXRKScheme, IMEXRK3R2R, IMEXRK4R3R, isembedded, step
 
 """
     Type that holds information about the particular scheme and 
