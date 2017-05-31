@@ -26,26 +26,26 @@ where the first two are used to loop over the state variables, using the informa
 to allocate internal storage. If the state is an `Array{T, N}`, e.g. a `Vector` than all of this is not needed.
 
 ### Defining the operators ###
-The stiff part, `A`, of type, say `Atype` should extend two methods:
+The dynamical system to be integrated is defined by its stiff and non stiff components, where the former is assumed to be linear. To use the integrators, users needs to define appropriate behaviour for the types used to represent the two components. The stiff part, denoted by `A` (of type, say, `Atype`) should extend two methods, one from `Base`, the other from the `IMEXRKCB` package:
 ```
 Base.A_mul_B!(out::FooBar, A::Atype, x::FooBar)
-IMERKCB.ImcA!(A::Atype, c::Real, y::FooBar, z::FooBar)
+IMEXRKCB.ImcA!(A::Atype, c::Real, y::FooBar, z::FooBar)
 ```
-The first calculates the action of the discretised linear operator `A` on `x` and stores the result in `out`. The latter solve
+The first calculates the action of the discretised linear operator `A` on `x` and stores the result in `out`. The latter solves
 for `z` such that `(I-cA)z = y`, where `I` is the identity operator and `c` is a real constant. The result is written in `z`. The variable `A` can contain all the storage required to perform these two operations, e.g. storage for LU factorisation, etc..
 
 The non stiff part `g` should be callable, with signature
 ```julia
 g(t::Real, x::FooBar, dxdt::FooBar)
 ```
-where `dxdt` is the time derivative of the state associated with the nonstiff terms, `x` is the current state, and `t` is time.
+where `dxdt` is the time derivative of the state associated with the non stiff terms, `x` is the current state, and `t` is time. `dxdt` will be overwritten.
 
 ### Scheme definition ###
-The third order integration schemes are constructed using 
+To use the integrator, one needs first to define the scheme that will be used. The two third order integration schemes are constructed using 
 ```julia
 scheme = IMEXRK3R2R(IMEXRKCB3e, x, false),
 ```
-where the first argument is a tableau (IMEXRKCB3e/IMEXRKCB3e for three register implementations of 2R scheme), `x` is an object of type `FooBar` (used to allocate internal storage for the scheme) and the last argument is a boolean flag to activate the embedded scheme. When this is activated, the state calculate by the embedded scheme at the end of a time step can be read from `scheme.storage[5]`. 
+where the first argument is a tableau (IMEXRKCB3e/IMEXRKCB3e for three register implementations of 2R scheme), `x` is an object of type `FooBar` (used to allocate internal storage for the scheme) and the last argument is a boolean flag to activate the embedded scheme. When this is activated, the state calculate by the embedded scheme at the end of a time step can be read from `scheme.storage[5]`. Note that in the construction of the scheme, `Base.similar(::FooBar)` is called to allocate storage.
 
 The fourth order scheme (using a four register implementation of the 3R scheme) is constructed using 
 ```julia
@@ -60,5 +60,4 @@ step!(scheme, g, A, t, Δt, x)
 ```
 where `x` will be overwritten with the state at the end of the time step, from time `t` to time `t+Δt`. Note that 
 this function does not allocate extra memory. All the required storage for the step is allocated at the time of 
-constructing `scheme`. This is the only building block provided in this package. More advanced integrators can be built using this low-level primitive..
-
+constructing `scheme`. This is the only building block provided in this package. More advanced integrators can be built using this low-level primitive.
