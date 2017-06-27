@@ -20,14 +20,16 @@ fixed time step `Δt`. The signature of the returned function `ret` is `ret(x)`,
 which operates in place, overwriting its argument. The input argument `x` should
 be of a type with the storage defined in `scheme`.
 """
-function forwmap!(g, A, T::Real, Δt::Real, scheme::IMEXRKScheme)
-    T  > 0 || throw(ArgumentError("T must be greater than 0, got $T"))
+function forwmap!(g, A, Δt::Real, scheme::IMEXRKScheme)
     Δt > 0 || throw(ArgumentError("Δt must be greater than 0, got $Δt"))
-    # the returned function will work in place and will propagate forward
-    # the system by `T`
-    function wrapped(x, monitors::Monitor...)
+    # the returned function will work in place
+    function wrapped(x, T::Real, monitors::Monitor...)
+        # time must be positive
+        T  > 0 || throw(ArgumentError("T must be greater than 0, got $T"))
+
         # set time to zero. Change this for non-autonomous systems.
         t = zero(Δt) 
+        
         # loop
         while true
             # obtain next time step

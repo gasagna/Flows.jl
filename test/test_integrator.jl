@@ -1,6 +1,3 @@
-using Base.Test
-using IMEXRKCB
-
 # Define a custom type that satisfy the required interface. 
 # Note that for subtypes of AbstractVector `A_mul_B!` and `ImcA!`
 # already work out of the box.
@@ -31,17 +28,17 @@ Base.A_mul_B!(out::foo{Float64}, A::Diagonal{Float64}, in::foo{Float64}) =
                        IMEXRK4R3R(IMEXRKCB4,  x, false)]
 
             # forward map
-            ϕ = forwmap!(g, A, 1.0, 0.01123, scheme)
+            ϕ = forwmap!(g, A, 0.01123, scheme)
 
             # check relative error
-            @test ((ϕ(x)[1] - exp(-1))/exp(-1)) < 4.95e-8
-            @test ((ϕ(x)[1] - exp(-2))/exp(-2)) < 4.95e-8
-            @test ((ϕ(x)[1] - exp(-3))/exp(-3)) < 4.95e-8
-            @test ((ϕ(x)[1] - exp(-4))/exp(-4)) < 4.95e-8
-            @test ((ϕ(x)[1] - exp(-5))/exp(-5)) < 4.95e-8
+            @test ((ϕ(x, 1.0)[1] - exp(-1))/exp(-1)) < 4.95e-8
+            @test ((ϕ(x, 1.0)[1] - exp(-2))/exp(-2)) < 4.95e-8
+            @test ((ϕ(x, 1.0)[1] - exp(-3))/exp(-3)) < 4.95e-8
+            @test ((ϕ(x, 1.0)[1] - exp(-4))/exp(-4)) < 4.95e-8
+            @test ((ϕ(x, 1.0)[1] - exp(-5))/exp(-5)) < 4.95e-8
 
             # try giving a different input
-            @test_throws MethodError ϕ([1])
+            @test_throws MethodError ϕ([1], 1.0)
         end
     end
 end
