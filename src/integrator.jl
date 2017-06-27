@@ -54,6 +54,6 @@ end
     Return time step for current RK step. Becomes smaller than `Δt` in 
     case we need to hit `T` exactly.
 """ 
-function next_Δt(t, T, Δt)
+function next_Δt(t, T, Δt::S)::S where S
     min(t + Δt, T) - t
 end
