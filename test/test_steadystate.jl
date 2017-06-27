@@ -1,4 +1,4 @@
-@testset "diffusion    " begin
+@testset "diffusion                              " begin
     g(t, x, ẋ) = (ẋ[1] = 1)
     A = Diagonal([-5])
 

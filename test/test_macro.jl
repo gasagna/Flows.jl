@@ -1,11 +1,11 @@
-@testset "basic" begin
+@testset "basic                                  " begin
     x = [0, 0]
     y = [1, 2]
     @over_i x[i] = 2 * y[i]
     @test x == [2, 4]
 end
 
-@testset "operators" begin
+@testset "operators                              " begin
     x = [0, 0]
     y = [1, 2]
     @over_i x[i] += 2 * y[i]
@@ -21,7 +21,7 @@ end
     @test x == [1, 6]
 end
 
-@testset "no allocations" begin
+@testset "no allocations                         " begin
     x = rand(10000)
     y = rand(10000)
     f(x, y) = @over_i x[i] = 2 * y[i]

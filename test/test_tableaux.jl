@@ -1,13 +1,13 @@
 import IMEXRKCB: Tableau, IMEXTableau, nstages
 
-@testset "convert_tuple" begin
-    typeof(IMEXRKCB.convert_tuple(Float64, 1)) == Float64
-    typeof(IMEXRKCB.convert_tuple(Float64, (1, 1))) == Float64
-    typeof(IMEXRKCB.convert_tuple(Float64, ((1, 1), (1, 1)))) == Float64
+@testset "convert_tuple                          " begin
+    @test typeof(IMEXRKCB.convert_tuple(Float64, 1))                == Float64
+    @test typeof(IMEXRKCB.convert_tuple(Float64, (1, 1)))           == Tuple{Float64, Float64}
+    @test typeof(IMEXRKCB.convert_tuple(Float64, ((1, 1), (1, 1)))) == Tuple{Tuple{Float64, Float64}, Tuple{Float64, Float64}}
 end
 
 # conversion/promotion
-@testset "To Float64" begin
+@testset "To Float64                             " begin
     t = Tableau(((1, 2),
                  (3, 4)),
                  (5, 6),

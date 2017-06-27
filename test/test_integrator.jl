@@ -14,7 +14,7 @@ Base.setindex!(f::foo, val, i::Int) = (f.data[i] = val)
 Base.A_mul_B!(out::foo{Float64}, A::Diagonal{Float64}, in::foo{Float64}) = 
     A_mul_B!(out.data, A, in.data)
 
-@testset "forwmap!" begin
+@testset "forwmap!                               " begin
     # make system
     g(t, x, ẋ) = (for i in eachindex(x); ẋ[i] = -0.5*x[i]; end; ẋ)
     A = Diagonal([-0.5])
@@ -43,7 +43,7 @@ Base.A_mul_B!(out::foo{Float64}, A::Diagonal{Float64}, in::foo{Float64}) =
     end
 end
 
-@testset "time step" begin
+@testset "time step                              " begin
     @test IMEXRKCB.next_Δt(0.0, 1.0, 0.1) == 0.1
     @test IMEXRKCB.next_Δt(0.0, 1.0, 1.1) == 1.0
 end
