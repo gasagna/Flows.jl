@@ -3,18 +3,18 @@
     A = Diagonal([-5])
 
     # integration scheme
-    for scheme in [IMEXRK3R2R(IMEXRKCB3e, [0.0], false),
-                   IMEXRK3R2R(IMEXRKCB3c, [0.0], false),
-                   IMEXRK4R3R(IMEXRKCB4,  [0.0], false)]
-
-        # forward map
-        ϕ = forwmap!(g, A, 0.12345, scheme)
+    for scheme in [IMEXRK3R2R(IMEXRKCB3e, false, [0.0]),
+                   IMEXRK3R2R(IMEXRKCB3c, false, [0.0]),
+                   IMEXRK4R3R(IMEXRKCB4,  false, [0.0])]
 
         # monitor
         m = Monitor([0.0], x->x[1])
+
+        # forward map
+        ϕ = integrator(g, A, scheme, 0.12345, m)
         
         # do job
-        ϕ([0.0], 20, m)
+        ϕ([0.0], 20)
 
         # 
         @test m.samples[end] ≈ 1/5

@@ -1,5 +1,9 @@
 export @over_i
 
+# All of this is required because julia does not currently support using the dot 
+# notation for broadcasting inside generated functions, which we use to generate
+# the stepping code. 
+
 macro over_i(expr)
     # Accepts expressions of the form
     # x[i] = ...
@@ -15,4 +19,38 @@ macro over_i(expr)
             $(esc(expr))
         end
     end
+end
+
+function subst(expr::Expr, with)
+    # Recursively scan an expression and if you find 
+    # something like `foo[i]` replace with 
+    # `foo.with[i]`, where with will be `x` or `y` 
+    # for objects of AugmentedState type.
+    if expr.head == :ref
+        cur = expr.args[1]
+        rep = Expr(:., cur, with)
+        expr.args[1] = rep
+    end
+    for arg in expr.args
+        subst(arg, with)
+    end
+    return expr
+end
+subst(expr, with) = nothing
+
+# Broadcast expression to the `x` and `y` fields
+# of the objects involved in the expression. This
+# happens only if flag is true.
+function broadcast2fields(flag::Bool, expr::Expr)
+    if flag
+        withx = subst(copy(expr), :(:x))
+        withy = subst(copy(expr), :(:y))
+        ret = quote 
+                    $withx
+                    $withy
+              end
+    else
+        ret = expr
+    end
+    return ret
 end

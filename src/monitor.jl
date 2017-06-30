@@ -10,7 +10,8 @@ Base.size(m::Monitor) = (length(m.times), )
 Base.getindex(m::Monitor, i::Int) = (m.times[i], m.samples[i])
 
 function Monitor(x, f)
-    # get the type of the output
+    # get the type of the output. This calls `f` once. Hope
+    # it is not a problem....
     T = typeof(f(x))
     Monitor{T, typeof(f)}(f, T[], Float64[])
 end
@@ -22,7 +23,8 @@ Base.push!(m::Monitor, x, t::Real) =
 # if we have more monitors push to all of them
 function Base.push!(ms::Tuple{Vararg{Monitor}}, x, t::Real)
     for m in ms
-        push!(m, x, t)
+        # extract true state part if x is an augmented state.
+        push!(m, _state(x), t)
     end
     nothing
 end
