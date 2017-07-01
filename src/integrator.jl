@@ -61,7 +61,7 @@ integrator(g, A, q, scheme::IMEXRKScheme, Δt::Real) =
         step!(scheme, g, A, t, Δt⁺, z)
         t += Δt⁺
         # update monitors
-        push!(ms, t, _state(z), _quad(z)...)
+        push!(ms, t, _state_quad(z)...)
     end
     z
 end
