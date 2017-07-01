@@ -53,7 +53,7 @@ integrator(g, A, q, scheme::IMEXRKScheme, Δt::Real) =
 (I::Integrator{<:AugmentedSystem})(x, q, T::Real) = I(aug_state(x, q), T)
 
 # Main propagation function
-@inline function _propagate!(scheme::IMEXRKScheme, g, A, T, Δt, z)
+@inline function _propagate!(scheme::IMEXRKScheme{Tab, S}, g, A, T::Real, Δt::Real, z::S) where {Tab, S}
     t = zero(Δt)
     while t < T
         Δt⁺ = next_Δt(t, T, Δt)
