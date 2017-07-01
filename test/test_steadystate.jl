@@ -1,3 +1,6 @@
+using Base.Test
+using IMEXRKCB
+
 @testset "diffusion                              " begin
     g(t, x, ẋ) = (ẋ[1] = 1)
     A = Diagonal([-5])
@@ -8,13 +11,13 @@
                    IMEXRK4R3R(IMEXRKCB4,  false, [0.0])]
 
         # monitor
-        m = Monitor([0.0], x->x[1])
+        m = Monitor(x->x[1], [0.0])
 
         # forward map
-        ϕ = integrator(g, A, scheme, 0.12345, m)
+        ϕ = integrator(g, A, scheme, 0.12345)
         
         # do job
-        ϕ([0.0], 20)
+        ϕ([0.0], 20, m)
 
         # 
         @test m.samples[end] ≈ 1/5

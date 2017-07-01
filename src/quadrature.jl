@@ -14,7 +14,7 @@ aug_state(x)    = x
 _state(x::AugmentedState) = x.x
 _state(x) = x
 _quad(x::AugmentedState) = x.y
-_quad(x) = x
+_quad(x) = ()
 
 # Used in the definition of a scheme for proper allocation of storage. Note
 # that `Y` cannot be a `Number`, because `similar` would raise an error. The
