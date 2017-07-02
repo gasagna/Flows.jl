@@ -1,3 +1,6 @@
+using Base.Test
+using IMEXRKCB
+
 # test for kuramoto-sivashinsky equation
 Nₓ = 32
 ν = (2π/39)^2
@@ -24,22 +27,22 @@ end
 srand(0)
 x₀ = 1e-2*randn(Nₓ)
 
-# define scheme
-for scheme in [IMEXRK3R2R(IMEXRKCB3e, x₀, false)]
-               # IMEXRK3R2R(IMEXRKCB3c, x₀, false),
-               # IMEXRK4R3R(IMEXRKCB4,  x₀, false)]
+# define scheme with quadrature
+for scheme in [IMEXRK3R2R(IMEXRKCB3e, false, x₀),
+               IMEXRK3R2R(IMEXRKCB3c, false, x₀),
+               IMEXRK4R3R(IMEXRKCB4,  false, x₀)]
 
-    # get map
-    ϕ = forwmap!(g, A, 1e-3, scheme)
-    
+    # get integrator
+    I = integrator(g, A, scheme, 1e-2)
+
     # warm up
-    ϕ(x₀, 10)
+    I(x₀, 10.0)
 
     # measure time and allocations
-    t = @elapsed   ϕ(x₀, 10)
-    a = @allocated ϕ(x₀, 10)
+    t = @elapsed   I(x₀, 10.0)
+    a = @allocated I(x₀, 10.0)
 
     # check
-    @test t < 0.4
+    @test t < 0.05
     @test a == 0
 end

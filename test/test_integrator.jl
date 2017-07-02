@@ -1,3 +1,6 @@
+using Base.Test
+using IMEXRKCB
+
 # Define a custom type that satisfy the required interface. 
 # Note that for subtypes of AbstractVector `A_mul_B!` and `ImcA!`
 # already work out of the box.
@@ -14,7 +17,7 @@ Base.setindex!(f::foo, val, i::Int) = (f.data[i] = val)
 Base.A_mul_B!(out::foo{Float64}, A::Diagonal{Float64}, in::foo{Float64}) = 
     A_mul_B!(out.data, A, in.data)
 
-@testset "forwmap!                               " begin
+@testset "integrator                             " begin
     # make system
     g(t, x, ẋ) = (for i in eachindex(x); ẋ[i] = -0.5*x[i]; end; ẋ)
     A = Diagonal([-0.5])
@@ -23,12 +26,12 @@ Base.A_mul_B!(out::foo{Float64}, A::Diagonal{Float64}, in::foo{Float64}) =
     for x in [[1.0], foo{Float64}([1.0])]
 
         # integration scheme
-        for scheme in [IMEXRK3R2R(IMEXRKCB3e, x, false),
-                       IMEXRK3R2R(IMEXRKCB3c, x, false),
-                       IMEXRK4R3R(IMEXRKCB4,  x, false)]
+        for scheme in [IMEXRK3R2R(IMEXRKCB3e, false, x),
+                       IMEXRK3R2R(IMEXRKCB3c, false, x),
+                       IMEXRK4R3R(IMEXRKCB4,  false, x)]
 
             # forward map
-            ϕ = forwmap!(g, A, 0.01123, scheme)
+            ϕ = integrator(g, A, scheme, 0.01123)
 
             # check relative error
             @test ((ϕ(x, 1.0)[1] - exp(-1))/exp(-1)) < 4.95e-8
