@@ -1,17 +1,44 @@
 export Monitor
 
 """
-    m = Monitor(f, x[, q])
+    m = Monitor((f1, f2, ..., fn), xq, [sizehint=100])
 
-Construct an object that monitors and stores the value of a function 
-`f` depending on the state `x` and optionally on the quadrature 
-variable `q`. A monitor object has two user-exposed fields:
+Construct an object that monitors and stores the value of functions 
+`f1, f2, ... fn` along with time integration. The functions depend 
+on the state `x` and optionally on the quadrature 
+variable `q`. The argument `xq` is used so that the types of the outputs
+`f1(xq), f2(xq), ..., fn(xq)` can be calculated, to allocate appropriate
+storage. 
+
+`Monitor` objects have two user-exposed fields:
 
     m.times
     m.samples
 
-which contains the times instant at which samples have been stored 
-and the samples themselves, respectively.
+The first  contains the times instant at which samples have been stored. The
+second is a tuple of vectors containing the samples associated to the functions, 
+e.g., `m.samples[1]`, contains the samples of the first function.
+
+If only one quantity is monitored, the associated function needs to be wrapped
+in a one element tuple, e.g. as
+
+    m = Monitor((f,), xq)
+
+and the associated samples will be stored in `m.samples[1]`.
+
+For functions that depend on the quadrature variable, the constructor is 
+as follows
+
+    m = Monitor((f,), (x, q))
+
+i.e., state and quadrature variable instances are wrapped in a tuple, and 
+the function `f` has signature
+
+    function f(xq)
+        # separate state and quadrature
+        x, q = xq 
+        # calculations
+    end
 """
 struct Monitor{F, S, N}
     fs::F
