@@ -48,10 +48,8 @@ integrator(g, A, q, scheme::IMEXRKScheme, Δt::Real) =
 (I::Integrator)(x, T::Real, mon::Monitor) = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, mon)
 
 # Integrator augmented with a quadrature function are callable with an additional argument.
-(I::Integrator{<:AugmentedSystem})(x, q, T::Real)               = 
-    _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), nothing)
-(I::Integrator{<:AugmentedSystem})(x, q, T::Real, mon::Monitor) = 
-    _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), mon)
+(I::Integrator{<:AugmentedSystem})(x, q, T::Real)               = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), nothing)
+(I::Integrator{<:AugmentedSystem})(x, q, T::Real, mon::Monitor) = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), mon)
 
 # Main propagation function
 @inline function _propagate!(scheme::IMEXRKScheme{Tab, S}, 
