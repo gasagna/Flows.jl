@@ -31,7 +31,7 @@ using IMEXRKCB
             # monitor the three quadrature equations
             mon = Monitor((xq->xq[2][1], 
                            xq->xq[2][2], 
-                           xq->xq[2][3]), ([0.0], [0.0, 0.0, 0.0]))
+                           xq->xq[2][3]), (x₀, q₀))
 
             # call
             f(x₀, q₀, 5, mon)
