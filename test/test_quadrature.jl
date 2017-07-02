@@ -28,22 +28,22 @@ using IMEXRKCB
             x₀ = [1.0]
             q₀ = [0.0, 0.0, 0.0]
         
-            # monitor the quadrature equations
-            ms = (Monitor((x, q)->q[1], [0.0], [0.0]),
-                  Monitor((x, q)->q[2], [0.0], [0.0]),
-                  Monitor((x, q)->q[3], [0.0], [0.0]))
+            # monitor the three quadrature equations
+            mon = Monitor((xq->xq[2][1], 
+                           xq->xq[2][2], 
+                           xq->xq[2][3]), ([0.0], [0.0, 0.0, 0.0]))
 
             # call
-            f(x₀, q₀, 5, ms...)
+            f(x₀, q₀, 5, mon)
 
             # integrate 1 dt
-            @test ms[1].samples ≈ ms[1].times
+            @test mon.samples[1] ≈ mon.times
 
             # integrate exp(t)dt
-            @test norm(abs.(ms[2].samples - (exp.(ms[2].times) - 1.0))) / Δt^(order-1) < value
+            @test norm(abs.(mon.samples[2] - (exp.(mon.times) - 1.0))) / Δt^(order-1) < value
 
             # integrate t*dt
-            @test ms[3].samples ≈ 0.5*(ms[3].times).^2
+            @test mon.samples[3] ≈ 0.5*(mon.times).^2
 
             # integrals
             @test norm(abs.(q₀ - exact)) / Δt^order < value

@@ -11,7 +11,7 @@ using IMEXRKCB
                    IMEXRK4R3R(IMEXRKCB4,  false, [0.0])]
 
         # monitor
-        m = Monitor(x->x[1], [0.0])
+        m = Monitor((x->x[1], ), [0.0])
 
         # forward map
         ϕ = integrator(g, A, scheme, 0.12345)
@@ -20,6 +20,6 @@ using IMEXRKCB
         ϕ([0.0], 20, m)
 
         # 
-        @test m.samples[end] ≈ 1/5
+        @test m.samples[1][end] ≈ 1/5
     end
 end

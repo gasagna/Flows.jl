@@ -39,29 +39,30 @@ end
 integrator(g, A, scheme::IMEXRKScheme, Δt::Real) =
     Integrator{typeof.((g, A, scheme))...}(g, A, scheme, Δt)
 
-# main entry point. Integrators are callable objects....
-function (I::Integrator)(x, T::Real, ms::Monitor...) 
-    T  > 0 || throw(ArgumentError("T must be greater than 0, got $T"))
-    _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, ms...)
-end
-
 # If a quadrature function is provided, augment system and call outer constructor
 integrator(g, A, q, scheme::IMEXRKScheme, Δt::Real) =
     integrator(aug_system(g, q), A, scheme, Δt)
 
+# main entry points. Integrators are callable objects....
+(I::Integrator)(x, T::Real)               = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, nothing)
+(I::Integrator)(x, T::Real, mon::Monitor) = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, mon)
+
 # Integrator augmented with a quadrature function are callable with an additional argument.
-(I::Integrator{<:AugmentedSystem})(x, q, T::Real, ms::Monitor...) = I(aug_state(x, q), T, ms...)
+(I::Integrator{<:AugmentedSystem})(x, q, T::Real)               = I(aug_state(x, q), T)
+(I::Integrator{<:AugmentedSystem})(x, q, T::Real, mon::Monitor) = I(aug_state(x, q), T, mon)
 
 # Main propagation function
-@inline function _propagate!(scheme::IMEXRKScheme{Tab, S}, g, 
-                             A, T::Real, Δt::Real, z::S, ms::Monitor...) where {Tab, S}
+@inline function _propagate!(scheme::IMEXRKScheme{Tab, S}, 
+                             g, A, T::Real, Δt::Real, z::S, 
+                             ms::Union{Monitor, Void}) where {Tab, S}
+    T  > 0 || throw(ArgumentError("T must be greater than 0, got $T"))
     t = zero(Δt)
     while t < T
         Δt⁺ = next_Δt(t, T, Δt)
         step!(scheme, g, A, t, Δt⁺, z)
         t += Δt⁺
         # update monitors
-        push!(ms, t, _state_quad(z)...)
+        isa(ms, Monitor) && push!(ms, t, _state_quad(z))
     end
     z
 end
