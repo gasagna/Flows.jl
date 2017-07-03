@@ -1,4 +1,4 @@
-export Monitor
+export Monitor, reset!
 
 """
     m = Monitor((f1, f2, ..., fn), xq, [sizehint=100])
@@ -64,4 +64,11 @@ end
     end
     push!(expr.args, :(push!(m.times, t)))
     return expr
+end
+
+# Reset the data in a monitor.
+function reset!(m::Monitor{F, S, N}, sizehint::Int=100) where {F, S, N}
+    sizehint!(resize!(m.times, 0), sizehint)
+    foreach(s->sizehint!(resize!(s, 0), sizehint), m.samples)
+    return m
 end
