@@ -58,13 +58,13 @@ end
 # to avoid allocations using a normal for loop. Try again with simpler code in
 # future Julia versions...
 @generated function Base.push!(m::Monitor{F, S, N}, t::Real, xq) where {F, S, N}
-    expr = Expr(:block)
-    for i = 1:N
-        push!(expr.args, :(push!(m.samples[$i], m.fs[$i](xq))))
+    quote 
+        Base.Cartesian.@nexprs $N i->push!(m.samples[i], m.fs[i](xq))
+        push!(m.times, t)
+        return m
     end
-    push!(expr.args, :(push!(m.times, t)))
-    return expr
 end
+
 
 # Reset the data in a monitor.
 function reset!(m::Monitor{F, S, N}, sizehint::Int=100) where {F, S, N}

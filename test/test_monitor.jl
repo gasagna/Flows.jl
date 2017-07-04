@@ -38,6 +38,7 @@ end
 
     # try resetting and see we still do not allocate
     reset!(m)
+    @test (@allocated reset!(m)) == 0
     
     @test (@allocated ϕ(x₀, 1, m)) == 0
 end
