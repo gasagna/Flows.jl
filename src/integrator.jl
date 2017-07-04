@@ -58,11 +58,11 @@ integrator(g, A, q, scheme::IMEXRKScheme, Δt::Real) =
     T  > 0 || throw(ArgumentError("T must be greater than 0, got $T"))
     t = zero(Δt)
     while t < T
+        # update monitors
+        isa(ms, Monitor) && push!(ms, t, _state_quad(z))
         Δt⁺ = next_Δt(t, T, Δt)
         step!(scheme, g, A, t, Δt⁺, z)
         t += Δt⁺
-        # update monitors
-        isa(ms, Monitor) && push!(ms, t, _state_quad(z))
     end
     z
 end

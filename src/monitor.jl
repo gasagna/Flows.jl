@@ -65,7 +65,6 @@ end
     end
 end
 
-
 # Reset the data in a monitor.
 function reset!(m::Monitor{F, S, N}, sizehint::Int=100) where {F, S, N}
     sizehint!(resize!(m.times, 0), sizehint)
