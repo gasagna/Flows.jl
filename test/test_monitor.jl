@@ -34,10 +34,6 @@ end
     # warm up
     ϕ(x₀, 1, m) 
 
-    # test that we have the correct values
-    @test m.times      ≈     [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    @test m.samples[1] ≈ 0.5*[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0].^2
-
     # does not allocate because we do not grow the arrays in the monitor
     @test (@allocated ϕ(x₀, 1, m)) == 0
 
