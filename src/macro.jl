@@ -43,17 +43,13 @@ subst(expr, with) = nothing
 
 # Broadcast expression to the `x` and `q` fields
 # of the objects involved in the expression. This
-# happens only if flag is true.
-function broadcast2fields(flag::Bool, expr::Expr)
-    if flag
-        withx = subst(copy(expr), :(:x))
-        withy = subst(copy(expr), :(:q))
-        ret = quote 
-                    $withx
-                    $withy
-              end
-    else
-        ret = expr
-    end
-    return ret
+# happens only if the flag in the first argument is true.
+function broadcast2fields(::Type{Val{true}}, expr::Expr)
+    withx = subst(copy(expr), :(:x))
+    withy = subst(copy(expr), :(:q))
+    ret = quote 
+                $withx
+                $withy
+          end
 end
+broadcast2fields(::Type{Val{false}}, expr::Expr) = expr
