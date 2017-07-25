@@ -1,3 +1,5 @@
+using MacroTools
+
 export @over_i
 
 # All of this is required because julia does not currently support using the dot 
@@ -24,32 +26,26 @@ macro over_i(expr)
     end
 end
 
-function subst(expr::Expr, with)
-    # Recursively scan an expression and if you find 
-    # something like `foo[i]` replace with 
-    # `foo.with[i]`, where with will be `x` or `q` 
-    # for objects of AugmentedState type.
-    if expr.head == :ref
-        cur = expr.args[1]        # this is: :foo
-        rep = Expr(:., cur, with)
-        expr.args[1] = rep        # this is: :foo.with
+# Substitute expressions like `x[i]` with `x.with[i]`
+function substitute(ex, with)
+    MacroTools.postwalk(ex) do x
+        return @capture(x, arr_[i]) ? :($arr.$with[i]) : x
     end
-    for arg in expr.args
-        subst(arg, with)
-    end
-    return expr
 end
-subst(expr, with) = nothing
 
-# Broadcast expression to the `x` and `q` fields
-# of the objects involved in the expression. This
-# happens only if the flag in the first argument is true.
-function broadcast2fields(::Type{Val{true}}, expr::Expr)
-    withx = subst(copy(expr), :(:x))
-    withy = subst(copy(expr), :(:q))
-    ret = quote 
-                $withx
-                $withy
-          end
+# Broadcast expression to the `x` and `q` fields of the
+# `AugmentedState` objects involved in the expression `expr`.
+function loop_i_sq(expr)
+    quote 
+        @over_i $(substitute(copy(expr), :x))
+        @over_i $(substitute(copy(expr), :q))
+    end
 end
-broadcast2fields(::Type{Val{false}}, expr::Expr) = expr
+
+# Do not broadcast, and expect the types to have defined
+# the linear indexing behaviour.
+function loop_i_s(expr)
+    quote
+        @over_i $expr
+    end
+end
