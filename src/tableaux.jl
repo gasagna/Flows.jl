@@ -42,12 +42,7 @@ _promote_tuple_type(h::Tuple{Vararg{Number}}) = promote_type(map(typeof, h)...)
 
 # get coefficients of the tableau
 getindex(tab::Tableau,  ::Symbol, i::Integer, j::Integer) = tab.a[i][j]
-function getindex(tab::Tableau, t::Symbol, i::Integer) 
-    t == :b && return tab.b[i]
-    t == :e && return tab.e[i]
-    t == :c && return tab.c[i]
-    throw(ArgumentError("symbol $t not recognized"))
-end
+getindex(tab::Tableau, t::Symbol, i::Integer)             = getfield(tab, t)[i]
 
 
 # ~~ Tableau for IMEX schemes ~~~
