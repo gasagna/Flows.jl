@@ -1,63 +1,85 @@
-import Base: getindex
+import Base: getindex, heads, tails, convert
 
-# NOTES
-# ~ most of these are defined for ::Type{Tableau} because we have encoded
-#   the tableau coefficients in the type, not in a field. hence we need to
-#   operate on the type directly.
-
-# TODO
-# ~ add isembedded
-
-# Tableau coefficients are defined in the type parameter
-struct Tableau{a, b, b̂, c, N}
-    Tableau{a, b, b̂, c, N}(::NTuple{N, NTuple{N, Float64}},
-                           ::NTuple{N, Float64},
-                           ::NTuple{N, Float64},
-                           ::NTuple{N, Float64}) where {a, b, b̂, c, N} = new()
-end
-
-# convert a tuple such that all elements have type T
-convert_tuple{T}(::Type{T}, a::Number) = T(a)
-convert_tuple{T}(::Type{T}, a::Tuple) = (map(el->convert_tuple(T, el), a)...)
-
-function Tableau{N}(a::NTuple{N, NTuple{N, Number}},
-                    b::NTuple{N, Number},
-                    b̂::NTuple{N, Number},
-                    c::NTuple{N, Number})
-    # we convert all coefficients to Float64
-    af, bf, b̂f, cf = convert_tuple(Float64, (a, b, b̂, c))
-    Tableau{af, bf, b̂f, cf, N}(af, bf, b̂f, cf)
-end
+# abstract type
+abstract type AbstractTableau{N, T} end
 
 # number of stages
-nstages{a, b, b̂, c, N}(::Type{Tableau{a, b, b̂, c, N}}) = N
+nstages(::AbstractTableau{N}) where {N} = N
+
+# Tableau coefficients
+struct Tableau{N, T} <: AbstractTableau{N, T}
+    a::NTuple{N, NTuple{N, T}}  #
+    b::NTuple{N, T}             #
+    e::NTuple{N, T}             # embedded scheme
+    c::NTuple{N, T}             #
+    Tableau{N, T}(a::NTuple{N, NTuple{N, T}},
+                  b::NTuple{N, T},
+                  e::NTuple{N, T},
+                  c::NTuple{N, T}) where {N, T} = new(a, b, e, c)
+end
+
+# Outer constructor: convert all coefficients to a common type
+function Tableau(a::NTuple{N, NTuple{N, Number}},
+                 b::NTuple{N, Number},
+                 e::NTuple{N, Number},
+                 c::NTuple{N, Number}) where N
+    T = promote_tuple_type((a, b, e, c))
+    Tableau{N, T}(convert_tuple(T, (a, b, e, c))...)
+end
+
+# Convert a tableau to have coefficient of given type
+convert(::Type{Tableau{N, T}}, tab::Tableau{N, S}) where {N, T, S} =
+    Tableau{N, T}(convert_tuple(T, (tab.a, tab.b, tab.e, tab.c))...)
+
+# convert a tuple such that all elements have type T
+convert_tuple(::Type{T}, a::Number) where T = T(a)
+convert_tuple(::Type{T}, a::Tuple)  where T = (map(el->convert_tuple(T, el), a)...)
+
+# find common type for promotion across elements of a tuple, maybe nested
+ promote_tuple_type(h::Tuple)                 = _promote_tuple_type(h)
+_promote_tuple_type(h::Tuple)                 = promote_type(_promote_tuple_type(heads(h)...), _promote_tuple_type(tails(h)...))
+_promote_tuple_type(h::Tuple{Vararg{Number}}) = promote_type(map(typeof, h)...)
 
 # get coefficients of the tableau
-getindex{a, b, b̂, c, N}(::Type{Tableau{a, b, b̂, c, N}}, ::Type{Val{:a}}, i::Integer, j::Integer) = a[i][j]
-getindex{a, b, b̂, c, N}(::Type{Tableau{a, b, b̂, c, N}}, ::Type{Val{:b}}, i::Integer)             = b[i]
-getindex{a, b, b̂, c, N}(::Type{Tableau{a, b, b̂, c, N}}, ::Type{Val{:b̂}}, i::Integer)             = b̂[i]
-getindex{a, b, b̂, c, N}(::Type{Tableau{a, b, b̂, c, N}}, ::Type{Val{:c}}, i::Integer)             = c[i]
+getindex(tab::Tableau,  ::Symbol, i::Integer, j::Integer) = tab.a[i][j]
+function getindex(tab::Tableau, t::Symbol, i::Integer) 
+    t == :b && return tab.b[i]
+    t == :e && return tab.e[i]
+    t == :c && return tab.c[i]
+    throw(ArgumentError("symbol $t not recognized"))
+end
 
 
 # ~~ Tableau for IMEX schemes ~~~
-immutable IMEXTableau{Tᴵ<:Tableau, Tᴱ<:Tableau} end
+struct IMEXTableau{N, T} <: AbstractTableau{N, T}
+    tabᴵ::Tableau{N, T}
+    tabᴱ::Tableau{N, T}
+end
 
-IMEXTableau(tᴵ::Tableau, tᴱ::Tableau) = IMEXTableau{typeof(tᴵ), typeof(tᴱ)}()
+# outer constructor
+function IMEXTableau(tabᴵ::Tableau{N, Tᴵ}, tabᴱ::Tableau{N, Tᴱ}) where {N, Tᴵ, Tᴱ} 
+    T = promote_type(Tᴵ, Tᴱ)
+    IMEXTableau{N, T}(convert(Tableau{N, T}, tabᴵ), convert(Tableau{N, T}, tabᴱ))
+end
 
-# number of stages
-nstages{Tᴵ, Tᴱ}(::Type{IMEXTableau{Tᴵ, Tᴱ}}) = nstages(Tᴵ)
+convert(::Type{IMEXTableau{N, T}}, tab::IMEXTableau{N, S}) where {N, T, S} =
+    IMEXTableau{N, T}(map(t->convert(Tableau{N, T}, t), (tab.tabᴵ, tab.tabᴱ))...)
 
 # get coefficients of the tableau
-getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:aᴵ}}, i::Integer, j::Integer) = Tᴵ[Val{:a}, i, j]
-getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:bᴵ}}, i::Integer) = Tᴵ[Val{:b}, i]
-getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:b̂ᴵ}}, i::Integer) = Tᴵ[Val{:b̂}, i]
-getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:cᴵ}}, i::Integer) = Tᴵ[Val{:c}, i]
-getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:aᴱ}}, i::Integer, j::Integer) = Tᴱ[Val{:a}, i, j]
-getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:bᴱ}}, i::Integer) = Tᴱ[Val{:b}, i]
-getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:b̂ᴱ}}, i::Integer) = Tᴱ[Val{:b̂}, i]
-getindex{Tᴵ<:Tableau, Tᴱ<:Tableau}(t::Type{IMEXTableau{Tᴵ, Tᴱ}}, ::Type{Val{:cᴱ}}, i::Integer) = Tᴱ[Val{:c}, i]
-
-
+function getindex(tab::IMEXTableau,  t::Symbol, i::Integer, j::Integer)
+    t == :aᴵ && return tab.tabᴵ[:a, i, j]
+    t == :aᴱ && return tab.tabᴱ[:a, i, j]
+    throw(ArgumentError("symbol $t not recognized"))
+end
+function getindex(tab::IMEXTableau, t::Symbol, i::Integer) 
+    t == :bᴵ && return tab.tabᴵ[:b, i]
+    t == :eᴵ && return tab.tabᴵ[:e, i]
+    t == :cᴵ && return tab.tabᴵ[:c, i]
+    t == :bᴱ && return tab.tabᴱ[:b, i]
+    t == :eᴱ && return tab.tabᴱ[:e, i]
+    t == :cᴱ && return tab.tabᴱ[:c, i]
+    throw(ArgumentError("symbol $t not recognized"))
+end
 
 # Tableaux from Cavaglieri and Bewley 2015
 export IMEXRKCB3c, IMEXRKCB3e, IMEXRKCB4
@@ -124,3 +146,5 @@ const IMEXRKCB4_E = Tableau(((0//1,                         0//1,               
                              (0,                            1//4,                         3//4,                         3//8,                         1//2,                        1//1))
 
 const IMEXRKCB4 = IMEXTableau(IMEXRKCB4_I, IMEXRKCB4_E)
+
+# PR to add more are welcome!
