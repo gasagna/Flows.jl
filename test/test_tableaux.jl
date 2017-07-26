@@ -1,6 +1,3 @@
-import IMEXRKCB: Tableau, IMEXTableau, nstages
-using Base.Test
-
 @testset "convert_tuple                          " begin
     @test typeof(IMEXRKCB.convert_tuple(Float64, 1))                == Float64
     @test typeof(IMEXRKCB.convert_tuple(Float64, (1, 1)))           == Tuple{Float64, Float64}

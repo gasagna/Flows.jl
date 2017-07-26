@@ -1,6 +1,3 @@
-using Base.Test
-using IMEXRKCB
-
 @testset "integrator                             " begin
     # make system
     g(t, x, ẋ) = (ẋ .= -0.5.*x; ẋ)
@@ -10,9 +7,12 @@ using IMEXRKCB
     x = [1.0]
 
     # integration scheme
-    for scheme in [IMEXRK3R2R(IMEXRKCB3e, false, x),
-                   IMEXRK3R2R(IMEXRKCB3c, false, x),
-                   IMEXRK4R3R(IMEXRKCB4,  false, x)]
+    for impl in [IMEXRK3R2R(IMEXRKCB3e, false),
+                 IMEXRK3R2R(IMEXRKCB3c, false),
+                 IMEXRK4R3R(IMEXRKCB4,  false)]
+
+        # define scheme
+        scheme = IMEXRKScheme(impl, x)                 
 
         # integrator
         I = integrator(g, A, scheme, 0.01123)
