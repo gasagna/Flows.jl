@@ -1,5 +1,7 @@
 import Base: getindex, heads, tails, convert
 
+export Tableau, IMEXTableau, nstages
+
 # abstract type
 abstract type AbstractTableau{N, T} end
 
