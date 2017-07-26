@@ -54,6 +54,10 @@ end
 # outer constructor
 function IMEXTableau(tabᴵ::Tableau{N, Tᴵ}, tabᴱ::Tableau{N, Tᴱ}) where {N, Tᴵ, Tᴱ} 
     T = promote_type(Tᴵ, Tᴱ)
+    # we promote the two tableaux to the same type, because otherwise the getindex
+    # method would be type unstable. This might not be a problem, actually, because
+    # getindex is never used at run time, but only at compile time, when code
+    # for a particular implementation is constructed.
     IMEXTableau{N, T}(convert(Tableau{N, T}, tabᴵ), convert(Tableau{N, T}, tabᴱ))
 end
 
