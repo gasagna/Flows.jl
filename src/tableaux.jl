@@ -123,7 +123,7 @@ const IMEXRKCB3c_E = Tableau(((0//1,                         0//1,              
 
 const IMEXRKCB3c = IMEXTableau(IMEXRKCB3c_I, IMEXRKCB3c_E)
 
-# ~ IMEXRKCB4
+# ~ IMEXRKCB4. Note we convert to Float64, because we fail to calculate `c1 =  aᴵkpkm1 - bᴵkm1` for Int128. This might no be super accurate
 const IMEXRKCB4_I = Tableau(((0//1,                         0//1,                         0//1,                         0//1,                        0//1,                       0//1), 
                              (1//8,                         1//8,                         0//1,                         0//1,                        0//1,                       0//1),   
                              (216145252607//961230882893,   257479850128//1143310606989,  30481561667//101628412017,    0//1,                        0//1,                       0//1),
