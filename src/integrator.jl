@@ -64,7 +64,7 @@ fwdmapgen(I::Integrator) = T->(x->I(x, T))
     t = zero(Δt)
     while t < T
         # update monitors
-        isa(ms, Monitor) && push!(ms, t, _state_quad(z))
+        ms isa Monitor && push!(ms, t, _state_quad(z))
         Δt⁺ = next_Δt(t, T, Δt)
         step!(scheme, g, A, t, Δt⁺, z)
         t += Δt⁺
