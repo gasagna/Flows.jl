@@ -1,6 +1,3 @@
-using Base.Test
-using IMEXRKCB
-
 @testset "n monitors                             " begin
     m = Monitor((x->x[1], x->x[1]^2), [1.0])
     
@@ -20,7 +17,7 @@ end
     A = Diagonal([0.0])
 
     # integration scheme
-    scheme = IMEXRK3R2R(IMEXRKCB3e, false, [0.0])
+    scheme = IMEXRKScheme(IMEXRK3R2R(IMEXRKCB3e, false), [0.0])
 
     # monitors
     m = Monitor((x->x[1], x->x[1]^2), [1.0])

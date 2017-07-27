@@ -1,6 +1,3 @@
-using Base.Test
-using IMEXRKCB
-
 # Define a custom type that satisfy the required interface. 
 # Note that for subtypes of AbstractVector `A_mul_B!` and `ImcA!`
 # already work out of the box.
@@ -9,7 +6,7 @@ struct foo{T}
 end
 foo(data::AbstractVector{T}) where T = foo{T}(data)
 
-Base.eachindex(f::foo) = eachindex(f.data)
+Base.size(f::foo) = size(f.data)
 Base.similar(f::foo) = foo(similar(f.data))
 Base.getindex( f::foo,      i::Int) =  f.data[i]
 Base.setindex!(f::foo, val, i::Int) = (f.data[i] = val)
@@ -17,18 +14,29 @@ Base.setindex!(f::foo, val, i::Int) = (f.data[i] = val)
 Base.A_mul_B!(out::foo{Float64}, A::Diagonal{Float64}, in::foo{Float64}) = 
     A_mul_B!(out.data, A, in.data)
 
+Base.unsafe_get(f::foo) = f.data
+
+@generated function Base.Broadcast.broadcast!(f, dest::foo{T}, args::Vararg{Any, N}) where {T, N}
+    quote
+        broadcast!(f, unsafe_get(dest), map(unsafe_get, args)...)
+    end
+end
+
 @testset "integrator                             " begin
     # make system
-    g(t, x, ẋ) = (for i in eachindex(x); ẋ[i] = -0.5*x[i]; end; ẋ)
+    g(t, x, ẋ) = (ẋ .= -0.5.*x; ẋ)
     A = Diagonal([-0.5])
 
     # try on standard vector and on custom type
     for x in [[1.0], foo{Float64}([1.0])]
 
         # integration scheme
-        for scheme in [IMEXRK3R2R(IMEXRKCB3e, false, x),
-                       IMEXRK3R2R(IMEXRKCB3c, false, x),
-                       IMEXRK4R3R(IMEXRKCB4,  false, x)]
+        for impl in   [IMEXRK3R2R(IMEXRKCB3e, false),
+                       IMEXRK3R2R(IMEXRKCB3c, false),
+                       IMEXRK4R3R(IMEXRKCB4,  false)]
+
+            # construct scheme
+            scheme = IMEXRKScheme(impl, x)                       
 
             # forward map
             ϕ = integrator(g, A, scheme, 0.01123)

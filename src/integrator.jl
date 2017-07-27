@@ -57,14 +57,14 @@ fwdmapgen(I::Integrator) = T->(x->I(x, T))
 (I::Integrator{<:AugmentedSystem})(x, q, T::Real, mon::Monitor) = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), mon)
 
 # Main propagation function
-@inline function _propagate!(scheme::IMEXRKScheme{Tab, S}, 
+@inline function _propagate!(scheme::IMEXRKScheme{S}, 
                              g, A, T::Real, Δt::Real, z::S, 
-                             ms::Union{Monitor, Void}) where {Tab, S}
+                             ms::Union{Monitor, Void}) where {S}
     T  > 0 || throw(ArgumentError("T must be greater than 0, got $T"))
     t = zero(Δt)
     while t < T
         # update monitors
-        isa(ms, Monitor) && push!(ms, t, _state_quad(z))
+        ms isa Monitor && push!(ms, t, _state_quad(z))
         Δt⁺ = next_Δt(t, T, Δt)
         step!(scheme, g, A, t, Δt⁺, z)
         t += Δt⁺
