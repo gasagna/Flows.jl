@@ -21,6 +21,7 @@ _state_quad(x) = x
 # Operations are broadcasted to both state and quadrature parts
 @generated function Base.Broadcast.broadcast!(f, dest::AugmentedState, args...)
     quote
+        $(Expr(:meta, :inline))
         broadcast!(f, _state(dest), map(_state, args)...)
         broadcast!(f,  _quad(dest), map(_quad,  args)...)
         dest
