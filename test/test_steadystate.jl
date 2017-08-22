@@ -19,7 +19,10 @@
         # do job
         ϕ([0.0], 20, m)
 
-        # 
+        # test value
         @test m.samples[1][end] ≈ 1/5
+
+        # ensure we saved the last step in the monitor
+        @test m.times[end] == 20
     end
 end

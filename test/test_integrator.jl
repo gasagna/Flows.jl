@@ -55,6 +55,8 @@ end
 end
 
 @testset "time step                              " begin
-    @test IMEXRKCB.next_Δt(0.0, 1.0, 0.1) == 0.1
-    @test IMEXRKCB.next_Δt(0.0, 1.0, 1.1) == 1.0
+    @test IMEXRKCB.next_Δt(0.0, 1.0, 0.1)  == 0.1
+    @test IMEXRKCB.next_Δt(0.0, 1.0, 1.1)  == 1.0
+    @test IMEXRKCB.next_Δt(0.9, 1.0, 0.12) == 1.0-0.9
+    @test IMEXRKCB.next_Δt(0.9, 1.0, 0.1)  == 1.0-0.9
 end
