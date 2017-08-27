@@ -3,7 +3,8 @@
     A = Diagonal([-5])
 
     # integration scheme
-    for impl in [IMEXRK3R2R(IMEXRKCB3e, false),
+    for impl in [IMEXRK3R2R(IMEXRKCB2,  false),
+                 IMEXRK3R2R(IMEXRKCB3e, false),
                  IMEXRK3R2R(IMEXRKCB3c, false),
                  IMEXRK4R3R(IMEXRKCB4,  false)]
 

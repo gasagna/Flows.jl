@@ -83,7 +83,25 @@ function getindex(tab::IMEXTableau, t::Symbol, i::Integer)
 end
 
 # Tableaux from Cavaglieri and Bewley 2015
-export IMEXRKCB3c, IMEXRKCB3e, IMEXRKCB4
+export IMEXRKCB2, IMEXRKCB3c, IMEXRKCB3e, IMEXRKCB4
+
+# ~ IMEXRKCB2
+const IMEXRKCB2_I = Tableau(((0//1, 0//1, 0//1),
+                             (0//1, 2//5, 0//1),
+                             (0//1, 5//6, 1//6)),
+                             (0//1, 5//6, 1//6),
+                             (0//1, 4//5, 1//5),
+                             (0//1, 2//5, 1//1))
+
+const IMEXRKCB2_E = Tableau(((0//1, 0//1, 0//1),
+                             (2//5, 0//1, 0//1),
+                             (0//1, 1//1, 0//1)),
+                             (0//1, 5//6, 1//6),
+                             (0//1, 4//5, 1//5),
+                             (0//1, 2//5, 1//1))
+
+const IMEXRKCB2 = IMEXTableau(IMEXRKCB2_I, IMEXRKCB2_E)
+
 
 # ~ IMEXRKCB3e
 const IMEXRKCB3e_I = Tableau(((0//1, 0//1,  0//1, 0//1),

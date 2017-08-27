@@ -30,7 +30,8 @@ end
     q(t, x, q̇) = (q̇[1] = 1; q̇[2] = x[1]; q̇[3] = t)
 
     # integration scheme
-    for (impl, order, value) in [(IMEXRK3R2R(IMEXRKCB3e, false), 3, 5.5),
+    for (impl, order, value) in [(IMEXRK3R2R(IMEXRKCB2,  false), 2, 19),
+                                 (IMEXRK3R2R(IMEXRKCB3e, false), 3, 5.5),
                                  (IMEXRK3R2R(IMEXRKCB3c, false), 3, 5.8),
                                  (IMEXRK4R3R(IMEXRKCB4,  false), 4, 0.16)]
 

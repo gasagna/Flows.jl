@@ -7,9 +7,10 @@
     x = [1.0]
 
     # integration scheme
-    for impl in [IMEXRK3R2R(IMEXRKCB3e, false),
-                 IMEXRK3R2R(IMEXRKCB3c, false),
-                 IMEXRK4R3R(IMEXRKCB4,  false)]
+    for (impl, err) in [(IMEXRK3R2R(IMEXRKCB2,  false), 1e-6),
+                        (IMEXRK3R2R(IMEXRKCB3e, false), 3e-9),
+                        (IMEXRK3R2R(IMEXRKCB3c, false), 4e-9),
+                        (IMEXRK4R3R(IMEXRKCB4,  false), 2e-13)]
 
         # define scheme
         scheme = IMEXRKScheme(impl, x)                 
@@ -25,7 +26,7 @@
             f = gen(T)
 
             # test value
-            @test f([1.0]) ≈ [exp(-T)]
+            @test (f([1.0])[1] - exp(-T)) < err
 
             # test no allocations
             x₀ = Float64[1.0]
