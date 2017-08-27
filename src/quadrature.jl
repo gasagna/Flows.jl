@@ -49,7 +49,7 @@ aug_system(g, q) = AugmentedSystem(g, q)
 Base.A_mul_B!(out::AugmentedState, A, z::AugmentedState) = 
         (A_mul_B!(_state(out), A, _state(z)); _quad(out) .= 0)
 
-# Since we treat the quadrature fully implicitly, the solution of
+# Since we treat the quadrature fully explicitly, the solution of
 # (I-cA)z = y for the quadrature part is simply z = y, because the
 # component of A associated to this part is zero and the state 
 # and quadrature parts are decoupled.
