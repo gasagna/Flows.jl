@@ -26,9 +26,10 @@
     x₀ = 1e-2*randn(Nₓ)
 
     # define scheme with quadrature
-    for impl in [IMEXRK3R2R(IMEXRKCB3e, false),
-                 IMEXRK3R2R(IMEXRKCB3c, false),
-                 IMEXRK4R3R(IMEXRKCB4,  false)]
+    for (impl, tmin) in [(IMEXRK3R2R(IMEXRKCB2,  false), 0.019),
+                         (IMEXRK3R2R(IMEXRKCB3e, false), 0.026),
+                         (IMEXRK3R2R(IMEXRKCB3c, false), 0.036),
+                         (IMEXRK4R3R(IMEXRKCB4,  false), 0.041)]
 
         # define scheme             
         scheme = IMEXRKScheme(impl, x₀)
@@ -40,11 +41,11 @@
         I(x₀, 10.0)
 
         # measure time and allocations
-        t = @elapsed   I(x₀, 10.0)
+        t = minimum([@elapsed I(x₀, 10.0) for i = 1:100])
         a = @allocated I(x₀, 10.0)
 
         # check
-        @test t < 0.05
+        @test t < tmin
         @test a == 0
     end
 # end
