@@ -69,6 +69,8 @@ fwdmapgen(I::Integrator) = T->(x->I(x, T))
         step!(scheme, g, A, t, Δt⁺, z)
         t += Δt⁺
     end
+    # update with last step
+    ms isa Monitor && push!(ms, t, _state_quad(z))
     z
 end
 

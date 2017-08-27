@@ -128,8 +128,8 @@ function _codegen(::IMEXRK4R3R{Tab, Embed}) where {Tab, Embed}
                 aᴱkpkm1 = Tab[:aᴱ, k+1, k-1]
                 bᴵkm1   = Tab[:bᴵ, k-1]
                 bᴱkm1   = Tab[:bᴱ, k-1]
-                c1 =  Float64(aᴵkpkm1) - Float64(bᴵkm1)
-                c2 = (Float64(aᴱkpkm1) - Float64(bᴱkm1))/Float64(aᴱkkm1)
+                c1 =  aᴵkpkm1 - bᴵkm1
+                c2 = (aᴱkpkm1 - bᴱkm1)/aᴱkkm1
                 push!(expr.args, :(y .= x .+ $c1*Δt.*zᴵ .+ $c2.*(zᴱ .- y)))
             end
             aᴵkkm1 = Tab[:aᴵ, k, k-1]

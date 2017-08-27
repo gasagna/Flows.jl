@@ -5,6 +5,7 @@ using IMEXRKCB
 # generated
 
 embed = true
+# impl = IMEXRK3R2R(IMEXRKCB2, embed)
 # impl = IMEXRK3R2R(IMEXRKCB3e, embed)
 # impl = IMEXRK3R2R(IMEXRKCB3c, embed)
 impl = IMEXRK4R3R(IMEXRKCB4,  embed)

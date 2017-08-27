@@ -33,7 +33,8 @@ end
 
 # generate methods for consistent combinations of implementations and tableaux
 for embed in [true, false]
-    for impl in [IMEXRK3R2R(IMEXRKCB3e, embed),
+    for impl in [IMEXRK3R2R(IMEXRKCB2,  embed),
+                 IMEXRK3R2R(IMEXRKCB3e, embed),
                  IMEXRK3R2R(IMEXRKCB3c, embed),
                  IMEXRK4R3R(IMEXRKCB4,  embed)]
 

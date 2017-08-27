@@ -83,7 +83,25 @@ function getindex(tab::IMEXTableau, t::Symbol, i::Integer)
 end
 
 # Tableaux from Cavaglieri and Bewley 2015
-export IMEXRKCB3c, IMEXRKCB3e, IMEXRKCB4
+export IMEXRKCB2, IMEXRKCB3c, IMEXRKCB3e, IMEXRKCB4
+
+# ~ IMEXRKCB2
+const IMEXRKCB2_I = Tableau(((0//1, 0//1, 0//1),
+                             (0//1, 2//5, 0//1),
+                             (0//1, 5//6, 1//6)),
+                             (0//1, 5//6, 1//6),
+                             (0//1, 4//5, 1//5),
+                             (0//1, 2//5, 1//1))
+
+const IMEXRKCB2_E = Tableau(((0//1, 0//1, 0//1),
+                             (2//5, 0//1, 0//1),
+                             (0//1, 1//1, 0//1)),
+                             (0//1, 5//6, 1//6),
+                             (0//1, 4//5, 1//5),
+                             (0//1, 2//5, 1//1))
+
+const IMEXRKCB2 = IMEXTableau(IMEXRKCB2_I, IMEXRKCB2_E)
+
 
 # ~ IMEXRKCB3e
 const IMEXRKCB3e_I = Tableau(((0//1, 0//1,  0//1, 0//1),
@@ -125,8 +143,8 @@ const IMEXRKCB3c_E = Tableau(((0//1,                         0//1,              
 
 const IMEXRKCB3c = IMEXTableau(IMEXRKCB3c_I, IMEXRKCB3c_E)
 
-# ~ IMEXRKCB4. Note we convert to Float64, because we fail to calculate `c1 =  aᴵkpkm1 - bᴵkm1` for Int128. This might no be super accurate
-const IMEXRKCB4_I = Tableau(((0//1,                         0//1,                         0//1,                         0//1,                        0//1,                       0//1), 
+# ~ IMEXRKCB4. Note we convert to Int128, because we fail to calculate `c1 =  aᴵkpkm1 - bᴵkm1` for Int64
+const IMEXRKCB4_I = Tableau(((Int128(0)//1,                 0//1,                         0//1,                         0//1,                        0//1,                       0//1), 
                              (1//8,                         1//8,                         0//1,                         0//1,                        0//1,                       0//1),   
                              (216145252607//961230882893,   257479850128//1143310606989,  30481561667//101628412017,    0//1,                        0//1,                       0//1),
                              (232049084587//1377130630063, -381180097479//1276440792700, -54660926949//461115766612,    344309628413//552073727558,  0//1,                       0//1),
@@ -136,7 +154,7 @@ const IMEXRKCB4_I = Tableau(((0//1,                         0//1,               
                              (5590918588//49191225249,      92380217342//122399335103,   -29257529014//55608238079,    -126677396901//66917692409,   384446411890//169364936833, 58325237543//207682037557),
                              (0,                            1//4,                         3//4,                         3//8,                        1//2,                       1//1))
 
-const IMEXRKCB4_E = Tableau(((0//1,                         0//1,                         0//1,                         0//1,                         0//1,                        0//1), 
+const IMEXRKCB4_E = Tableau(((Int128(0)//1,                 0//1,                         0//1,                         0//1,                         0//1,                        0//1), 
                              (1//4,                         0//1,                         0//1,                         0//1,                         0//1,                        0//1),   
                              (153985248130//1004999853329,  902825336800//1512825644809,  0//1,                         0//1,                         0//1,                        0//1),
                              (232049084587//1377130630063,  99316866929//820744730663,    82888780751//969573940619,    0//1,                         0//1,                        0//1),

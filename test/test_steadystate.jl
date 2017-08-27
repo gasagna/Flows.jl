@@ -3,7 +3,8 @@
     A = Diagonal([-5])
 
     # integration scheme
-    for impl in [IMEXRK3R2R(IMEXRKCB3e, false),
+    for impl in [IMEXRK3R2R(IMEXRKCB2,  false),
+                 IMEXRK3R2R(IMEXRKCB3e, false),
                  IMEXRK3R2R(IMEXRKCB3c, false),
                  IMEXRK4R3R(IMEXRKCB4,  false)]
 
@@ -19,7 +20,10 @@
         # do job
         ϕ([0.0], 20, m)
 
-        # 
+        # test value
         @test m.samples[1][end] ≈ 1/5
+
+        # ensure we saved the last step in the monitor
+        @test m.times[end] == 20
     end
 end

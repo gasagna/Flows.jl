@@ -21,6 +21,7 @@ _state_quad(x) = x
 # Operations are broadcasted to both state and quadrature parts
 @generated function Base.Broadcast.broadcast!(f, dest::AugmentedState, args...)
     quote
+        $(Expr(:meta, :inline))
         broadcast!(f, _state(dest), map(_state, args)...)
         broadcast!(f,  _quad(dest), map(_quad,  args)...)
         dest
@@ -40,17 +41,26 @@ struct AugmentedSystem{G, Q}
 end
 aug_system(g, q) = AugmentedSystem(g, q)
 
+# treat the quadrature equation fully explicitly
 (f::AugmentedSystem)(t::Real, z::AugmentedState, ż::AugmentedState) =
     (f.g(t, _state(z), _state(ż)); 
      f.q(t, _state(z), _quad(ż)))
 
 # Broadcast calls to state part only
-Base.A_mul_B!(out::AugmentedState, A, z::AugmentedState) = 
-        (A_mul_B!(_state(out), A, _state(z)); _quad(out) .= 0)
+Base.A_mul_B!(out::T, A, z::T) where {T<:AugmentedState} =
+    (A_mul_B!(_state(out), A, _state(z)); _quad(out) .= 0)
 
-# Since we treat the quadrature fully implicitly, the solution of
+# fix ambiguity warning due to method for Diagonal in imca.jl
+Base.A_mul_B!(out::T, A::Diagonal, z::T) where {T<:AugmentedState} =
+    (A_mul_B!(_state(out), A, _state(z)); _quad(out) .= 0)
+
+# Since we treat the quadrature fully explicitly, the solution of
 # (I-cA)z = y for the quadrature part is simply z = y, because the
 # component of A associated to this part is zero and the state 
 # and quadrature parts are decoupled.
 ImcA!(A, c::Real, y::T, z::T) where T<:AugmentedState =
     (ImcA!(A, c, _state(y), _state(z)); _quad(z) .= _quad(y))
+
+# fix ambiguity warning due to method for Diagonal in imca.jl
+ImcA!(A::Diagonal, c::Real, y::T, z::T) where T<:AugmentedState =
+    (ImcA!(A, c, _state(y), _state(z)); _quad(z) .= _quad(y))    
