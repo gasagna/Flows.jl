@@ -28,7 +28,7 @@
     # define scheme with quadrature
     for (impl, tmin) in [(IMEXRK3R2R(IMEXRKCB2,  false), 0.019),
                          (IMEXRK3R2R(IMEXRKCB3e, false), 0.026),
-                         (IMEXRK3R2R(IMEXRKCB3c, false), 0.036),
+                         (IMEXRK3R2R(IMEXRKCB3c, false), 0.026),
                          (IMEXRK4R3R(IMEXRKCB4,  false), 0.041)]
 
         # define scheme             
