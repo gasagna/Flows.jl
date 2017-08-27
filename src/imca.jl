@@ -10,6 +10,9 @@ should define a custom method for this function.
 function ImcA!(A, c::Real, y::T, z::T) where T end
 
 # Provide interface for systems where the stiff operator is 
-# defined as a `Diagonal` matrix object from base Julia. 
-ImcA!(A::Diagonal, c::Real, y::T, z::T) where T <: AbstractVector =
-    z .= y./(1 .- c.*diag(A))
+# defined as a `Diagonal` matrix object from Julia Base. Custom
+# types are supposed to have defined broadcasting operations
+# for the dot notation
+ImcA!(A::Diagonal, c::Real, y::T, z::T) where {T} = z .= y./(1 .- c.*diag(A))
+
+Base.A_mul_B!(out::T, A::Diagonal, in::T) where {T} = out .= diag(A).*in
