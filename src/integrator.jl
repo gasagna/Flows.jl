@@ -44,8 +44,8 @@ integrator(g, A, q, scheme::IMEXRKScheme, Δt::Real) =
     integrator(aug_system(g, q), A, scheme, Δt)
 
 # main entry points. Integrators are callable objects....
-(I::Integrator)(x, T::Real)               = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, nothing)
-(I::Integrator)(x, T::Real, mon::Monitor) = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, mon)
+(I::Integrator)(x, T::Real, mon::Union{Void, Monitor}=nothing) = 
+    _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, mon)
 
 # returns a function `f(T)` that when called with a real argument
 # T will return a function `g(x)` that maps the state `x` forward 
@@ -53,8 +53,8 @@ integrator(g, A, q, scheme::IMEXRKScheme, Δt::Real) =
 fwdmapgen(I::Integrator) = T->(x->I(x, T))
 
 # Integrator augmented with a quadrature function are callable with an additional argument.
-(I::Integrator{<:AugmentedSystem})(x, q, T::Real)               = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), nothing)
-(I::Integrator{<:AugmentedSystem})(x, q, T::Real, mon::Monitor) = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), mon)
+(I::Integrator{<:AugmentedSystem})(x, q, T::Real, mon::Union{Void, Monitor}=nothing) = 
+    _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), mon)
 
 # Main propagation function
 @inline function _propagate!(scheme::IMEXRKScheme{S}, 
