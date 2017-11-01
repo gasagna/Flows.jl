@@ -30,7 +30,7 @@ struct Integrator{G, At, Sc}
                                    A::At, 
                                    scheme::Sc, 
                                    Δt::Real) where {G, At, Sc}
-        Δt == 0 || throw(ArgumentError("Δt must be different from 0, got $Δt"))
+        Δt == 0 && throw(ArgumentError("Δt must be different from 0, got $Δt"))
         new(g, A, scheme, Δt)
     end
 end
@@ -63,7 +63,7 @@ hasstorage(w::Work)                    = true
 hasstorage(w::Work{Void, T}) where {T} = false
 
 # Main propagation function
-@inline function _propagate!(scheme::IMEXRKScheme{S}, g, A, T::Real, Δt::Real, z::S, ms::Work) where {S}
+@inline function _propagate!(scheme::IMEXRKScheme{S}, g, A, T::Real, Δt::Real, z::S, work::Work) where {S}
     # disallow crazy stuff
     T  > 0 || throw(ArgumentError("T must be greater than 0, got $T"))
 
