@@ -40,16 +40,16 @@ integrator(g, A,    scheme::IMEXRKScheme, Δt::Real) = Integrator{typeof.((g, A,
 integrator(g, A, q, scheme::IMEXRKScheme, Δt::Real) = integrator(aug_system(g, q), A, scheme, Δt)
 
 # Main entry points. Integrators are callable objects ...
-(I::Integrator)(x, T::Real)                                    = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x  Work(nothing, nothing))
-(I::Integrator)(x, T::Real, mon::Monitor)                      = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, Work(nothing,     mon))
-(I::Integrator)(x, T::Real, sol::AbtractStorage)               = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, Work(sol,     nothing))
-(I::Integrator)(x, T::Real, mon::Monitor, sol::AbtractStorage) = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, Work(mon,         sol))
+(I::Integrator)(x, T::Real)                                     = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, Work(nothing, nothing))
+(I::Integrator)(x, T::Real, mon::Monitor)                       = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, Work(nothing,     mon))
+(I::Integrator)(x, T::Real, sol::AbstractStorage)               = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, Work(sol,     nothing))
+(I::Integrator)(x, T::Real, mon::Monitor, sol::AbstractStorage) = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, Work(mon,         sol))
 
 # Integrator augmented with a quadrature function are callable with an additional argument.
-(I::Integrator{<:AugmentedSystem})(x, q, T::Real)                                    = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), Work(nothing, nothing))
-(I::Integrator{<:AugmentedSystem})(x, q, T::Real, mon::Monitor)                      = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), Work(nothing,     mon))
-(I::Integrator{<:AugmentedSystem})(x, q, T::Real, sol::AbtractStorage)               = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), Work(sol,     nothing))
-(I::Integrator{<:AugmentedSystem})(x, q, T::Real, mon::Monitor, sol::AbtractStorage) = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), Work(mon,         sol))
+(I::Integrator{<:AugmentedSystem})(x, q, T::Real)                                     = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), Work(nothing, nothing))
+(I::Integrator{<:AugmentedSystem})(x, q, T::Real, mon::Monitor)                       = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), Work(nothing,     mon))
+(I::Integrator{<:AugmentedSystem})(x, q, T::Real, sol::AbstractStorage)               = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), Work(sol,     nothing))
+(I::Integrator{<:AugmentedSystem})(x, q, T::Real, mon::Monitor, sol::AbstractStorage) = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), Work(mon,         sol))
 
 # This is used to dispatch appropriate methods
 struct Work{SolType, MonType}
@@ -71,7 +71,7 @@ hasstorage(w::Work{Void, T}) where {T} = false
     t = Δt > 0 ? zero(T) : T 
 
     # might wish to store initial state in the storage and monitor
-    hasstorage(work) && iswritable(work.sol) && push!(work.sol, _state(z))
+    hasstorage(work) && iswmode(work.sol) && push!(work.sol, _state(z), t)
     hasmonitor(work) && push!(work.mon, t, _state_quad(z))
 
     # start integration
@@ -80,8 +80,8 @@ hasstorage(w::Work{Void, T}) where {T} = false
         Δt⁺ = next_Δt(t, T, Δt)
 
         # advance (might need storage, for reading or storing)
-        hasstorage(work) && isreadable(work.sol) && (step!(scheme, g, A, t, Δt⁺, z, storage))
-        hasstorage(work) && iswritable(work.sol) && (step!(scheme, g, A, t, Δt⁺, z); push!(work.sol, _state(z)))
+        hasstorage(work) && isrmode(work.sol) && (step!(scheme, g, A, t, Δt⁺, z, storage))
+        hasstorage(work) && iswmode(work.sol) && (step!(scheme, g, A, t, Δt⁺, z); push!(work.sol, _state(z), t+Δt⁺))
         hasstorage(work) || step!(scheme, g, A, t, Δt⁺, z)
 
         # update monitor if needed
