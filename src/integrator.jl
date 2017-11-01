@@ -68,7 +68,7 @@ hasstorage(w::Work{Void, T}) where {T} = false
     T  > 0 || throw(ArgumentError("T must be greater than 0, got $T"))
 
     # initial integration time depends on integration mode
-    t = Δt > 0 ? zero(T) : T 
+    t = Δt > 0 ? zero(Δt) : oftype(Δt, T)
 
     # might wish to store initial state in the storage and monitor
     hasstorage(work) && iswmode(work.sol) && push!(work.sol, _state(z), t)
@@ -83,12 +83,12 @@ hasstorage(w::Work{Void, T}) where {T} = false
         hasstorage(work) && isrmode(work.sol) && (step!(scheme, g, A, t, Δt⁺, z, storage))
         hasstorage(work) && iswmode(work.sol) && (step!(scheme, g, A, t, Δt⁺, z); push!(work.sol, _state(z), t+Δt⁺))
         hasstorage(work) || step!(scheme, g, A, t, Δt⁺, z)
-
-        # update monitor if needed
-        hasmonitor(work) && push!(ms, t, _state_quad(z))
-
+        
         # update time
         t += Δt⁺
+
+        # update monitor if needed
+        hasmonitor(work) && push!(work.mon, t, _state_quad(z))
     end
     z
 end
