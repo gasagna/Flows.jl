@@ -1,3 +1,6 @@
+using Base.Test
+using IMEXRKCB
+
 # Define a custom type that satisfy the required interface. 
 # Note that for subtypes of AbstractVector `A_mul_B!` and `ImcA!`
 # already work out of the box.
@@ -55,9 +58,21 @@ end
     end
 end
 
+@testset "integrate condition                    " begin
+    @test IMEXRKCB.integrate(0, 0.5, 1,  0.1) == true
+    @test IMEXRKCB.integrate(0, 1.0, 1,  0.1) == false
+    @test IMEXRKCB.integrate(0, 1.0, 1, -0.1) == true
+    @test IMEXRKCB.integrate(0, 0.0, 1, -0.1) == false
+end
+
 @testset "time step                              " begin
-    @test IMEXRKCB.next_Δt(0.0, 1.0, 0.1)  == 0.1
-    @test IMEXRKCB.next_Δt(0.0, 1.0, 1.1)  == 1.0
-    @test IMEXRKCB.next_Δt(0.9, 1.0, 0.12) == 1.0-0.9
-    @test IMEXRKCB.next_Δt(0.9, 1.0, 0.1)  == 1.0-0.9
+    # positive time step
+    @test IMEXRKCB.next_Δt(0, 0.0, 1, 0.1)  ≈ 0.1
+    @test IMEXRKCB.next_Δt(0, 0.0, 1, 1.1)  ≈ 1.0
+    @test IMEXRKCB.next_Δt(0, 0.9, 1, 0.12) ≈ 0.1
+    @test IMEXRKCB.next_Δt(0, 0.9, 1, 0.1)  ≈ 0.1
+    # negative time step
+    @test IMEXRKCB.next_Δt(0, 0.3, 1, -0.2) ≈ -0.2
+    @test IMEXRKCB.next_Δt(0, 0.1, 1, -0.2) ≈ -0.1
+    @test IMEXRKCB.next_Δt(0, 1.0, 1, -1.1) ≈ -1.0
 end

@@ -77,7 +77,7 @@ hasstorage(w::Work{Void, T}) where {T} = false
     # start integration
     while integrate(0, t, T, Δt)
         # compute next time step
-        Δt⁺ = next_Δt(t, T, Δt)
+        Δt⁺ = next_Δt(0, t, T, Δt)
 
         # advance (might need storage, for reading or storing)
         hasstorage(work) && isrmode(work.sol) && (step!(scheme, g, A, t, Δt⁺, z, storage))
@@ -95,14 +95,14 @@ end
 
 # Evaluate condition to continue integration. This depends on the
 # direction of time, which can be negative for the adjoint problem
-function integrate(start, curr, stop, Δt)
-    Δt > 0 && return curr < stop  # forward
-    Δt < 0 && return curr > start # backward
+function integrate(tmin, t, tmax, Δt)
+    Δt > 0 && return t < tmax # forward
+    Δt < 0 && return t > tmin # backward
 end
 
 # Return time step for current RK step. Becomes smaller than `Δt` in 
 # case we need to hit the stopping `T` exactly.
-function next_Δt(t, T, Δt::S)::S where S
-    Δt > 0 && return min(t + Δt, T) - t # forward
-    Δt < 0 && return max(t - Δt, 0) - t # backward
+function next_Δt(tmin, t, tmax, Δt::S)::S where S
+    Δt > 0 && return min(t + Δt, tmax) - t # forward
+    Δt < 0 && return max(t + Δt, tmin) - t # backward
 end
