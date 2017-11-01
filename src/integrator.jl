@@ -101,7 +101,7 @@ function integrate(tmin, t, tmax, Δt)
 end
 
 # Return time step for current RK step. Becomes smaller than `Δt` in 
-# case we need to hit the stopping `T` exactly.
+# case we need to hit the stopping time exactly
 function next_Δt(tmin, t, tmax, Δt::S)::S where S
     Δt > 0 && return min(t + Δt, tmax) - t # forward
     Δt < 0 && return max(t + Δt, tmin) - t # backward
