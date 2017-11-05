@@ -1,73 +1,75 @@
 export Monitor, reset!
 
-"""
-    m = Monitor((f1, f2, ..., fn), xq, [sizehint=100])
-
-Construct an object that monitors and stores the value of functions 
-`f1, f2, ... fn` along with time integration. The functions depend 
-on the state `x` and optionally on the quadrature 
-variable `q`. The argument `xq` is used so that the types of the outputs
-`f1(xq), f2(xq), ..., fn(xq)` can be calculated, to allocate appropriate
-storage. 
-
-`Monitor` objects have two user-exposed fields:
-
-    m.times
-    m.samples
-
-The first  contains the times instant at which samples have been stored. The
-second is a tuple of vectors containing the samples associated to the functions, 
-e.g., `m.samples[1]`, contains the samples of the first function.
-
-If only one quantity is monitored, the associated function needs to be wrapped
-in a one element tuple, e.g. as
-
-    m = Monitor((f,), xq)
-
-and the associated samples will be stored in `m.samples[1]`.
-
-For functions that depend on the quadrature variable, the constructor is 
-as follows
-
-    m = Monitor((f,), (x, q))
-
-i.e., state and quadrature variable instances are wrapped in a tuple, and 
-the function `f` has signature
-
-    function f(xq)
-        # separate state and quadrature
-        x, q = xq 
-        # calculations
-    end
-"""
-struct Monitor{F, S, N}
-    fs::F
-    samples::S
-    times::Vector{Float64}
-end
-
-# Outer constructor
-function Monitor(fs::NTuple{N, Base.Callable}, xq, sizehint::Int=100) where N
-    types   = map(f->typeof(f(xq)), fs)
-    samples = map(T->sizehint!(T[], sizehint), types)
-    times   = sizehint!(Float64[], sizehint)
-    Monitor{typeof(fs), typeof(samples), N}(fs, samples, times)
-end
-
-# push new samples to the monitor, at time t. This need to be a generated function
-# to avoid allocations using a normal for loop. Try again with simpler code in
-# future Julia versions...
-@generated function Base.push!(m::Monitor{F, S, N}, t::Real, xq) where {F, S, N}
-    quote 
-        Base.Cartesian.@nexprs $N i->push!(m.samples[i], m.fs[i](xq))
-        push!(m.times, t)
-        return m
+struct Monitor{X, O, V<:AbstractVector{X}, F}
+    ts::Vector{Float64} # times
+    xs::V               # samples
+     f::F               # act on what is begin pushed (copy, identity, other func)
+    function Monitor{X, O, V, T}(ts::Vector, xs::V, f::F, sizehint::Int) where {X, O, V<:AbstractVector{X}, F}
+        length(ts) == length(xs) || error("input arrays must have same length")
+        new{X, O, V, F}(sizehint!(ts, sizehint), sizehint!(xs, sizehint), f)
     end
 end
 
-# Reset the data in a monitor.
-function reset!(m::Monitor{F, S, N}, sizehint::Int=100) where {F, S, N}
-    sizehint!(resize!(m.times, 0), sizehint)
-    foreach(s->sizehint!(resize!(s, 0), sizehint), m.samples)
-    return m
+# ~~~ Outer constructors ~~~
+
+# Provide a sample of what will be pushed (in RAM)
+Monitor(x, f::Base.Callable=identity, order::Int=3, sizehint::Int=100) =
+    Monitor(typeof(f(x)), f, order, sizehint)
+
+# Provide the type of what will be pushed (in RAM)
+Monitor(::Type{X}, f::Base.Callable=identity, order::Int=3, sizehint::Int=100) =
+    Monitor(X[], f, order, sizehint)
+
+# Provide the object where samples will be pushed (e.g. a database, to disk)
+Monitor(xs::AbstractVector, f::Base.Callable=identity, order::Int=3, sizehint::Int=100) =
+    Monitor{eltype{xs}, order, typeof(xs), typeof(f)}(Float64[], xs, f, order, sizehint)
+
+# Add snapshots and time to the storage
+Base.push!(mon::Monitor{X}, t::Real, x::X) where {X} =
+    (push!(mon.xs, mon.f(x)); push!(mon.ts, t))
+
+# Reset storage
+reset!(mon::Monitor, sizehint::Int=100) =
+    (sizehint!(resize!(mon.ts, 0), sizehint);
+     sizehint!(resize!(mon.xs, 0), sizehint); return mon)
+
+# ~~~ Interpolation ~~~
+
+# Third order interpolation
+function (interp::Monitor{X, 3})(out::X, t::Real) where {X}
+    # aliases
+    xs, ts = interp.xs, interp.ts
+
+    # fix small round off error
+    t < ts[1]   && (t = t + 1e-10)
+    t > ts[end] && (t = t - 1e-10)
+
+    # check if t is inbounds
+    t > ts[1] && t < ts[end] || throw(error("selected time $t is out" *
+                                     " of range [$(ts[1]), $(ts[end])]"))
+
+    # search current index
+    idx = searchsortedlast(ts, t)
+
+    # boundary conditions need shifting of the stencil
+    Δ = idx == 1              ?  1 :
+        idx == length(ts)     ? -2 :
+        idx == length(ts) - 1 ? -1 : 0
+    idx += Δ
+
+    # get interpolation weights
+    w1, w2, w3, w4 = weights(ts[idx-1],
+                             ts[idx],
+                             ts[idx+1],
+                             ts[idx+2], t)
+
+    # compute linear combination and return
+    return out .= w1.*xs[idx-1] .+ w2.*xs[idx] .+ w3.*xs[idx+1] .+ w4.*xs[idx+2]
 end
+
+# Third order interpolation weights
+@inline weights(t0, t1, t2, t3, t) =
+    ((t-t1)*(t-t2)*(t-t3)/((t0-t1)*(t0-t2)*(t0-t3)),
+     (t-t0)*(t-t2)*(t-t3)/((t1-t0)*(t1-t2)*(t1-t3)),
+     (t-t0)*(t-t1)*(t-t3)/((t2-t0)*(t2-t1)*(t2-t3)),
+     (t-t0)*(t-t1)*(t-t2)/((t3-t0)*(t3-t1)*(t3-t2)))
