@@ -1,5 +1,8 @@
-using Base.Test
-using IMEXRKCB
+#=
+    Comparing the numerical solution with a case for which there is a
+    # known analytic solution, discussed in the tutorial at 
+    http://cs.stanford.edu/~ambrad/adjoint_tutorial.pdf, section 2.1.3.
+=#
 
 # define adjoint equation
 struct AdjointEq{M<:Monitor}
