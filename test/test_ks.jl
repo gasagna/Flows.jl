@@ -6,7 +6,7 @@
     # linear term
     A = Diagonal(Float64[k*k*(1-ν*k*k) for k = 1:Nₓ])
 
-    # nonlinear term
+    # nonlinear term (the wrong way of doing it)
     function g(t::Real, x::AbstractVector, ẋ::AbstractVector)
         Nₓ = length(x)
         for k = 1:Nₓ
@@ -38,11 +38,11 @@
         I = integrator(g, A, scheme, 1e-2)
 
         # warm up
-        I(x₀, 10.0)
+        I(x₀, (0.0, 10.0))
 
         # measure time and allocations
-        t = minimum([@elapsed I(x₀, 10.0) for i = 1:100])
-        a = @allocated I(x₀, 10.0)
+        t = minimum([@elapsed I(x₀, (0, 10)) for i = 1:100])
+        a = @allocated I(x₀, (0, 10))
 
         # check
         @test t < tmin

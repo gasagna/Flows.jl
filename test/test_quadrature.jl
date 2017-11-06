@@ -50,23 +50,9 @@ end
             # initial conditions
             x₀ = [1.0]
             q₀ = [0.0, 0.0, 0.0]
-        
-            # monitor the three quadrature equations
-            mon = Monitor((xq->xq[2][1], 
-                           xq->xq[2][2], 
-                           xq->xq[2][3]), (x₀, q₀))
 
             # call
-            f(x₀, q₀, 5, mon)
-
-            # integrate 1 dt
-            @test mon.samples[1] ≈ mon.times
-
-            # integrate exp(t)dt
-            @test norm(abs.(mon.samples[2] - (exp.(mon.times) - 1.0))) / Δt^(order-1) < value
-
-            # integrate t*dt
-            @test mon.samples[3] ≈ 0.5*(mon.times).^2
+            f(x₀, q₀, (0, 5))
 
             # integrals
             @test norm(abs.(q₀ - exact)) / Δt^order < value
