@@ -1,5 +1,3 @@
-import Base: A_mul_B!
-
 # This defines a type that wraps the main state vector `x::X` augmented
 # with an appropriate object `q::Q` used for pure quadrature integration.
 # Note that the type is immutable, hence if a scalar function need to be 
