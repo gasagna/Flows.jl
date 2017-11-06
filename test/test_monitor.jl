@@ -1,7 +1,7 @@
 using Base.Test
 using IMEXRKCB
 
-@testset "n monitors                             " begin
+@testset "test monitor content                   " begin
     m = Monitor([1.0], x->x[1]^2)
 
     push!(m, 0.0, [0.0])
