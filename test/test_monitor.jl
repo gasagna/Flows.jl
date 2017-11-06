@@ -1,6 +1,3 @@
-using Base.Test
-using IMEXRKCB
-
 @testset "test monitor content                   " begin
     m = Monitor([1.0], x->x[1]^2)
 

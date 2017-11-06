@@ -1,6 +1,3 @@
-using Base.Test
-using IMEXRKCB
-
 # Define a custom type that satisfy the required interface. 
 # Note that for subtypes of AbstractVector `A_mul_B!` and `ImcA!`
 # already work out of the box.
