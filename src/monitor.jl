@@ -11,14 +11,14 @@ struct Monitor{X, V<:AbstractVector, F, O}
 end
 
 # Provide a sample of what will be pushed
-function Monitor(x::X, f::Base.Callable=identity, order::Int=3, sizehint::Int=100) where {X}
+function Monitor(x::X, f::Base.Callable=identity; order::Int=3, sizehint::Int=100) where {X}
     T = typeof(f(x))
     Monitor{X, Vector{T}, typeof(f), order}(Float64[], T[], f, sizehint)
 end
 
 # Add snapshots and time to the storage
-Base.push!(mon::Monitor{X}, t::Real, x::X) where {X} =
-    (push!(mon.xs, mon.f(x)); push!(mon.ts, t))
+@inline Base.push!(mon::Monitor{X}, t::Real, x::X) where {X} =
+    (push!(mon.xs, mon.f(x)); push!(mon.ts, t); nothing)
 
 # Reset storage
 reset!(mon::Monitor, sizehint::Int=100) =

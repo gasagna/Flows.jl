@@ -19,25 +19,28 @@ end
     scheme = IMEXRKScheme(IMEXRK3R2R(IMEXRKCB3e, false), [0.0])
 
     # monitors
-    m = Monitor([1.0], x->x[1]^2)
+    m1 = Monitor([1.0], x->x[1]^2; sizehint=10000)
+    m2 = Monitor([1.0], x->x[1]^3; sizehint=10000)
 
     # forward map
-    ϕ = integrator(g, A, scheme, 0.1)
+    ϕ = integrator(g, A, scheme, 0.01)
     
     # initial condition
     x₀ = [0.0]
 
     # warm up
-    ϕ(x₀, (0, 1), m) 
+    fun(ϕ, x₀, span, m1, m2) = @allocated ϕ(x₀, span, m1, m2)
 
     # does not allocate because we do not grow the arrays in the monitor
-    @test (@allocated ϕ(x₀, (0, 1), m)) == 0
+    @test fun(ϕ, x₀, (0, 1), m1, m2) == 0
 
     # try resetting and see we still do not allocate
-    reset!(m)
-    @test (@allocated reset!(m)) == 0
+    for m = [m1, m2]
+        reset!(m)
+        @test (@allocated reset!(m)) == 0
+    end
     
-    @test (@allocated ϕ(x₀, (0, 1), m)) == 0
+    @test fun(ϕ, x₀, (0, 1), m1, m2) == 0
 end
 
 @testset "reset monitors                         " begin
