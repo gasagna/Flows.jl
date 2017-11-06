@@ -20,10 +20,10 @@ Base.A_mul_B!(out, sys::System{G, A, Void}, z) where {G, A} =
     A_mul_B!(out, sys.A, z)
 
 Base.A_mul_B!(out, sys::System{G, Void, Q}, z) where {G, Q} =
-    (out .*= 0; out)
+    (out .= 0; out)
 
 Base.A_mul_B!(out, sys::System{G, Void, Void}, z) where {G} = 
-    (out .*= 0; out)
+    (out .= 0; out)
 
 # Since we treat the quadrature fully explicitly, the solution of
 # (I-cA)z = y for the quadrature part is simply z = y, because the
