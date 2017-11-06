@@ -8,7 +8,7 @@ include("implementations.jl")
 include("schemes.jl")
 include("codegen.jl")
 include("quadrature.jl")
-include("problem.jl")
+include("system.jl")
 include("integrator.jl")
 
 end
