@@ -1,3 +1,5 @@
+import Base: A_mul_B!
+
 # This defines a type that wraps the main state vector `x::X` augmented
 # with an appropriate object `q::Q` used for pure quadrature integration.
 # Note that the type is immutable, hence if a scalar function need to be 
@@ -35,32 +37,38 @@ Base.similar(z::AugmentedState) = AugmentedState(similar.(_state_quad(z))...)
 
 # define this to broadcast the call to the subsystems, the main rhs of the
 # ode, and the quadrature rule.
-struct AugmentedSystem{G, Q}
-    g::G
-    q::Q
+struct AugmentedSystem{G, A, Q}
+    g::G # explicit term
+    A::A # linear implicit term: can be Void if not provided
+    q::Q # quadrature function: can be Void if not provided
 end
-aug_system(g, q) = AugmentedSystem(g, q)
+aug_system(g, A, q) = AugmentedSystem(g, A, q)
 
-# treat the quadrature equation fully explicitly
-(f::AugmentedSystem)(t::Real, z::AugmentedState, ż::AugmentedState) =
-    (f.g(t, _state(z), _state(ż)); 
-     f.q(t, _state(z), _quad(ż)))
+function (aug::AugmentedSystem{G, A, Q})(t::Real, z::T, dzdt::T) where {G, A, Q, T} 
+    aug.g(t, _state(z), _state(dzdt))
+    Q <: Void || aug.q(t, _state(z), _quad(dzdt))
+    return dzdt
+end
 
-# Broadcast calls to state part only
-Base.A_mul_B!(out::T, A, z::T) where {T<:AugmentedState} =
-    (A_mul_B!(_state(out), A, _state(z)); _quad(out) .= 0)
-
-# fix ambiguity warning due to method for Diagonal in imca.jl
-Base.A_mul_B!(out::T, A::Diagonal, z::T) where {T<:AugmentedState} =
-    (A_mul_B!(_state(out), A, _state(z)); _quad(out) .= 0)
+function A_mul_B!(out::T, aug::AugmentedSystem{G, A}, z::T) where {G, A, T} 
+    if A <: Void
+        out .*= 0
+    else
+        A_mul_B!(_state(out), aug.A, _state(z))
+    end
+    return out
+end
 
 # Since we treat the quadrature fully explicitly, the solution of
 # (I-cA)z = y for the quadrature part is simply z = y, because the
 # component of A associated to this part is zero and the state 
 # and quadrature parts are decoupled.
-ImcA!(A, c::Real, y::T, z::T) where T<:AugmentedState =
-    (ImcA!(A, c, _state(y), _state(z)); _quad(z) .= _quad(y))
-
-# fix ambiguity warning due to method for Diagonal in imca.jl
-ImcA!(A::Diagonal, c::Real, y::T, z::T) where T<:AugmentedState =
-    (ImcA!(A, c, _state(y), _state(z)); _quad(z) .= _quad(y))    
+function ImcA!(aug::AugmentedSystem{G, A, Q}, c::Real, y::T, z::T) where {G, A, Q, T} 
+    if A <: Void
+        z .= y
+    else
+        ImcA!(aug.A, c, _state(y), _state(z))
+        T<:AugmentedState && _quad(z) .= _quad(y)
+    end
+    return z
+end

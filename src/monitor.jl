@@ -1,28 +1,20 @@
 export Monitor, reset!
 
-struct Monitor{X, O, V<:AbstractVector{X}, F}
+struct Monitor{X, V<:AbstractVector, F, O}
     ts::Vector{Float64} # times
     xs::V               # samples
      f::F               # act on what is begin pushed (copy, identity, other func)
-    function Monitor{X, O, V, T}(ts::Vector, xs::V, f::F, sizehint::Int) where {X, O, V<:AbstractVector{X}, F}
-        length(ts) == length(xs) || error("input arrays must have same length")
-        new{X, O, V, F}(sizehint!(ts, sizehint), sizehint!(xs, sizehint), f)
+    function Monitor{X, V, F, O}(ts::Vector, xs::V, f::F, sizehint::Int) where {X, V<:AbstractVector, F, O}
+        length(ts) == length(xs) == 0 || error("input arrays must be zero")
+        new{X, V, F, O}(sizehint!(ts, sizehint), sizehint!(xs, sizehint), f)
     end
 end
 
-# ~~~ Outer constructors ~~~
-
-# Provide a sample of what will be pushed (in RAM)
-Monitor(x, f::Base.Callable=identity, order::Int=3, sizehint::Int=100) =
-    Monitor(typeof(f(x)), f, order, sizehint)
-
-# Provide the type of what will be pushed (in RAM)
-Monitor(::Type{X}, f::Base.Callable=identity, order::Int=3, sizehint::Int=100) =
-    Monitor(X[], f, order, sizehint)
-
-# Provide the object where samples will be pushed (e.g. a database, to disk)
-Monitor(xs::AbstractVector, f::Base.Callable=identity, order::Int=3, sizehint::Int=100) =
-    Monitor{eltype{xs}, order, typeof(xs), typeof(f)}(Float64[], xs, f, order, sizehint)
+# Provide a sample of what will be pushed
+function Monitor(x::X, f::Base.Callable=identity, order::Int=3, sizehint::Int=100) where {X}
+    T = typeof(f(x))
+    Monitor{X, Vector{T}, typeof(f), order}(Float64[], T[], f, sizehint)
+end
 
 # Add snapshots and time to the storage
 Base.push!(mon::Monitor{X}, t::Real, x::X) where {X} =
@@ -36,7 +28,7 @@ reset!(mon::Monitor, sizehint::Int=100) =
 # ~~~ Interpolation ~~~
 
 # Third order interpolation
-function (interp::Monitor{X, 3})(out::X, t::Real) where {X}
+function (interp::Monitor{X, V, F, 3})(out::X, t::Real) where {X, V, F}
     # aliases
     xs, ts = interp.xs, interp.ts
 
@@ -45,7 +37,7 @@ function (interp::Monitor{X, 3})(out::X, t::Real) where {X}
     t > ts[end] && (t = t - 1e-10)
 
     # check if t is inbounds
-    t > ts[1] && t < ts[end] || throw(error("selected time $t is out" *
+    t ≥ ts[1] && t ≤ ts[end] || throw(error("selected time $t is out" *
                                      " of range [$(ts[1]), $(ts[end])]"))
 
     # search current index

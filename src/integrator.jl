@@ -1,108 +1,67 @@
-export integrator, fwdmapgen, _propagate!
+export integrator
 
-# """
-#     forwmap!(g, A, T, Δt, scheme)
-
-# Returns a function for the `T`-time forward map associated to the dynamical system
-# defined by `g` and `A`. These two define the non-stiff and stiff part of the 
-# equations, and obey the interface
-    
-#     g(::Real, x::T, ẋ::T)
-#     A_mul_B!(out::T, A, x::T)
-#     ImcA!(out::T, A, x::T)
-
-# where `T` is any custom type. The code here is agnostic to this type, as long as
-# there exists a method for `similar(::Type{T})`, so that the temporaries needed 
-# can be generated internally without user intervention. 
-
-# Integration is performed using the IMEXRK scheme defined by `scheme` using
-# fixed time step `Δt`. The signature of the returned function `ret` is `ret(x)`, 
-# which operates in place, overwriting its argument. The input argument `x` should
-# be of a type with the storage defined in `scheme`.
-# """
-
-struct Integrator{G, At, Sc}
-           g::G       # the non-stiff part. Potentially augmented with a quadrature function
-           A::At      # the linear stiff part.
+struct Integrator{S<:AugmentedSystem, Sc}
+         sys::S       # 
       scheme::Sc      # the scheme, with storage and RK implementation
           Δt::Float64 # the time step. Will be replaced by integration options
-    function Integrator{G, At, Sc}(g::G, 
-                                   A::At, 
-                                   scheme::Sc, 
-                                   Δt::Real) where {G, At, Sc}
-        Δt == 0 && throw(ArgumentError("Δt must be different from 0, got $Δt"))
-        new(g, A, scheme, Δt)
+    function Integrator(sys::S,
+                               scheme::Sc,
+                               Δt::Real) where {S, Sc}
+        Δt > 0 || throw(ArgumentError("Δt must be positive, got $Δt"))
+        new{S, Sc}(sys, scheme, Δt)
     end
 end
 
-# Outer constructor: if a quadrature function is provided, augment system and call outer constructor
-integrator(g, A,    scheme::IMEXRKScheme, Δt::Real) = Integrator{typeof.((g, A, scheme))...}(g, A, scheme, Δt)
-integrator(g, A, q, scheme::IMEXRKScheme, Δt::Real) = integrator(aug_system(g, q), A, scheme, Δt)
+# Outer constructor
+integrator(g, A, q, scheme::IMEXRKScheme, Δt::Real) = Integrator(aug_system(g, A,             q), scheme, Δt)
+integrator(g, A,    scheme::IMEXRKScheme, Δt::Real) = Integrator(aug_system(g, A,       nothing), scheme, Δt)
+integrator(g,       scheme::IMEXRKScheme, Δt::Real) = Integrator(aug_system(g, nothing, nothing), scheme, Δt)
 
 # Main entry points. Integrators are callable objects ...
-(I::Integrator)(x, T::Real)                                     = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, Work(nothing, nothing))
-(I::Integrator)(x, T::Real, mon::Monitor)                       = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, Work(nothing,     mon))
-(I::Integrator)(x, T::Real, sol::AbstractStorage)               = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, Work(sol,     nothing))
-(I::Integrator)(x, T::Real, mon::Monitor, sol::AbstractStorage) = _propagate!(I.scheme, I.g, I.A, T, I.Δt, x, Work(mon,         sol))
+(I::Integrator)(x, span::NTuple{2, Real}, mon::Union{Void, Monitor}=nothing) =
+    _propagate!(I.scheme, I.sys, span, I.Δt, x, mon)
 
 # Integrator augmented with a quadrature function are callable with an additional argument.
-(I::Integrator{<:AugmentedSystem})(x, q, T::Real)                                     = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), Work(nothing, nothing))
-(I::Integrator{<:AugmentedSystem})(x, q, T::Real, mon::Monitor)                       = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), Work(nothing,     mon))
-(I::Integrator{<:AugmentedSystem})(x, q, T::Real, sol::AbstractStorage)               = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), Work(sol,     nothing))
-(I::Integrator{<:AugmentedSystem})(x, q, T::Real, mon::Monitor, sol::AbstractStorage) = _propagate!(I.scheme, I.g, I.A, T, I.Δt, aug_state(x, q), Work(mon,         sol))
-
-# This is used to dispatch appropriate methods
-struct Work{SolType, MonType}
-    sol::SolType
-    mon::MonType
-end
-
-hasmonitor(w::Work)                    = true
-hasmonitor(w::Work{T, Void}) where {T} = false
-hasstorage(w::Work)                    = true
-hasstorage(w::Work{Void, T}) where {T} = false
+(I::Integrator{<:AugmentedSystem})(x, q, span::NTuple{2, Real}, mon::Union{Void, Monitor}=nothing) =
+    _propagate!(I.scheme, I.sys, span, I.Δt, aug_state(x, q), mon)
 
 # Main propagation function
-@inline function _propagate!(scheme::IMEXRKScheme{S}, g, A, T::Real, Δt::Real, z::S, work::Work) where {S}
-    # disallow crazy stuff
-    T  > 0 || throw(ArgumentError("T must be greater than 0, got $T"))
+@inline function _propagate!(scheme::IMEXRKScheme{S}, sys, span::NTuple{2, Real}, Δt::Real, z::S, mon::Union{Void, Monitor}) where {S}
+    # initial integration time
+    t = Float64(span[1])
 
-    # initial integration time depends on integration mode
-    t = Δt > 0 ? zero(Δt) : oftype(Δt, T)
-
-    # might wish to store initial state in the storage and monitor
-    hasstorage(work) && iswmode(work.sol) && push!(work.sol, _state(z), t)
-    hasmonitor(work) && push!(work.mon, t, _state_quad(z))
+    # might wish to store initial state
+    mon isa Monitor && push!(mon, t, _state(z))
 
     # start integration
-    while integrate(0, t, T, Δt)
+    while integrate(t, span, Δt)
         # compute next time step
-        Δt⁺ = next_Δt(0, t, T, Δt)
+        Δt⁺ = next_Δt(t, span, Δt)
 
-        # advance (might need storage, for reading or storing)
-        hasstorage(work) && isrmode(work.sol) && (step!(scheme, g, A, t, Δt⁺, z, storage))
-        hasstorage(work) && iswmode(work.sol) && (step!(scheme, g, A, t, Δt⁺, z); push!(work.sol, _state(z), t+Δt⁺))
-        hasstorage(work) || step!(scheme, g, A, t, Δt⁺, z)
-        
+        # advance
+        step!(scheme, sys, t, Δt⁺, z)
+
         # update time
         t += Δt⁺
 
-        # update monitor if needed
-        hasmonitor(work) && push!(work.mon, t, _state_quad(z))
+        # store solution into monitor
+        mon isa Monitor && push!(mon, t, _state(z))
     end
     z
 end
 
 # Evaluate condition to continue integration. This depends on the
 # direction of time, which can be negative for the adjoint problem
-function integrate(tmin, t, tmax, Δt)
-    Δt > 0 && return t < tmax # forward
-    Δt < 0 && return t > tmin # backward
+function integrate(t, span, Δt)
+    tstart, tstop = span 
+    tstart ≤ tstop && return t < tstop # forward
+    tstart > tstop && return t > tstop # backward
 end
 
-# Return time step for current RK step. Becomes smaller than `Δt` in 
-# case we need to hit the stopping time exactly
-function next_Δt(tmin, t, tmax, Δt::S)::S where S
-    Δt > 0 && return min(t + Δt, tmax) - t # forward
-    Δt < 0 && return max(t + Δt, tmin) - t # backward
+# Return time step for current step. Becomes smaller than
+# `Δt` in case we need to hit the stopping time exactly
+function next_Δt(t, span, Δt::S)::S where S
+    tstart, tstop = span 
+    tstart ≤ tstop && return min(t + Δt, tstop) - t # forward
+    tstart > tstop && return max(t - Δt, tstop) - t # backward
 end
