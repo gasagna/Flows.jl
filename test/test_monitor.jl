@@ -58,3 +58,27 @@ end
     @test m.ts == []
     @test m.xs == []
 end
+
+@testset "cubic interpolation                    " begin
+    # data
+    ts = 0.0:0.1:1
+
+    # create storage with one sample
+    sol = Monitor([0.0])
+
+    # push a cubic function of time
+    for t in ts
+        push!(sol, t, [t*t*t])
+    end
+
+    # check interpolation
+    out = [0.0]
+    for ti in 0.0:0.01:1.0
+        out = sol(out, ti)
+        @test out ≈ [ti*ti*ti]
+    end
+
+    # check out of bound range
+    @test_throws ErrorException sol(out, -1.0)
+    @test_throws ErrorException sol(out,  1.1)
+end
