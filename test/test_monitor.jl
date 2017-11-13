@@ -64,21 +64,26 @@ end
     ts = 0.0:0.1:1
 
     # create storage with one sample
-    sol = Monitor([0.0])
+    sol1 = Monitor([0.0])
+    sol2 = Monitor([0.0])
+    sol3 = Monitor([0.0])
 
     # push a cubic function of time
     for t in ts
-        push!(sol, t, [t*t*t])
+        push!(sol1, t, [t])
+        push!(sol2, t, [t*t])
+        push!(sol3, t, [t*t*t])
     end
 
-    # check interpolation
+    # check interpolation on finer grid
     out = [0.0]
     for ti in 0.0:0.01:1.0
-        out = sol(out, ti)
-        @test out ≈ [ti*ti*ti]
+        @test sol1(out, ti) ≈ [ti]
+        @test sol2(out, ti) ≈ [ti*ti]
+        @test sol3(out, ti) ≈ [ti*ti*ti]
     end
 
     # check out of bound range
-    @test_throws ErrorException sol(out, -1.0)
-    @test_throws ErrorException sol(out,  1.1)
+    @test_throws ErrorException sol1(out, -1.0)
+    @test_throws ErrorException sol1(out,  1.1)
 end
