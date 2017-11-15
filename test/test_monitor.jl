@@ -1,3 +1,14 @@
+using Base.Test
+using IMEXRKCB
+
+@testset "test monitor type                      " begin
+    m = Monitor([1.0], x->"1")
+    push!(m, 0.0, [0.0])
+    @test m.xs == ["1"]
+
+    @test eltype(m.xs) == String
+end
+
 @testset "test monitor content                   " begin
     m = Monitor([1.0], x->x[1]^2)
 

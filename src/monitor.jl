@@ -1,6 +1,6 @@
 export Monitor, reset!
 
-struct Monitor{X, V<:AbstractVector, F, O}
+struct Monitor{X, V<:AbstractVector{X}, F, O}
     ts::Vector{Float64} # times
     xs::V               # samples
      f::F               # act on what is begin pushed (copy, identity, other func)
@@ -11,13 +11,13 @@ struct Monitor{X, V<:AbstractVector, F, O}
 end
 
 # Provide a sample of what will be pushed
-function Monitor(x::X, f::Base.Callable=identity; order::Int=3, sizehint::Int=100) where {X}
-    T = typeof(f(x))
-    Monitor{X, Vector{T}, typeof(f), order}(Float64[], T[], f, sizehint)
+function Monitor(x, f::Base.Callable=identity; order::Int=3, sizehint::Int=100)
+    T = typeof(f(x)) # get the eltype of the storage
+    Monitor{T, Vector{T}, typeof(f), order}(Float64[], T[], f, sizehint)
 end
 
 # Add snapshots and time to the storage
-@inline Base.push!(mon::Monitor{X}, t::Real, x::X) where {X} =
+@inline Base.push!(mon::Monitor, t::Real, x) =
     (push!(mon.xs, mon.f(x)); push!(mon.ts, t); nothing)
 
 # Reset storage
