@@ -43,21 +43,33 @@ end
             ϕ = integrator(g, A, scheme, 0.01123)
 
             # check relative error, for a few repetitions of the integration
-            @test abs(ϕ(x, 1.0)[1] - exp(-1))/exp(-1) < err
-            @test abs(ϕ(x, 1.0)[1] - exp(-2))/exp(-2) < err
-            @test abs(ϕ(x, 1.0)[1] - exp(-3))/exp(-3) < err
-            @test abs(ϕ(x, 1.0)[1] - exp(-4))/exp(-4) < err
-            @test abs(ϕ(x, 1.0)[1] - exp(-5))/exp(-5) < err
+            @test abs(ϕ(x, (0, 1))[1] - exp(-1))/exp(-1) < err
+            @test abs(ϕ(x, (0, 1))[1] - exp(-2))/exp(-2) < err
+            @test abs(ϕ(x, (0, 1))[1] - exp(-3))/exp(-3) < err
+            @test abs(ϕ(x, (0, 1))[1] - exp(-4))/exp(-4) < err
+            @test abs(ϕ(x, (0, 1))[1] - exp(-5))/exp(-5) < err
 
             # try giving a different input
-            @test_throws MethodError ϕ([1], 1.0)
+            @test_throws MethodError ϕ([1], (0, 1))
         end
     end
 end
 
+@testset "integrate condition                    " begin
+    @test IMEXRKCB.integrate(0.5, (0, 1), 0.1) == true
+    @test IMEXRKCB.integrate(1.0, (0, 1), 0.1) == false
+    @test IMEXRKCB.integrate(1.0, (1, 0), 0.1) == true
+    @test IMEXRKCB.integrate(0.0, (1, 0), 0.1) == false
+end
+
 @testset "time step                              " begin
-    @test IMEXRKCB.next_Δt(0.0, 1.0, 0.1)  == 0.1
-    @test IMEXRKCB.next_Δt(0.0, 1.0, 1.1)  == 1.0
-    @test IMEXRKCB.next_Δt(0.9, 1.0, 0.12) == 1.0-0.9
-    @test IMEXRKCB.next_Δt(0.9, 1.0, 0.1)  == 1.0-0.9
+    # positive time step
+    @test IMEXRKCB.next_Δt(0.0, (0, 1), 0.1)  ≈ 0.1
+    @test IMEXRKCB.next_Δt(0.0, (0, 1), 1.1)  ≈ 1.0
+    @test IMEXRKCB.next_Δt(0.9, (0, 1), 0.12) ≈ 0.1
+    @test IMEXRKCB.next_Δt(0.9, (0, 1), 0.1)  ≈ 0.1
+    # negative time step
+    @test IMEXRKCB.next_Δt(0.3, (1, 0), 0.2) ≈ -0.2
+    @test IMEXRKCB.next_Δt(0.1, (1, 0), 0.2) ≈ -0.1
+    @test IMEXRKCB.next_Δt(1.0, (1, 0), 1.1) ≈ -1.0
 end

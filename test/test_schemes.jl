@@ -19,7 +19,7 @@
 
             # step forward
             x = [1.0]
-            IMEXRKCB.step!(scheme, g, A, 0., Δt, x)
+            IMEXRKCB.step!(scheme, IMEXRKCB.System(g, A, nothing), 0., Δt, x)
 
             # check error decays with expected power. The bounds bnd are used
             # to check whether the error decays at the expected rate, up

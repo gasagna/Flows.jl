@@ -21,8 +21,7 @@ function codegen(impl::AbstractIMEXRKImplementation; strip::Bool=true)
     funcode = strip == true ? strip_step(_codegen(impl)) : _codegen(impl)
     quote
         function step!(scheme::IMEXRKScheme{S, $T}, 
-                       g, 
-                       A, 
+                       sys,
                        t::Real, 
                        Δt::Real, 
                        x::S) where S

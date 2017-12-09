@@ -71,12 +71,12 @@ function _codegen(::IMEXRK3R2R{Tab, Embed}) where {Tab, Embed}
         end
         # compute z = A*y then
         # compute z = (I-cA)⁻¹*(A*y) in place
-        push!(expr.args, :(A_mul_B!(z, A, y)))
-        push!(expr.args, :(ImcA!(A, $aᴵkk*Δt, z, z)))
+        push!(expr.args, :(A_mul_B!(z, sys, y)))
+        push!(expr.args, :(ImcA!(sys, $aᴵkk*Δt, z, z)))
 
         # w is the temporary input for g - output in y
         push!(expr.args, :(w .= y .+ $aᴵkk*Δt.*z))
-        push!(expr.args, :(g(t + $cᴱk*Δt, w, y)))
+        push!(expr.args, :(sys(t + $cᴱk*Δt, w, y)))
         push!(expr.args, :(x .= x .+ $bᴵk*Δt.*z .+ $bᴱk*Δt.*y))
 
         # add code for embedded implementations
@@ -137,12 +137,12 @@ function _codegen(::IMEXRK4R3R{Tab, Embed}) where {Tab, Embed}
         end
         # compute w = A*zᴱ then
         # compute z = (I-cA)⁻¹*w in place
-        push!(expr.args, :(A_mul_B!(w, A, zᴱ)))
-        push!(expr.args, :(ImcA!(A, $aᴵkk*Δt, w, zᴵ)))
+        push!(expr.args, :(A_mul_B!(w, sys, zᴱ)))
+        push!(expr.args, :(ImcA!(sys, $aᴵkk*Δt, w, zᴵ)))
 
         # w is the temporary input for g - output in zᴱ
         push!(expr.args, :(w .= zᴱ .+ $aᴵkk*Δt.*zᴵ))
-        push!(expr.args, :(g(t + $cᴱk*Δt, w, zᴱ)))
+        push!(expr.args, :(sys(t + $cᴱk*Δt, w, zᴱ)))
         push!(expr.args, :(x .= x .+ $bᴵk*Δt.*zᴵ .+ $bᴱk*Δt.*zᴱ))
         
         # add code for embedded implementations

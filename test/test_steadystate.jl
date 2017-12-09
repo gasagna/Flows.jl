@@ -12,18 +12,18 @@
         scheme = IMEXRKScheme(impl, [1.0])
 
         # monitor
-        m = Monitor((x->x[1], ), [0.0])
+        m = Monitor([0.0], x->x[1])
 
         # forward map
         ϕ = integrator(g, A, scheme, 0.12345)
         
         # do job
-        ϕ([0.0], 20, m)
+        ϕ([0.0], (0, 20), m)
 
         # test value
-        @test m.samples[1][end] ≈ 1/5
+        @test m.xs[end] ≈ 1/5
 
         # ensure we saved the last step in the monitor
-        @test m.times[end] == 20
+        @test m.ts[end] == 20
     end
 end
