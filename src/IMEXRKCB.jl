@@ -9,6 +9,7 @@ include("schemes.jl")
 include("codegen.jl")
 include("quadrature.jl")
 include("system.jl")
+include("losslessrange.jl")
 include("integrator.jl")
 
 end

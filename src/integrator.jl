@@ -29,48 +29,27 @@ integrator(g,       scheme::IMEXRKScheme, Δt::Real) = Integrator(System(g, noth
 @generated function _propagate!(scheme::IMEXRKScheme{S},
                                 system::System,
                                 span::NTuple{2, Real},
-                                Δt::Float64,
+                                Δt::Float64, # enforced to be positive
                                 z::S,
                                 mon::Vararg{Monitor, N}) where {S, N}
     quote
         $(Expr(:meta, :inline))
 
-        # initial integration time
-        t = Float64(span[1])
+        # define integration times
+        ts = LossLessRange(span[1], span[2], span[1] < span[2] ? Δt : -Δt)
 
-        # might wish to store initial state in monitors
-        Base.Cartesian.@nexprs $N i->push!(mon[i], t, _state(z))
+        # store initial state in monitors
+        Base.Cartesian.@nexprs $N i->push!(mon[i], ts[1], _state(z))
 
         # start integration
-        while integrate(t, span, Δt)
-            # compute next time step
-            Δt⁺ = next_Δt(t, span, Δt)
+        for j = 2:length(ts)
 
             # advance
-            step!(scheme, system, t, Δt⁺, z)
-
-            # update time
-            t += Δt⁺
+            step!(scheme, system, ts[j-1], ts[j]-ts[j-1], z)
 
             # store solution into monitor
-            Base.Cartesian.@nexprs $N i->push!(mon[i], t, _state(z))
+            Base.Cartesian.@nexprs $N i->push!(mon[i], ts[j], _state(z))
         end
         z
     end
-end
-
-# Evaluate condition to continue integration. This depends on the
-# direction of time, which can be negative for the adjoint system
-function integrate(t, span, Δt)
-    tstart, tstop = span
-    tstart ≤ tstop && return t < tstop # forward
-    tstart > tstop && return t > tstop # backward
-end
-
-# Return time step for current step. Becomes smaller than
-# `Δt` in case we need to hit the stopping time exactly
-function next_Δt(t, span, Δt::S)::S where S
-    tstart, tstop = span
-    tstart ≤ tstop && return min(t + Δt, tstop) - t # forward
-    tstart > tstop && return max(t - Δt, tstop) - t # backward
 end

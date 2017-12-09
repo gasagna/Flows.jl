@@ -34,7 +34,7 @@ end
                           (IMEXRK4R3R(IMEXRKCB4,  false), 3e-12)]
     
         # try on standard vector and on custom type
-        for x in [foo{Float64}([1.0])]
+        for x in [[1.0], foo{Float64}([1.0])]
 
             # construct scheme
             scheme = IMEXRKScheme(impl, x)                       
@@ -53,23 +53,4 @@ end
             @test_throws MethodError ϕ([1], (0, 1))
         end
     end
-end
-
-@testset "integrate condition                    " begin
-    @test IMEXRKCB.integrate(0.5, (0, 1), 0.1) == true
-    @test IMEXRKCB.integrate(1.0, (0, 1), 0.1) == false
-    @test IMEXRKCB.integrate(1.0, (1, 0), 0.1) == true
-    @test IMEXRKCB.integrate(0.0, (1, 0), 0.1) == false
-end
-
-@testset "time step                              " begin
-    # positive time step
-    @test IMEXRKCB.next_Δt(0.0, (0, 1), 0.1)  ≈ 0.1
-    @test IMEXRKCB.next_Δt(0.0, (0, 1), 1.1)  ≈ 1.0
-    @test IMEXRKCB.next_Δt(0.9, (0, 1), 0.12) ≈ 0.1
-    @test IMEXRKCB.next_Δt(0.9, (0, 1), 0.1)  ≈ 0.1
-    # negative time step
-    @test IMEXRKCB.next_Δt(0.3, (1, 0), 0.2) ≈ -0.2
-    @test IMEXRKCB.next_Δt(0.1, (1, 0), 0.2) ≈ -0.1
-    @test IMEXRKCB.next_Δt(1.0, (1, 0), 1.1) ≈ -1.0
 end
