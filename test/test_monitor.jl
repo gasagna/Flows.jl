@@ -39,6 +39,13 @@ end
     # initial condition
     x₀ = [0.0]
 
+    # test end point is calculated correctly
+    ϕ(x₀, (0, 1.005), m1, m2)
+
+    @test m1.ts[end  ] == 1.005
+    @test m1.ts[end-1] == 1.000
+    @test m1.ts[end-2] == 0.990
+
     # warm up
     fun(ϕ, x₀, span, m1, m2) = @allocated ϕ(x₀, span, m1, m2)
 
