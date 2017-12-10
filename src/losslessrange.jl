@@ -17,4 +17,4 @@ end
     llr.isLossy ? length(llr.rng) + 1 : length(llr.rng)
 
 @inline Base.getindex(llr::LossLessRange, i::Integer) = 
-    llr.isLossy ? (i == length(llr) ? llr.val : llr.rng[i]) : llr.rng[i]
+    llr.isLossy ? (i == length(llr) ? llr.stop : llr.rng[i]) : llr.rng[i]
