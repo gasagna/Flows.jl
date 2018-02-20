@@ -5,19 +5,20 @@ export IMEXMethod
 struct IMEXMethod{X, T<:Real, I}
     storage::Vector{X}
     tableau::IMEXTableau{T}
-    function IMEXMethod{X, T, I}(tab::IMEXTableau, nstores::Int, x::X) where {X, T, I}
-        new(X[similar(x) for i = 1:nstores], convert(IMEXTableau{T}, tab))
+    function IMEXMethod{X, T, I}(tab::IMEXTableau{T}, nstores::Int, x::X) where {X, T, I}
+        new(X[similar(x) for i = 1:nstores], tab)
     end
 end
 
-IMEXMethod(impl::Symbol, tab::IMEXTableau, nstores::Int, x::X) where {X} =
-    IMEXMethod{X, eltype(x), impl}(tab, nstores, x)
+IMEXMethod(impl::Symbol, tab::IMEXTableau{T}, nstores::Int, x::X) where {X, T} =
+    IMEXMethod{X, T, impl}(tab, nstores, x)
 
-# allowed method tags
-const __allowed__ = Dict{Symbol, Tuple{IMEXTableau, Int, Symbol}}(:CB2_3R2R  => (CB2,  3, :_3R2R),
-                                                                  :CB3c_3R2R => (CB3c, 3, :_3R2R),
-                                                                  :CB3e_3R2R => (CB3e, 3, :_3R2R),
-                                                                  :CB4_4R3R  => (CB4,  4, :_4R3R))
+# allowed method tags. We convert tableaux to Float64. This should cover most cases.
+D = Dict{Symbol, Tuple{IMEXTableau, Int, Symbol}}
+const __allowed__ =  D(:CB2_3R2R  => (convert(IMEXTableau{Float64}, CB2),  3, :_3R2R),
+                       :CB3c_3R2R => (convert(IMEXTableau{Float64}, CB3c), 3, :_3R2R),
+                       :CB3e_3R2R => (convert(IMEXTableau{Float64}, CB3e), 3, :_3R2R),
+                       :CB4_4R3R  => (convert(IMEXTableau{Float64}, CB4),  4, :_4R3R))
 
 # Main entry point
 function IMEXMethod(tag::Symbol, x::X, q...) where {X}
