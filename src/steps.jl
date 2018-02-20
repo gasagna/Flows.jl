@@ -45,14 +45,14 @@ function step!(method::IMEXMethod{X, T, :_3R2R},
         if k == 1
             y .= x
         else
-            y .= x .+ (tab[:aᴵ, k, k-1] - tab[:bᴵ, k-1])*Δt.*z .+
-                      (tab[:aᴱ, k, k-1] - tab[:bᴱ, k-1])*Δt.*y
+            y .= x .+ (tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*z .+ 
+                      (tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*Δt.*y
         end
         A_mul_B!(z, sys, y)                 # compute z = A*y then
         ImcA!(sys, tab[:aᴵ, k, k]*Δt, z, z) # get z = (I-cA)⁻¹*(A*y) in place
-        w .= y .+ tab[:aᴵ, k, k]*Δt.*z      # w is the temp input, output is y
+        w .= y .+ tab[:aᴵ, k, k].*Δt.*z      # w is the temp input, output is y
         sys(t + tab[:cᴱ, k]*Δt, w, y)
-        x .= x .+ tab[:bᴵ, k]*Δt.*z .+ tab[:bᴱ, k]*Δt.*y
+        x .= x .+ tab[:bᴵ, k].*Δt.*z .+ tab[:bᴱ, k].*Δt.*y
     end
     return nothing
 end
@@ -79,7 +79,7 @@ function step!(method::IMEXMethod{X, T, :_4R3R},
             zᴵ .= x
             zᴱ .= x
         else
-            zᴱ .= y .+ tab[:aᴱ, k, k-1]*Δt.*zᴱ
+            zᴱ .= y .+ tab[:aᴱ, k, k-1].*Δt.*zᴱ
             if k < nstages(tab)
                 y .= x .+ (tab[:aᴵ, k+1, k-1] .- tab[:bᴵ, k-1]).*Δt.*zᴵ .+
                           (tab[:aᴱ, k+1, k-1] .- tab[:bᴱ, k-1])./tab[:aᴱ, k, k-1].*(zᴱ .- y)
@@ -90,7 +90,7 @@ function step!(method::IMEXMethod{X, T, :_4R3R},
         ImcA!(sys, tab[:aᴵ, k, k]*Δt, w, zᴵ) # compute z = (I-cA)⁻¹*w in place
         w .= zᴱ .+ tab[:aᴵ, k, k]*Δt.*zᴵ     # w is the temp input, output is zᴱ
         sys(t + tab[:cᴱ, k]*Δt, w, zᴱ)
-        x .= x .+ tab[:bᴵ, k]*Δt.*zᴵ .+ tab[:bᴱ, k]*Δt.*zᴱ
+        x .= x .+ tab[:bᴵ, k].*Δt.*zᴵ .+ tab[:bᴱ, k].*Δt.*zᴱ
     end
     return nothing
 end
