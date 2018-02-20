@@ -10,6 +10,11 @@ struct Tableau{T}
     end
 end
 
+function Tableau(a::Matrix, b::Vector, e::Vector, c::Vector)
+    T = promote_type(eltype.((a, b, e, c))...)
+    Tableau(convert(Matrix{T}, a), convert.(Vector{T}, (b, e, c))...)
+end
+
 # number of stages
 nstages(tab::Tableau) = size(tab.a, 1)
 
@@ -19,10 +24,8 @@ Base.getindex(tab::Tableau, t::Symbol, i::Integer)             = getfield(tab, t
 
 # Convert a tableau to have coefficient of given type
 Base.convert(::Type{Tableau{T}}, tab::Tableau{S}) where {T, S} =
-    Tableau{T}(convert(Matrix{T}, tab.a),
-               convert(Vector{T}, tab.b),
-               convert(Vector{T}, tab.e),
-               convert(Vector{T}, tab.c))
+    Tableau(convert(Matrix{T}, tab.a), convert(Vector{T}, tab.b),
+            convert(Vector{T}, tab.e), convert(Vector{T}, tab.c))
 
 # ~~ Tableau for IMEX schemes ~~~
 struct IMEXTableau{T}
@@ -34,8 +37,11 @@ end
 function IMEXTableau(tabI::Tableau{TI}, tabE::Tableau{TE}) where {TI, TE} 
     nstages(tabI) == nstages(tabE) || error("tableaux must have same number of stage")
     T = promote_type(TI, TE)
-    IMEXTableau{T}(convert(Tableau{T}, tabI), convert(Tableau{T}, tabE))
+    IMEXTableau(convert(Tableau{T}, tabI), convert(Tableau{T}, tabE))
 end
+
+Base.convert(::Type{IMEXTableau{T}}, tab::IMEXTableau{S}) where {T, S} =
+    IMEXTableau(convert(Tableau{T}, tab.tabI), convert(Tableau{T}, tab.tabE))
 
 # get coefficients of the tableau
 function Base.getindex(tab::IMEXTableau,  t::Symbol, i::Integer, j::Integer)

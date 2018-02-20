@@ -1,47 +1,32 @@
-@testset "convert_tuple                          " begin
-    @test typeof(IMEXRKCB.convert_tuple(Float64, 1))                == Float64
-    @test typeof(IMEXRKCB.convert_tuple(Float64, (1, 1)))           == Tuple{Float64, Float64}
-    @test typeof(IMEXRKCB.convert_tuple(Float64, ((1, 1), (1, 1)))) == Tuple{Tuple{Float64, Float64}, Tuple{Float64, Float64}}
-end
-
-@testset "promote_tuple_type                     " begin
-    @test IMEXRKCB.promote_tuple_type((1, ))                         == Int
-    @test IMEXRKCB.promote_tuple_type((1, 2.0f0))                    == Float32
-    @test IMEXRKCB.promote_tuple_type((1, 2.0f0, 3.0))               == Float64
-    @test IMEXRKCB.promote_tuple_type(((1, 2.0f0, 3.0), (1, 2.0f0))) == Float64
-end
-
 @testset "nstages                                " begin
-    t = Tableau(((1, 2),
-                 (3, 4)),
-                 (5, 6),
-                 (7, 8),
-                 (9, 0.0))
-    @test nstages(t) == 2
+    t = IMEXRKCB.Tableau([1 2;
+                          3 4],
+                         [5, 6],
+                         [7, 8],
+                         [9, 0.])
+    @test IMEXRKCB.nstages(t) == 2
 end
 
-# promotion
 @testset "promote                                " begin
-    t = Tableau(((1, 2),
-                 (3, 4)),
-                 (5, 6),
-                 (7, 8),
-                 (9, 0.0))
+    t = IMEXRKCB.Tableau([1 2;
+                          3 4],
+                         [5, 6],
+                         [7, 8],
+                         [9, 0.])
     @test typeof(t[:a, 1, 1]) == Float64
     @test typeof(t[:b, 1]   ) == Float64
     @test typeof(t[:e, 1]   ) == Float64
     @test typeof(t[:c, 1]   ) == Float64
 end
 
-# convert
 @testset "convert                                " begin
-    ti = Tableau(((1, 2),
-                  (3, 4)),
-                  (5, 6),
-                  (7, 8),
-                  (9, 0))
+    t = IMEXRKCB.Tableau([1 2;
+                          3 4],
+                         [5, 6],
+                         [7, 8],
+                         [9, 0.])
     for T in [Float64, Float32, Rational{Int}]
-        tf = convert(Tableau{2, T}, ti)
+        tf = convert(IMEXRKCB.Tableau{T}, t)
         @test typeof(tf[:a, 1, 1]) == T
         @test typeof(tf[:b, 1]   ) == T
         @test typeof(tf[:e, 1]   ) == T
@@ -49,13 +34,12 @@ end
     end
 end
 
-# standard Tableau indexing
-let
-    t = Tableau(((1, 2),   #a
-                 (3, 4)),
-                 (5, 6),   #b
-                 (7, 8),   #e
-                 (9, 0))   #c
+@testset "indexing                               " begin
+    t = IMEXRKCB.Tableau([1 2;
+                          3 4],
+                         [5, 6],
+                         [7, 8],
+                         [9, 0])
 
     @test t[:a, 1, 1] == 1
     @test t[:a, 1, 2] == 2
@@ -69,69 +53,63 @@ let
     @test t[:c, 2   ] == 0
 end
 
-# IMEX tableau convert
 @testset "IMEXTableau convert                    " begin
     for T in [Int128, Int64, Float32, Float64]
         c = one(T)
-        tᴵ = Tableau(((1, 2),   #a
-                      (3, 4)), 
-                      (5, 6),   #b
-                      (7, 8),   #e
-                      (9, 0))   #c
+        ti = IMEXRKCB.Tableau([1  2;
+                               3  4],
+                              [5, 6],
+                              [7, 8],
+                              [9, 0])
 
-        tᴱ = Tableau(((11, 12),  #a
-                      (13, 14)),
-                      (15, 16),  #b
-                      (17, 18),  #e
-                      (19, c))   #c
+        te = IMEXRKCB.Tableau([11  12;   #a
+                               13  14],
+                              [15, 16],  #b
+                              [17, 18],  #e
+                              [19,  c])   #c
 
         # constructor
-        t  = IMEXTableau(tᴵ, tᴱ)
-        tf = convert(IMEXTableau{2, Float64}, t) 
-        @test typeof(tf) == IMEXTableau{2, Float64}
+        t  = IMEXRKCB.IMEXTableau(ti, te)
+        tf = convert(IMEXRKCB.IMEXTableau{Float64}, t) 
+        @test typeof(tf) == IMEXRKCB.IMEXTableau{Float64}
     end
 end
 
-
-# IMEX tableau promotion
 @testset "IMEXTableau promote                    " begin
     for T in [Int128, Int64, Float32, Float64]
         c = one(T)
-        tᴵ = Tableau(((1, 2),   #a
-                      (3, 4)), 
-                      (5, 6),   #b
-                      (7, 8),   #e
-                      (9, 0))   #c
+        ti = IMEXRKCB.Tableau([1  2;
+                               3  4],
+                              [5, 6],
+                              [7, 8],
+                              [9, 0])
 
-        tᴱ = Tableau(((11, 12),  #a
-                      (13, 14)),
-                      (15, 16),  #b
-                      (17, 18),  #e
-                      (19, c))   #c
-
+        te = IMEXRKCB.Tableau([11  12;   #a
+                               13  14],
+                              [15, 16],  #b
+                              [17, 18],  #e
+                              [19,  c])   #c
         # constructor
-        t = IMEXTableau(tᴵ, tᴱ)
-        @test typeof(t) == IMEXTableau{2, T}
+        t = IMEXRKCB.IMEXTableau(ti, te)
+        @test typeof(t) == IMEXRKCB.IMEXTableau{T}
     end
 end
 
+@testset "IMEXTableau indexing                   " begin
+    ti = IMEXRKCB.Tableau([1  2;
+                           3  4],
+                          [5, 6],
+                          [7, 8],
+                          [9, 0])
 
-# IMEX tableau indexing
-let
-    tᴵ = Tableau(((1, 2),  #a
-                  (3, 4)),
-                  (5, 6),  #b
-                  (7, 8),  #e
-                  (9, 0))  #c
-
-    tᴱ = Tableau(((11, 12),  #a
-                  (13, 14)),
-                  (15, 16),  #b
-                  (17, 18),  #e
-                  (19, 10))  #c
+    te = IMEXRKCB.Tableau([11  12;   #a
+                           13  14],
+                          [15, 16],  #b
+                          [17, 18],  #e
+                          [19, 10])  #c
 
     # constructor
-    t = IMEXTableau(tᴵ, tᴱ)
+    t = IMEXRKCB.IMEXTableau(ti, te)
 
     # implicit
     @test t[:aᴵ, 1, 1] == 1
