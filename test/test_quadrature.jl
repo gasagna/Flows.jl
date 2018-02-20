@@ -27,7 +27,7 @@ end
     A = Diagonal([0.5])
 
     # define example quadrature functions
-    quad(t, x, q̇) = (q̇[1] = 1; q̇[2] = x[1]; q̇[3] = t)
+    @inline quad(t, x, q̇) = (q̇[1] = 1; q̇[2] = x[1]; q̇[3] = t; return q̇)
 
     # state and quadrature
     x, q = Float64[0.0], Float64[0.0, 0.0, 0.0]
@@ -48,14 +48,18 @@ end
             f = integrator(g, A, quad, method, Δt)
 
             # initial conditions
-            x₀ = [1.0]
-            q₀ = [0.0, 0.0, 0.0]
+            x₀ = Float64[1.0]
+            q₀ = Float64[0.0, 0.0, 0.0]
 
             # call
             f(x₀, q₀, (0, 5))
 
             # integrals
             @test norm(abs.(q₀ - exact)) / Δt^order < value
+
+            # test allocations
+            fun(f, x₀, q₀, span) = @allocated f(x₀, q₀, span)
+            @test fun(f, x₀, q₀, (0.0, 100.0)) <= 32
         end
     end
 end

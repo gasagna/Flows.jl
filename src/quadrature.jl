@@ -11,20 +11,20 @@ aug_state(x, q) = AugmentedState(x, q)
 aug_state(x)    = x
 
 # extract parts from augmented state object
-_state(x::AugmentedState) = x.x
-_quad(x::AugmentedState) = x.q
+@inline _state(x::AugmentedState) = x.x
+@inline _quad(x::AugmentedState) = x.q
 _state(x) = x
 _quad(x) = x
 _state_quad(x::AugmentedState) = (x.x, x.q)
 _state_quad(x) = x
 
 # Operations are broadcasted to both state and quadrature parts
-@generated function Base.Broadcast.broadcast!(f, dest::AugmentedState, args...)
+@generated function Base.Broadcast.broadcast!(f, dest::AugmentedState, args::Vararg{Any, N}) where {N}
     quote
         $(Expr(:meta, :inline))
         broadcast!(f, _state(dest), map(_state, args)...)
         broadcast!(f,  _quad(dest), map(_quad,  args)...)
-        dest
+        return dest
     end
 end    
 
