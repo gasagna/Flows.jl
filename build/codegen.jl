@@ -4,10 +4,10 @@ using IMEXRKCB
 # the code is not simplified and all operations of the implementations are
 # generated
 
-embed = true
+embed = false
 # impl = IMEXRK3R2R(IMEXRKCB2, embed)
-# impl = IMEXRK3R2R(IMEXRKCB3e, embed)
+impl = IMEXRK3R2R(IMEXRKCB3e, embed)
 # impl = IMEXRK3R2R(IMEXRKCB3c, embed)
-impl = IMEXRK4R3R(IMEXRKCB4,  embed)
+# impl = IMEXRK4R3R(IMEXRKCB4,  embed)
 
 @show codegen(impl; strip=true)
