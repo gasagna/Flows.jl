@@ -1,4 +1,7 @@
-struct Tableau{T} 
+abstract type AbstractTableau{T<:Real} end
+Base.eltype(::AbstractTableau{T}) where {T} = T
+
+struct Tableau{T} <: AbstractTableau{T}
     a::Matrix{T}
     b::Vector{T}
     e::Vector{T}
@@ -28,7 +31,7 @@ Base.convert(::Type{Tableau{T}}, tab::Tableau{S}) where {T, S} =
             convert(Vector{T}, tab.e), convert(Vector{T}, tab.c))
 
 # ~~ Tableau for IMEX schemes ~~~
-struct IMEXTableau{T}
+struct IMEXTableau{T} <: AbstractTableau{T}
     tabI::Tableau{T}
     tabE::Tableau{T}
 end
@@ -39,6 +42,9 @@ function IMEXTableau(tabI::Tableau{TI}, tabE::Tableau{TE}) where {TI, TE}
     T = promote_type(TI, TE)
     IMEXTableau(convert(Tableau{T}, tabI), convert(Tableau{T}, tabE))
 end
+
+# number of stages
+nstages(tab::IMEXTableau) = nstages(tab.tabI)
 
 Base.convert(::Type{IMEXTableau{T}}, tab::IMEXTableau{S}) where {T, S} =
     IMEXTableau(convert(Tableau{T}, tab.tabI), convert(Tableau{T}, tab.tabE))
