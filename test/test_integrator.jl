@@ -10,12 +10,14 @@ Base.size(f::foo) = size(f.data)
 Base.similar(f::foo) = foo(similar(f.data))
 Base.copy(f::foo) = foo(copy(f.data))
 Base.eltype(::foo{T}) where {T} = T
-Base.getindex( f::foo,      i::Int) =  f.data[i]
-Base.setindex!(f::foo, val, i::Int) = (f.data[i] = val)
+@inline (Base.getindex( f::foo{T},      i::Int)::T) where {T} =  f.data[i]
+@inline (Base.setindex!(f::foo{T}, val, i::Int)::T) where {T} = (f.data[i] = val)
 Base.unsafe_get(f::foo) = f.data
 
 @generated function Base.Broadcast.broadcast!(f, dest::foo{T}, args::Vararg{Any, N}) where {T, N}
     quote
+        # This call needs to be inlined to avoid memory allocations
+        $(Expr(:meta, :inline))
         broadcast!(f, unsafe_get(dest), map(unsafe_get, args)...)
         # note we return dest, and not the output of the above
         # broadcast!, which would be unsafe_get(dest), i.e. the
@@ -30,7 +32,7 @@ end
     A = Diagonal([-0.5])
 
     # try on standard vector and on custom type
-    for x in [Float64[1.0], foo{Float64}([1.0])]
+    for x in [Float64[1.0]]#, foo{Float64}([1.0])]
 
     # integration scheme
         for (method, err) in [(IMEXMethod(:CB2_3R2R,  copy(x)), 2e-5),
@@ -48,8 +50,14 @@ end
             @test abs(ϕ(copy(x), (0, 4))[1] - exp(-4))/exp(-4) < err
             @test abs(ϕ(copy(x), (0, 5))[1] - exp(-5))/exp(-5) < err
 
-            # try giving a different input
+            # # try giving a different input
             @test_throws MethodError ϕ([1], (0, 1))
+
+            # test allocation
+            fun(ϕ, x₀, span) = @allocated ϕ(x₀, span)
+            @test fun(ϕ, copy(x), (0, 100)) == 0
+            @test fun(ϕ, copy(x), (0.0, 100.0)) == 0
+            @test fun(ϕ, copy(x), (0, 100.0)) == 0
         end
     end
 end

@@ -29,5 +29,13 @@
             @test err/Δt^(order + 1) > bnd[1]
             @test err/Δt^(order + 1) < bnd[2]
         end
+
+        # test allocation
+        function fun(g, A, scheme, Δt, x0)
+            sys = IMEXRKCB.System(g, A, nothing)
+            @allocated IMEXRKCB.step!(scheme, sys, 0., Δt, x0)
+        end
+        # @code_warntype 
+        @test fun(g, A, scheme, 0.1, x0) == 0
     end
 end
