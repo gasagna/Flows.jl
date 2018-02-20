@@ -3,19 +3,16 @@
     A = Diagonal([-5])
 
     # integration scheme
-    for impl in [IMEXRK3R2R(IMEXRKCB2,  false),
-                 IMEXRK3R2R(IMEXRKCB3e, false),
-                 IMEXRK3R2R(IMEXRKCB3c, false),
-                 IMEXRK4R3R(IMEXRKCB4,  false)]
-
-        # define scheme                
-        scheme = IMEXRKScheme(impl, [1.0])
+    for method in [IMEXMethod(:CB2_3R2R,  Float64[1.0]),
+                   IMEXMethod(:CB3e_3R2R, Float64[1.0]),
+                   IMEXMethod(:CB3c_3R2R, Float64[1.0]),
+                   IMEXMethod(:CB4_4R3R,  Float64[1.0])]
 
         # monitor
         m = Monitor([0.0], x->x[1])
 
         # forward map
-        ϕ = integrator(g, A, scheme, 0.12345)
+        ϕ = integrator(g, A, method, 0.12345)
         
         # do job
         ϕ([0.0], (0, 20), m)

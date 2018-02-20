@@ -43,10 +43,10 @@ end
     quadfun = QuadFun(forw_sol, similar(grad))
 
     # define forward and backward integrators
-    forw_scheme = IMEXRKScheme(IMEXRK4R3R(IMEXRKCB4, false), x0)
-    back_scheme = IMEXRKScheme(IMEXRK4R3R(IMEXRKCB4, false), λ0, grad)
-    G_forw = integrator(g_forw, forw_scheme, 0.01)
-    G_back = integrator(g_back, nothing, quadfun, back_scheme, 0.01)
+    forw_method = IMEXMethod(:CB4_4R3R, x0)
+    back_method = IMEXMethod(:CB4_4R3R, λ0, grad)
+    G_forw = integrator(g_forw, forw_method, 0.01)
+    G_back = integrator(g_back, nothing, quadfun, back_method, 0.01)
 
     # solve forward problem
     G_forw(x0, (0, T), forw_sol)

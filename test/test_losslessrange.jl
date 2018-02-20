@@ -1,6 +1,3 @@
-using IMEXRKCB
-using Base.Test
-
 @testset "losslessrange                          " begin
     @testset "lossy                          " begin
         rng = IMEXRKCB.LossLessRange(0, 1, 0.4)

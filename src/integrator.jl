@@ -13,9 +13,9 @@ struct Integrator{S<:System, Sc}
 end
 
 # Outer constructor
-integrator(g, A, q, scheme::IMEXRKScheme, Δt::Real) = Integrator(System(g, A,             q), scheme, Δt)
-integrator(g, A,    scheme::IMEXRKScheme, Δt::Real) = Integrator(System(g, A,       nothing), scheme, Δt)
-integrator(g,       scheme::IMEXRKScheme, Δt::Real) = Integrator(System(g, nothing, nothing), scheme, Δt)
+integrator(g, A, q, scheme::IMEXMethod, Δt::Real) = Integrator(System(g, A,             q), scheme, Δt)
+integrator(g, A,    scheme::IMEXMethod, Δt::Real) = Integrator(System(g, A,       nothing), scheme, Δt)
+integrator(g,       scheme::IMEXMethod, Δt::Real) = Integrator(System(g, nothing, nothing), scheme, Δt)
 
 # Main entry points. Integrators are callable objects ...
 @inline (I::Integrator)(x, span::NTuple{2, Real}, mon::Vararg{Monitor}) =
@@ -26,7 +26,7 @@ integrator(g,       scheme::IMEXRKScheme, Δt::Real) = Integrator(System(g, noth
     _propagate!(I.scheme, I.system, span, I.Δt, aug_state(x, q), mon...)
 
 # Main propagation function
-@generated function _propagate!(scheme::IMEXRKScheme{S},
+@generated function _propagate!(scheme::IMEXMethod{S},
                                 system::System,
                                 span::NTuple{2, Real},
                                 Δt::Float64, # enforced to be positive
