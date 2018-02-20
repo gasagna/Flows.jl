@@ -1,6 +1,3 @@
-using Base.Test
-using IMEXRKCB
-
 @testset "linear system                          " begin
 
     # define linear system ẋ = x, but splitting the right hand side
