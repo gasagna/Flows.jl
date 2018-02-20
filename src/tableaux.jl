@@ -22,8 +22,12 @@ end
 nstages(tab::Tableau) = size(tab.a, 1)
 
 # get coefficients of the tableau
-Base.getindex(tab::Tableau,  ::Symbol, i::Integer, j::Integer) = tab.a[i, j]
-Base.getindex(tab::Tableau, t::Symbol, i::Integer)             = getfield(tab, t)[i]
+Base.getindex(tab::Tableau, ::Symbol, i::Integer, j::Integer) = tab.a[i, j]
+function Base.getindex(tab::Tableau{T}, t::Symbol, i::Integer)::T where {T}
+    t == :b && return tab.b[i]
+    t == :e && return tab.e[i]
+    t == :c && return tab.c[i]
+end
 
 # Convert a tableau to have coefficient of given type
 Base.convert(::Type{Tableau{T}}, tab::Tableau{S}) where {T, S} =
@@ -50,13 +54,13 @@ Base.convert(::Type{IMEXTableau{T}}, tab::IMEXTableau{S}) where {T, S} =
     IMEXTableau(convert(Tableau{T}, tab.tabI), convert(Tableau{T}, tab.tabE))
 
 # get coefficients of the tableau
-function Base.getindex(tab::IMEXTableau,  t::Symbol, i::Integer, j::Integer)
+function Base.getindex(tab::IMEXTableau{T},  t::Symbol, i::Integer, j::Integer)::T where {T}
     t == :aᴵ && return tab.tabI[:a, i, j]
     t == :aᴱ && return tab.tabE[:a, i, j]
     throw(ArgumentError("symbol $t not recognized"))
 end
 
-function Base.getindex(tab::IMEXTableau, t::Symbol, i::Integer) 
+function Base.getindex(tab::IMEXTableau{T}, t::Symbol, i::Integer)::T where {T}
     t == :bᴵ && return tab.tabI[:b, i]
     t == :eᴵ && return tab.tabI[:e, i]
     t == :cᴵ && return tab.tabI[:c, i]
