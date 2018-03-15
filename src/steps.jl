@@ -14,7 +14,7 @@ IMEXMethod(impl::Symbol, tab::IMEXTableau{T}, nstores::Int, x::X) where {X, T} =
     IMEXMethod{X, T, impl}(tab, nstores, x)
 
 # allowed method tags. We convert tableaux to Float64. This should cover most cases.
-D = Dict{Symbol, Tuple{IMEXTableau, Int, Symbol}}
+D = Dict{Symbol, Tuple{IMEXTableau{Float64}, Int, Symbol}}
 const __allowed__ =  D(:CB2_3R2R  => (convert(IMEXTableau{Float64}, CB2),  3, :_3R2R),
                        :CB3c_3R2R => (convert(IMEXTableau{Float64}, CB3c), 3, :_3R2R),
                        :CB3e_3R2R => (convert(IMEXTableau{Float64}, CB3e), 3, :_3R2R),
