@@ -1,5 +1,5 @@
 using Base.Test
-using IMEXRKCB
+using Flows
 
 include("test_tableaux.jl")
 include("test_losslessrange.jl")

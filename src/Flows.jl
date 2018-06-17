@@ -1,5 +1,5 @@
 __precompile__(true)
-module IMEXRKCB
+module Flows
 
 include("storage.jl")
 include("monitor.jl")

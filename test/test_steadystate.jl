@@ -3,10 +3,10 @@
     A = Diagonal([-5])
 
     # integration scheme
-    for method in [IMEXMethod(:CB2_3R2R,  Float64[1.0]),
-                   IMEXMethod(:CB3e_3R2R, Float64[1.0]),
-                   IMEXMethod(:CB3c_3R2R, Float64[1.0]),
-                   IMEXMethod(:CB4_4R3R,  Float64[1.0])]
+    for method in [Scheme(:CB2_3R2R,  Float64[1.0]),
+                   Scheme(:CB3e_3R2R, Float64[1.0]),
+                   Scheme(:CB3c_3R2R, Float64[1.0]),
+                   Scheme(:CB4_4R3R,  Float64[1.0])]
 
         # monitor
         m = Monitor([0.0], x->x[1])

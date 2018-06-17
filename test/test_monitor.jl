@@ -1,5 +1,4 @@
 using Base.Test
-using IMEXRKCB
 
 @testset "test monitor type                      " begin
     m = Monitor(0, string)
@@ -38,15 +37,15 @@ end
     g(t, x, ẋ) = (ẋ[1] = t; ẋ)
     A = Diagonal([0.0])
 
-    # integration method
-    method = IMEXMethod(:CB3e_3R2R, Float64[0.0])
+    # integration scheme
+    scheme = Scheme(:CB3e_3R2R, Float64[0.0])
 
     # monitors
     m1 = Monitor([1.0], x->x[1]^2; sizehint=10000)
     m2 = Monitor([1.0], x->x[1]^3; sizehint=10000)
 
     # forward map
-    ϕ = integrator(g, A, method, 0.01)
+    ϕ = integrator(g, A, scheme, 0.01)
     
     # initial condition
     x₀ = [0.0]

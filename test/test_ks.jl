@@ -27,13 +27,13 @@ end
     x₀ = 1e-2*randn(Nₓ)
 
     # define scheme with quadrature
-    for (method, tmin) in [(IMEXMethod(:CB2_3R2R,  x₀), 0.0195),
-                           (IMEXMethod(:CB3e_3R2R, x₀), 0.0262),
-                           (IMEXMethod(:CB3c_3R2R, x₀), 0.0261),
-                           (IMEXMethod(:CB4_4R3R,  x₀), 0.0410)]
+    for (scheme, tmin) in [(Scheme(:CB2_3R2R,  x₀), 0.0195),
+                           (Scheme(:CB3e_3R2R, x₀), 0.0262),
+                           (Scheme(:CB3c_3R2R, x₀), 0.0261),
+                           (Scheme(:CB4_4R3R,  x₀), 0.0410)]
 
         # get integrator
-        I = integrator(g, A, method, 1e-2)
+        I = integrator(g, A, scheme, 1e-2)
 
         # warm up
         I(x₀, (0.0, 10.0))

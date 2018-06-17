@@ -1,6 +1,6 @@
 @testset "losslessrange                          " begin
     @testset "lossy                          " begin
-        rng = IMEXRKCB.LossLessRange(0, 1, 0.4)
+        rng = Flows.LossLessRange(0, 1, 0.4)
         expected = [0, 0.4, 0.8, 1.0]
         @test collect(rng) == expected
         for (i, el) in enumerate(rng)
@@ -15,7 +15,7 @@
         @test_throws BoundsError rng[5]
     end
     @testset "lossless                           " begin
-        rng = IMEXRKCB.LossLessRange(0, 0.8, 0.4)
+        rng = Flows.LossLessRange(0, 0.8, 0.4)
         expected = [0, 0.4, 0.8]
         @test collect(rng) == expected
         for (i, el) in enumerate(rng)
@@ -29,7 +29,7 @@
         @test_throws BoundsError rng[4]
     end
     @testset "backwards lossy                    " begin
-        rng = IMEXRKCB.LossLessRange(1, 0, -0.4)
+        rng = Flows.LossLessRange(1, 0, -0.4)
         expected = [1.0, 0.6, 0.2, 0.0]
         @test collect(rng) == expected
         for (i, el) in enumerate(rng)
@@ -44,7 +44,7 @@
         @test_throws BoundsError rng[5]
     end
     @testset "backwards lossless                    " begin
-        rng = IMEXRKCB.LossLessRange(0.8, 0, -0.4)
+        rng = Flows.LossLessRange(0.8, 0, -0.4)
         expected = [0.8, 0.4, 0.0]
         @test collect(rng) == expected
         for (i, el) in enumerate(rng)

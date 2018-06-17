@@ -1,14 +1,14 @@
 @testset "nstages                                " begin
-    t = IMEXRKCB.Tableau([1 2;
+    t = Flows.Tableau([1 2;
                           3 4],
                          [5, 6],
                          [7, 8],
                          [9, 0.])
-    @test IMEXRKCB.nstages(t) == 2
+    @test Flows.nstages(t) == 2
 end
 
 @testset "promote                                " begin
-    t = IMEXRKCB.Tableau([1 2;
+    t = Flows.Tableau([1 2;
                           3 4],
                          [5, 6],
                          [7, 8],
@@ -20,13 +20,13 @@ end
 end
 
 @testset "convert                                " begin
-    t = IMEXRKCB.Tableau([1 2;
+    t = Flows.Tableau([1 2;
                           3 4],
                          [5, 6],
                          [7, 8],
                          [9, 0.])
     for T in [Float64, Float32, Rational{Int}]
-        tf = convert(IMEXRKCB.Tableau{T}, t)
+        tf = convert(Flows.Tableau{T}, t)
         @test typeof(tf[:a, 1, 1]) == T
         @test typeof(tf[:b, 1]   ) == T
         @test typeof(tf[:e, 1]   ) == T
@@ -35,7 +35,7 @@ end
 end
 
 @testset "indexing                               " begin
-    t = IMEXRKCB.Tableau([1 2;
+    t = Flows.Tableau([1 2;
                           3 4],
                          [5, 6],
                          [7, 8],
@@ -56,60 +56,60 @@ end
 @testset "IMEXTableau convert                    " begin
     for T in [Int128, Int64, Float32, Float64]
         c = one(T)
-        ti = IMEXRKCB.Tableau([1  2;
+        ti = Flows.Tableau([1  2;
                                3  4],
                               [5, 6],
                               [7, 8],
                               [9, 0])
 
-        te = IMEXRKCB.Tableau([11  12;   #a
+        te = Flows.Tableau([11  12;   #a
                                13  14],
                               [15, 16],  #b
                               [17, 18],  #e
                               [19,  c])   #c
 
         # constructor
-        t  = IMEXRKCB.IMEXTableau(ti, te)
-        tf = convert(IMEXRKCB.IMEXTableau{Float64}, t) 
-        @test typeof(tf) == IMEXRKCB.IMEXTableau{Float64}
+        t  = Flows.IMEXTableau(ti, te)
+        tf = convert(Flows.IMEXTableau{Float64}, t) 
+        @test typeof(tf) == Flows.IMEXTableau{Float64}
     end
 end
 
 @testset "IMEXTableau promote                    " begin
     for T in [Int128, Int64, Float32, Float64]
         c = one(T)
-        ti = IMEXRKCB.Tableau([1  2;
+        ti = Flows.Tableau([1  2;
                                3  4],
                               [5, 6],
                               [7, 8],
                               [9, 0])
 
-        te = IMEXRKCB.Tableau([11  12;   #a
+        te = Flows.Tableau([11  12;   #a
                                13  14],
                               [15, 16],  #b
                               [17, 18],  #e
                               [19,  c])   #c
         # constructor
-        t = IMEXRKCB.IMEXTableau(ti, te)
-        @test typeof(t) == IMEXRKCB.IMEXTableau{T}
+        t = Flows.IMEXTableau(ti, te)
+        @test typeof(t) == Flows.IMEXTableau{T}
     end
 end
 
 @testset "IMEXTableau indexing                   " begin
-    ti = IMEXRKCB.Tableau([1  2;
+    ti = Flows.Tableau([1  2;
                            3  4],
                           [5, 6],
                           [7, 8],
                           [9, 0])
 
-    te = IMEXRKCB.Tableau([11  12;   #a
+    te = Flows.Tableau([11  12;   #a
                            13  14],
                           [15, 16],  #b
                           [17, 18],  #e
                           [19, 10])  #c
 
     # constructor
-    t = IMEXRKCB.IMEXTableau(ti, te)
+    t = Flows.IMEXTableau(ti, te)
 
     # implicit
     @test t[:aᴵ, 1, 1] == 1

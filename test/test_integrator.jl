@@ -35,10 +35,10 @@ end
     for x in [Float64[1.0]]#, foo{Float64}([1.0])]
 
     # integration scheme
-        for (method, err) in [(IMEXMethod(:CB2_3R2R,  copy(x)), 2e-5),
-                              (IMEXMethod(:CB3e_3R2R, copy(x)), 5e-8),
-                              (IMEXMethod(:CB3c_3R2R, copy(x)), 6e-8),
-                              (IMEXMethod(:CB4_4R3R,  copy(x)), 3e-12)]
+        for (method, err) in [(Scheme(:CB2_3R2R,  copy(x)), 2e-5),
+                              (Scheme(:CB3e_3R2R, copy(x)), 5e-8),
+                              (Scheme(:CB3c_3R2R, copy(x)), 6e-8),
+                              (Scheme(:CB4_4R3R,  copy(x)), 3e-12)]
 
             # forward map
             ϕ = integrator(g, A, method, 0.01123)
