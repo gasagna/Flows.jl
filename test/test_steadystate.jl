@@ -18,9 +18,9 @@
         ϕ([0.0], (0, 20), m)
 
         # test value
-        @test m.xs[end] ≈ 1/5
+        @test samples(m)[end] ≈ 1/5
 
         # ensure we saved the last step in the monitor
-        @test m.ts[end] == 20
+        @test times(m)[end] == 20
     end
 end

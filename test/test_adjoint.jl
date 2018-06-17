@@ -52,16 +52,16 @@ end
     G_forw(x0, (0, T), forw_sol)
 
     # check forward solution
-    exact = a*exp.(b*forw_sol.ts)
-    simul = [x[1] for x in forw_sol.xs]
+    exact = a*exp.(b*times(forw_sol))
+    simul = [x[1] for x in samples(forw_sol)]
     @test maximum(abs.(exact - simul)) < 1e-8
 
     # solve backward problem
     G_back(λ0, grad, (T, 0), back_sol)
 
     # check backward problem solution
-    exact = (1 - exp.(b*(T - back_sol.ts)))./b
-    simul = [x[1] for x in back_sol.xs]
+    exact = (1 - exp.(b*(T - times(back_sol))))./b
+    simul = [x[1] for x in samples(back_sol)]
     @test maximum(abs.(exact - simul)) < 1e-8
 
     # check gradient

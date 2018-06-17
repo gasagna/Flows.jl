@@ -2,14 +2,15 @@ using Base.Test
 using IMEXRKCB
 
 @testset "test monitor type                      " begin
-    m = Monitor([1.0], x->"1")
-    push!(m, 0.0, [0.0])
-    @test m.xs == ["1"]
-
-    @test eltype(m.xs) == String
+    m = Monitor(0, string)
+    push!(m, 0.0, 0)
+    @test times(m)   == [0.0]
+    @test samples(m) == ["0"]
+    @test eltype(samples(m)) == String
 end
 
 @testset "test monitor content                   " begin
+	# store every push
     m = Monitor([1.0], x->x[1]^2)
 
     push!(m, 0.0, [0.0])
@@ -17,8 +18,19 @@ end
     push!(m, 0.2, [2.0])
     push!(m, 0.3, [3.0])
 
-    @test m.ts == [0.0, 0.1, 0.2, 0.3]
-    @test m.xs == [0.0, 1.0, 4.0, 9.0]
+    @test times(m)   == [0.0, 0.1, 0.2, 0.3]
+    @test samples(m) == [0.0, 1.0, 4.0, 9.0]
+
+    # skip one sample 
+    m = Monitor([1.0], x->x[1]^2; oneevery=2)
+
+    push!(m, 0.0, [0.0])
+    push!(m, 0.1, [1.0])
+    push!(m, 0.2, [2.0])
+    push!(m, 0.3, [3.0])
+
+    @test times(m)   == [0.0, 0.2]
+    @test samples(m) == [0.0, 4.0]
 end
 
 @testset "allocation                             " begin
@@ -42,9 +54,9 @@ end
     # test end point is calculated correctly
     ϕ(x₀, (0, 1.005), m1, m2)
 
-    @test m1.ts[end  ] == 1.005
-    @test m1.ts[end-1] == 1.000
-    @test m1.ts[end-2] == 0.990
+    @test times(m1)[end  ] == 1.005
+    @test times(m1)[end-1] == 1.000
+    @test times(m1)[end-2] == 0.990
 
     # warm up
     fun(ϕ, x₀, span, m1, m2) = @allocated ϕ(x₀, span, m1, m2)
@@ -69,12 +81,12 @@ end
     push!(m, 0.2, [2.0])
     push!(m, 0.3, [3.0])
 
-    @test m.ts == [0.0, 0.1, 0.2, 0.3]
-    @test m.xs == [0.0, 1.0, 4.0, 9.0]
+    @test times(m)   == [0.0, 0.1, 0.2, 0.3]
+    @test samples(m) == [0.0, 1.0, 4.0, 9.0]
 
     reset!(m)
-    @test m.ts == []
-    @test m.xs == []
+    @test times(m)   == []
+    @test samples(m) == []
 end
 
 @testset "cubic interpolation                    " begin

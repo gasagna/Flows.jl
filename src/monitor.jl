@@ -1,44 +1,86 @@
+using DataStructures
+
 export Monitor, reset!
 
-struct Monitor{X, V<:AbstractVector{X}, F, O}
-    ts::Vector{Float64} # times
-    xs::V               # samples
-     f::F               # act on what is begin pushed (copy, identity, other func)
-    function Monitor{X, V, F, O}(ts::Vector, xs::V, f::F, sizehint::Int) where {X, V<:AbstractVector, F, O}
-        length(ts) == length(xs) == 0 || error("input arrays must be zero")
-        new{X, V, F, O}(sizehint!(ts, sizehint), sizehint!(xs, sizehint), f)
-    end
+# ///  Abstract type for all solution monitors ///
+abstract type AbstractMonitor end
+
+# ///// UTILS //////
+# whether t is between low and high
+isbetween(t::Real, low::Real, high::Real) = (t ≥ low && t ≤ high)
+
+
+
+# /// Monitor to save all time steps ///
+mutable struct Monitor{T, X, O, S<:AbstractStorage{T, X}, F} <: AbstractMonitor
+       store::S  # (time, samples) tuples
+           f::F  # action on what is begin pushed
+    oneevery::Int
+       count::Int
+    Monitor{O}(store::S, 
+               f::F, 
+               oneevery::Int) where {T, X, O, S<:AbstractStorage{T, X}, F} =
+        new{T, X, O, S, F}(store, f, oneevery, 0)
 end
 
 # Provide a sample of what will be pushed
-function Monitor(x, f::Base.Callable=identity; order::Int=3, sizehint::Int=100)
-    T = typeof(f(x)) # get the eltype of the storage
-    Monitor{T, Vector{T}, typeof(f), order}(Float64[], T[], f, sizehint)
+Monitor(x,
+        f::Base.Callable=identity,
+        store::S = RAMStorage{Float64, typeof(f(x))}();
+        oneevery::Int=1,
+        order::Int=3,
+        sizehint::Int=0) where {S<:AbstractStorage} =
+    Monitor{order}(sizehint!(store, sizehint), f, oneevery)
+
+# Add sample and time to the storage
+@inline function Base.push!(mon::Monitor, t::Real, x)
+    if mon.count % mon.oneevery == 0
+        push!(mon.store, t, mon.f(x))
+    end
+    mon.count += 1
+    return nothing
 end
 
-# Add snapshots and time to the storage
-@inline Base.push!(mon::Monitor, t::Real, x) =
-    (push!(mon.xs, mon.f(x)); push!(mon.ts, t); nothing)
-
 # Reset storage
-reset!(mon::Monitor, sizehint::Int=100) =
-    (sizehint!(resize!(mon.ts, 0), sizehint);
-     sizehint!(resize!(mon.xs, 0), sizehint); return mon)
+reset!(mon::Monitor, sizehint::Int=0) =
+    (sizehint!(resize!(mon.store, 0), sizehint); mon.count = 0; mon)
 
-# ~~~ Interpolation ~~~
+# get times or samples
+times(mon::Monitor)   = times(mon.store)
+samples(mon::Monitor) = samples(mon.store)
 
-# Third order interpolation
-function (interp::Monitor{X, V, F, 3})(out::X, t::Real) where {X, V, F}
-    # aliases
-    xs, ts = interp.xs, interp.ts
 
-    # fix small round off error
-    t < ts[1]   && (t = t + 1e-10)
-    t > ts[end] && (t = t - 1e-10)
+
+# /// Interpolation ///
+
+# Third order Lagrangian interpolation
+function lagrinterp(out::X,
+                    t::Real,
+                    x0::X,    x1::X,    x2::X,    x3::X,
+                    t0::Real, t1::Real, t2::Real, t3::Real) where {X}
+    # checks
+    isbetween(t, minmax(t0, t3)...) ||
+        error("selected time is out of range")
+
+    # get interpolation weights
+    w0 = (t-t1)*(t-t2)*(t-t3)/((t0-t1)*(t0-t2)*(t0-t3))
+    w1 = (t-t0)*(t-t2)*(t-t3)/((t1-t0)*(t1-t2)*(t1-t3))
+    w2 = (t-t0)*(t-t1)*(t-t3)/((t2-t0)*(t2-t1)*(t2-t3))
+    w3 = (t-t0)*(t-t1)*(t-t2)/((t3-t0)*(t3-t1)*(t3-t2))
+
+    # compute linear combination and return
+    out .= w0.*x0 .+ w1.*x1 .+ w2.*x2 .+ w3.*x3
+
+    return out
+end
+
+function (mon::Monitor{T, X, 3})(out::X, t::Real) where {T, X}
+    # Aliases. These should be lazy objects
+    ts, xs = times(mon), samples(mon)
 
     # check if t is inbounds
-    t ≥ ts[1] && t ≤ ts[end] || throw(error("selected time $t is out" *
-                                     " of range [$(ts[1]), $(ts[end])]"))
+    isbetween(t, minmax(ts[1], ts[end])...) ||
+        error("selected time is out of range")
 
     # search current index
     idx = searchsortedlast(ts, t)
@@ -49,19 +91,7 @@ function (interp::Monitor{X, V, F, 3})(out::X, t::Real) where {X, V, F}
         idx == length(ts) - 1 ? -1 : 0
     idx += Δ
 
-    # get interpolation weights
-    w1, w2, w3, w4 = weights(ts[idx-1],
-                             ts[idx],
-                             ts[idx+1],
-                             ts[idx+2], t)
-
-    # compute linear combination and return
-    return out .= w1.*xs[idx-1] .+ w2.*xs[idx] .+ w3.*xs[idx+1] .+ w4.*xs[idx+2]
+    # call interp function
+    return lagrinterp(out, t, xs[idx-1], xs[idx], xs[idx+1], xs[idx+2],
+                              ts[idx-1], ts[idx], ts[idx+1], ts[idx+2])
 end
-
-# Third order interpolation weights
-@inline weights(t0, t1, t2, t3, t) =
-    ((t-t1)*(t-t2)*(t-t3)/((t0-t1)*(t0-t2)*(t0-t3)),
-     (t-t0)*(t-t2)*(t-t3)/((t1-t0)*(t1-t2)*(t1-t3)),
-     (t-t0)*(t-t1)*(t-t3)/((t2-t0)*(t2-t1)*(t2-t3)),
-     (t-t0)*(t-t1)*(t-t2)/((t3-t0)*(t3-t1)*(t3-t2)))
