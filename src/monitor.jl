@@ -53,20 +53,24 @@ samples(mon::Monitor) = samples(mon.store)
 
 # /// Interpolation ///
 
+# get interpolation weights
+weights(t, t0, t1, t2, t3, ::Val{0}) =
+    ((t-t1)*(t-t2)*(t-t3)/((t0-t1)*(t0-t2)*(t0-t3)),
+     (t-t0)*(t-t2)*(t-t3)/((t1-t0)*(t1-t2)*(t1-t3)),
+     (t-t0)*(t-t1)*(t-t3)/((t2-t0)*(t2-t1)*(t2-t3)),
+     (t-t0)*(t-t1)*(t-t2)/((t3-t0)*(t3-t1)*(t3-t2)))
+
 # Third order Lagrangian interpolation
 function lagrinterp(out::X,
                     t::Real,
                     x0::X,    x1::X,    x2::X,    x3::X,
-                    t0::Real, t1::Real, t2::Real, t3::Real) where {X}
+                    t0::Real, t1::Real, t2::Real, t3::Real, deg::Val) where {X}
     # checks
     isbetween(t, minmax(t0, t3)...) ||
         error("selected time is out of range")
 
-    # get interpolation weights
-    w0 = (t-t1)*(t-t2)*(t-t3)/((t0-t1)*(t0-t2)*(t0-t3))
-    w1 = (t-t0)*(t-t2)*(t-t3)/((t1-t0)*(t1-t2)*(t1-t3))
-    w2 = (t-t0)*(t-t1)*(t-t3)/((t2-t0)*(t2-t1)*(t2-t3))
-    w3 = (t-t0)*(t-t1)*(t-t2)/((t3-t0)*(t3-t1)*(t3-t2))
+    # get weights
+    w0, w1, w2, w3 = weights(t, t0, t1, t2, t3, deg)
 
     # compute linear combination and return
     out .= w0.*x0 .+ w1.*x1 .+ w2.*x2 .+ w3.*x3
@@ -74,7 +78,7 @@ function lagrinterp(out::X,
     return out
 end
 
-function (mon::Monitor{T, X, 3})(out::X, t::Real) where {T, X}
+function (mon::Monitor{T, X, 3})(out::X, t::Real, deg::Val=Val{0}()) where {T, X}
     # Aliases. These should be lazy objects
     ts, xs = times(mon), samples(mon)
 
@@ -93,5 +97,5 @@ function (mon::Monitor{T, X, 3})(out::X, t::Real) where {T, X}
 
     # call interp function
     return lagrinterp(out, t, xs[idx-1], xs[idx], xs[idx+1], xs[idx+2],
-                              ts[idx-1], ts[idx], ts[idx+1], ts[idx+2])
+                              ts[idx-1], ts[idx], ts[idx+1], ts[idx+2], deg)
 end
