@@ -3,7 +3,7 @@ using DataStructures
 export Monitor, reset!
 
 # ///  Abstract type for all solution monitors ///
-abstract type AbstractMonitor end
+abstract type AbstractMonitor{T, X} end
 
 # ///// UTILS //////
 # whether t is between low and high
@@ -12,7 +12,7 @@ isbetween(t::Real, low::Real, high::Real) = (t ≥ low && t ≤ high)
 
 
 # /// Monitor to save all time steps ///
-mutable struct Monitor{T, X, O, S<:AbstractStorage{T, X}, F} <: AbstractMonitor
+mutable struct Monitor{T, X, O, S<:AbstractStorage{T, X}, F} <: AbstractMonitor{T, X}
        store::S  # (time, samples) tuples
            f::F  # action on what is begin pushed
     oneevery::Int
