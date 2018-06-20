@@ -1,5 +1,3 @@
-using Base.Test
-
 @testset "test monitor type                      " begin
     m = Monitor(0, string)
     push!(m, 0.0, 0)
@@ -20,7 +18,7 @@ end
     @test times(m)   == [0.0, 0.1, 0.2, 0.3]
     @test samples(m) == [0.0, 1.0, 4.0, 9.0]
 
-    # skip one sample 
+    # skip one sample
     m = Monitor([1.0], x->x[1]^2; oneevery=2)
 
     push!(m, 0.0, [0.0])
@@ -46,7 +44,7 @@ end
 
     # forward map
     ϕ = integrator(g, A, scheme, 0.01)
-    
+
     # initial condition
     x₀ = [0.0]
 
@@ -68,13 +66,13 @@ end
         reset!(m)
         @test (@allocated reset!(m)) == 0
     end
-    
+
     @test fun(ϕ, x₀, (0, 1), m1, m2) == 0
 end
 
 @testset "reset monitors                         " begin
     m = Monitor([1.0], x->x[1]^2)
-    
+
     push!(m, 0.0, [0.0])
     push!(m, 0.1, [1.0])
     push!(m, 0.2, [2.0])
@@ -107,9 +105,15 @@ end
     # check interpolation on finer grid
     out = [0.0]
     for ti in 0.0:0.01:1.0
-        @test sol1(out, ti) ≈ [ti]
-        @test sol2(out, ti) ≈ [ti*ti]
-        @test sol3(out, ti) ≈ [ti*ti*ti]
+    	# check function value
+        @test norm(sol1(out, ti, Val{0}()) - [ti]) < 1e-14
+        @test norm(sol2(out, ti, Val{0}()) - [ti*ti]) < 1e-14
+        @test norm(sol3(out, ti, Val{0}()) - [ti*ti*ti]) < 1e-14
+
+    	# check derivative
+        @test norm(sol1(out, ti, Val{1}()) - [1]) < 1e-14
+        @test norm(sol2(out, ti, Val{1}()) - [2*ti]) < 1e-14
+        @test norm(sol3(out, ti, Val{1}()) - [3*ti*ti]) < 1e-14
     end
 
     # check out of bound range

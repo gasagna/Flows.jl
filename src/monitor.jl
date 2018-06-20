@@ -54,11 +54,17 @@ samples(mon::Monitor) = samples(mon.store)
 # /// Interpolation ///
 
 # get interpolation weights
-weights(t, t0, t1, t2, t3, ::Val{0}) =
+@inline weights(t, t0, t1, t2, t3, ::Val{0}) =
     ((t-t1)*(t-t2)*(t-t3)/((t0-t1)*(t0-t2)*(t0-t3)),
      (t-t0)*(t-t2)*(t-t3)/((t1-t0)*(t1-t2)*(t1-t3)),
      (t-t0)*(t-t1)*(t-t3)/((t2-t0)*(t2-t1)*(t2-t3)),
      (t-t0)*(t-t1)*(t-t2)/((t3-t0)*(t3-t1)*(t3-t2)))
+
+@inline weights(t, t0, t1, t2, t3, ::Val{1}) =
+    (((t-t1)*(t-t2) + (t-t1)*(t-t3) + (t-t2)*(t-t3))/((t0-t1)*(t0-t2)*(t0-t3)),
+     ((t-t0)*(t-t2) + (t-t0)*(t-t3) + (t-t2)*(t-t3))/((t1-t0)*(t1-t2)*(t1-t3)),
+     ((t-t1)*(t-t0) + (t-t1)*(t-t3) + (t-t0)*(t-t3))/((t2-t0)*(t2-t1)*(t2-t3)),
+     ((t-t1)*(t-t2) + (t-t1)*(t-t0) + (t-t2)*(t-t0))/((t3-t0)*(t3-t1)*(t3-t2)))
 
 # Third order Lagrangian interpolation
 function lagrinterp(out::X,
