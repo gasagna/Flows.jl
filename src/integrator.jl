@@ -1,6 +1,7 @@
-export integrator
+export integrator,
+       set_Δt!
 
-struct Integrator{S<:System, M<:Scheme}
+mutable struct Integrator{S<:System, M<:Scheme}
       system::S       # the system to be integrated
       scheme::M       # the scheme, with storage and RK implementation
           Δt::Float64 # the time step. Will be replaced by integration options
@@ -16,6 +17,11 @@ end
 integrator(g, A, q, scheme::Scheme, Δt::Real) = Integrator(System(g, A,             q), scheme, Δt)
 integrator(g, A,    scheme::Scheme, Δt::Real) = Integrator(System(g, A,       nothing), scheme, Δt)
 integrator(g,       scheme::Scheme, Δt::Real) = Integrator(System(g, nothing, nothing), scheme, Δt)
+
+# change dt
+set_Δt!(I::Integrator, Δt::Real) =
+    (Δt < 0 && throw(ArgumentError("Δt must be positive, got $Δt"));
+     I.Δt = Δt; nothing)
 
 # Main entry points. Integrators are callable objects ...
 @inline (I::Integrator)(x, span::NTuple{2, Real}, mon::Vararg{AbstractMonitor}) =
