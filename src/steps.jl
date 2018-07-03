@@ -11,7 +11,8 @@ end
 
 # allowed scheme tags. We convert tableaux to Float64. This should cover most cases.
 D = Dict{Symbol, Tuple{AbstractTableau, Int, Symbol}}
-const __allowed__ =  D(:CB2_3R2R  => (convert(IMEXTableau{Float64}, CB2),  3, :_3R2R),
+const __allowed__ =  D(:RK4       => (convert(Tableau{Float64},     RK4),  5, :_RK4),
+                       :CB2_3R2R  => (convert(IMEXTableau{Float64}, CB2),  3, :_3R2R),
                        :CB3c_3R2R => (convert(IMEXTableau{Float64}, CB3c), 3, :_3R2R),
                        :CB3e_3R2R => (convert(IMEXTableau{Float64}, CB3e), 3, :_3R2R),
                        :CB4_4R3R  => (convert(IMEXTableau{Float64}, CB4),  4, :_4R3R))
@@ -21,6 +22,31 @@ function Scheme(tag::Symbol, x::X, q...) where {X}
     tag ∈ keys(__allowed__) || error("invalid scheme tag $tag")
     tab, nstores, impl = __allowed__[tag]
     Scheme{impl}(tab, nstores, aug_state(x, q...))
+end
+
+# Classical Fourth order Runge Kutta scheme
+function step!(scheme::Scheme{X, :_RK4},
+               sys::System,
+               t::Real,
+               Δt::Real,
+               x::X) where {X}
+    # aliases
+    k1 = scheme.storage[1]
+    k2 = scheme.storage[2]
+    k3 = scheme.storage[3]
+    k4 = scheme.storage[4]
+    y  = scheme.storage[5]
+
+    # stages
+    y .= x          ; sys(t + 0.0*Δt, y, k1)
+    y .= x .+ 0.5*k1; sys(t + 0.5*Δt, y, k2)
+    y .= x .+ 0.5*k2; sys(t + 0.5*Δt, y, k3)
+    y .= x .+     k3; sys(t + 1.0*Δt, y, k4)
+
+    # wrap up
+    x .= x .+ 1/6.0.*(k1 .+ 2.0.*k2 .+ 2.0.*k3 .+ k4)
+
+    return nothing
 end
 
 # Three-register implementation of [2R] IMEXRK schemes from section 1.2.1 of CB 2015
@@ -52,7 +78,6 @@ function step!(scheme::Scheme{X, :_3R2R},
     end
     return nothing
 end
-
 
 # Four-register implementation of [3R] IMEXRK schemes from section 1.2.3 of CB 2015
 function step!(scheme::Scheme{X, :_4R3R},
