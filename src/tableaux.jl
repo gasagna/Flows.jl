@@ -70,6 +70,14 @@ function Base.getindex(tab::IMEXTableau{T}, t::Symbol, i::Integer)::T where {T}
     throw(ArgumentError("symbol $t not recognized"))
 end
 
+# Dummy Tableaux for classical Runge-Kutta method
+const RK4 = Tableau([0//1  0//1   0//1  0//1;
+                     0//1  0//1   0//1  0//1;
+                     0//1  0//1   0//1  0//1;
+                     0//1  0//1   0//1  0//1],
+                    [0//1, 0//1,  0//1, 0//1],
+                    [0//1, 0//1,  0//1, 0//1],
+                    [0//1, 0//1,  0//1, 0//1])
 
 # Tableaux from Cavaglieri and Bewley 2015
 

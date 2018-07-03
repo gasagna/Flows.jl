@@ -38,13 +38,13 @@ function step!(scheme::Scheme{X, :_RK4},
     y  = scheme.storage[5]
 
     # stages
-    y .= x          ; sys(t + 0.0*Δt, y, k1)
-    y .= x .+ 0.5*k1; sys(t + 0.5*Δt, y, k2)
-    y .= x .+ 0.5*k2; sys(t + 0.5*Δt, y, k3)
-    y .= x .+     k3; sys(t + 1.0*Δt, y, k4)
+    y .= x             ; sys(t       , y, k1)
+    y .= x .+ Δt.*k1./2; sys(t + Δt/2, y, k2)
+    y .= x .+ Δt.*k2./2; sys(t + Δt/2, y, k3)
+    y .= x .+ Δt.*k3   ; sys(t +   Δt, y, k4)
 
     # wrap up
-    x .= x .+ 1/6.0.*(k1 .+ 2.0.*k2 .+ 2.0.*k3 .+ k4)
+    x .+= Δt./6.0.*(k1 .+ 2.0.*k2 .+ 2.0.*k3 .+ k4)
 
     return nothing
 end

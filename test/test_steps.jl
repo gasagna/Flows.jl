@@ -5,21 +5,25 @@
     g(t, x, ẋ) = (ẋ .= 0.5.*x; ẋ)
     A = Diagonal([0.5])
 
+    # also define full explicit term for RK4
+    gfull(t, x, ẋ) = (ẋ .= x; ẋ)
+
     # the type of the solution space 
     x0 = Float64[1.0]
 
     #                                      method                      ord  bounds
-    for (scheme, order, bnd) in [(Scheme(:CB2_3R2R,  x0), 2,   (0.025000, 0.027100)),
-                                 (Scheme(:CB3e_3R2R, x0), 3,   (0.006900, 0.008100)),
-                                 (Scheme(:CB3c_3R2R, x0), 3,   (0.007300, 0.008600)),
-                                 (Scheme(:CB4_4R3R,  x0), 4,   (0.000037, 0.000076))]
+    for (scheme, order, bnd, _g, _A) in [(Scheme(:RK4,       x0), 4, (0.008300, 0.008700), gfull, nothing),
+                                         (Scheme(:CB2_3R2R,  x0), 2, (0.025000, 0.027100), g,     A),
+                                         (Scheme(:CB3e_3R2R, x0), 3, (0.006900, 0.008100), g,     A),
+                                         (Scheme(:CB3c_3R2R, x0), 3, (0.007300, 0.008600), g,     A),
+                                         (Scheme(:CB4_4R3R,  x0), 4, (0.000037, 0.000076), g,     A)]
 
         # ensure that the error decays with expected rate
         for Δt = [5^(-i) for i in linspace(1, 3, 5)]
 
             # step forward
             x0 = Float64[1.0]
-            Flows.step!(scheme, Flows.System(g, A, nothing), 0., Δt, x0)
+            Flows.step!(scheme, Flows.System(_g, _A, nothing), 0., Δt, x0)
 
             # check error decays with expected power. The bounds bnd are used
             # to check whether the error decays at the expected rate, up
