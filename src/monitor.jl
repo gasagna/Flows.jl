@@ -72,7 +72,7 @@ function lagrinterp(out::X,
                     x0::X,    x1::X,    x2::X,    x3::X,
                     t0::Real, t1::Real, t2::Real, t3::Real, deg::Val) where {X}
     # checks
-    isbetween(t, minmax(t0, t3)...) ||
+    isbetween(t, min(t0, t3) - 1e-10, max(t0, t3)+1e-10) ||
         error("selected time is out of range")
 
     # get weights
@@ -89,7 +89,7 @@ function (mon::Monitor{T, X, 3})(out::X, t::Real, deg::Val=Val{0}()) where {T, X
     ts, xs = times(mon), samples(mon)
 
     # check if t is inbounds
-    isbetween(t, minmax(ts[1], ts[end])...) ||
+    isbetween(t,  min(ts[1], ts[end]) - 1e-10, max(ts[1], ts[end])+1e-10) ||
         error("selected time is out of range")
 
     # search current index
