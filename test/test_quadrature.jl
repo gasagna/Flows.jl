@@ -45,7 +45,7 @@ end
         for Δt = logspace(0, -2.5, 5)
 
             # forward map
-            f = integrator(g, A, quad, method, Δt)
+            f = integrator(g, A, quad, method, TimeStepConstant(Δt))
 
             # initial conditions
             x₀ = Float64[1.0]

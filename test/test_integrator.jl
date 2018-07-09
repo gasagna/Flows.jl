@@ -41,7 +41,7 @@ end
                               (Scheme(:CB4_4R3R,  copy(x)), 3e-12)]
 
             # forward map
-            ϕ = integrator(g, A, method, 0.01123)
+            ϕ = integrator(g, A, method, TimeStepConstant(0.01123))
 
             # check relative error, for a few repetitions of the integration
             @test abs(ϕ(copy(x), (0, 1))[1] - exp(-1))/exp(-1) < err

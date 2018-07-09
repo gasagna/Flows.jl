@@ -45,8 +45,8 @@ end
     # define forward and backward integrators
     forw_scheme = Scheme(:CB4_4R3R, x0)
     back_scheme = Scheme(:CB4_4R3R, λ0, grad)
-    G_forw = integrator(g_forw, forw_scheme, 0.01)
-    G_back = integrator(g_back, nothing, quadfun, back_scheme, 0.01)
+    G_forw = integrator(g_forw, forw_scheme, TimeStepConstant(0.01))
+    G_back = integrator(g_back, nothing, quadfun, back_scheme, TimeStepConstant(0.01))
 
     # solve forward problem
     G_forw(x0, (0, T), forw_sol)

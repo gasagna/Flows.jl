@@ -43,7 +43,7 @@ end
     m2 = Monitor([1.0], x->x[1]^3; sizehint=10000)
 
     # forward map
-    ϕ = integrator(g, A, scheme, 0.01)
+    ϕ = integrator(g, A, scheme, TimeStepConstant(0.01))
 
     # initial condition
     x₀ = [0.0]

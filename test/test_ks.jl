@@ -33,7 +33,7 @@ end
                            (Scheme(:CB4_4R3R,  x₀), 0.0410)]
 
         # get integrator
-        I = integrator(g, A, scheme, 1e-2)
+        I = integrator(g, A, scheme, TimeStepConstant(1e-2))
 
         # warm up
         I(x₀, (0.0, 10.0))

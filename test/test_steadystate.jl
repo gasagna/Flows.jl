@@ -12,7 +12,7 @@
         m = Monitor([0.0], x->x[1])
 
         # forward map
-        ϕ = integrator(g, A, method, 0.12345)
+        ϕ = integrator(g, A, method, TimeStepConstant(0.12345))
         
         # do job
         ϕ([0.0], (0, 20), m)
