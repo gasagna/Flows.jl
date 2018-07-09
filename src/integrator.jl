@@ -73,15 +73,16 @@ end
         # store initial state in monitors
         Base.Cartesian.@nexprs $N i->push!(mon[i], t, _state(z))
 
-        while t < T
-            # obtain time step from hook
-            Δt = next_Δt(t, T, hook(system.g, system.A, z))
+        # run until condition
+        while t != T
+            # obtain time step from hook and what the next time is
+            t_next, Δt = _next_Δt(t, T, hook(system.g, system.A, z))
 
             # advance
             step!(scheme, system, t, Δt, z)
 
             # update
-            t += Δt
+            t = t_next
 
             # store solution into monitor
             Base.Cartesian.@nexprs $N i->push!(mon[i], t, _state(z))
@@ -90,5 +91,9 @@ end
     end
 end
 
-# allow hitting the end point exactly
-next_Δt(t, T, Δt::S) where {S} = S(min(t + Δt, T) - t)
+# return next time and time step that allows hitting the end point exactly
+function _next_Δt(t, T, Δt::S) where {S<:Real}
+    @assert Δt > 0 "negative time step encountered"
+    t_next = ifelse(t ≤ T, min(t+Δt, T), max(t-Δt, T))
+    return t_next, S(t_next - t)
+end
