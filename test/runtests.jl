@@ -1,6 +1,7 @@
 using Base.Test
 using Flows
 
+include("test_timestepping.jl")
 include("test_tableaux.jl")
 include("test_losslessrange.jl")
 include("test_imca.jl")

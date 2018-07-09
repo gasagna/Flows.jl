@@ -5,10 +5,10 @@ using Flows
 struct TestFromHook <: AbstractTimeStepFromHook end
 (::TestFromHook)(g, A, z) = 0.1*sqrt(z[1])
 
-@testset "from hook                              " begin
-    # make system
-    g(t, x, ẋ) = (ẋ .= -1; ẋ)
+# system
+g(t, x, ẋ) = (ẋ .= -1; ẋ)
 
+@testset "from hook                              " begin
     # integration scheme
     scheme = Scheme(:RK4, zeros(1))
 
@@ -20,7 +20,7 @@ struct TestFromHook <: AbstractTimeStepFromHook end
 
     # FORWARD INTEGRATION
     # run
-    ϕ([1.0], (0, 1), mon)
+    ϕ([1.0], (0, 1), reset!(mon))
 
     # test we hit the end point
     @test times(mon)[1]   == 0
