@@ -88,15 +88,18 @@ function (mon::Monitor{T, X, 3})(out::X, t::Real, deg::Val=Val{0}()) where {T, X
     # Aliases. These should be lazy objects
     ts, xs = times(mon), samples(mon)
 
-    # check if t is inbounds
-    isbetween(t,  min(ts[1], ts[end]) - 1e-10, max(ts[1], ts[end])+1e-10) ||
+    # check if t is inbounds. Note that although time never goes out the bounds of 
+    # the span, it might be possible in the runge kutta steps that
+    # we do so by a very small amount, so we take care of that here.
+    isbetween(t,  min(ts[1], ts[end]) - 1e-10, max(ts[1], ts[end]) + 1e-10) ||
         error("selected time is out of range")
 
     # search current index
     idx = searchsortedlast(ts, t)
 
     # boundary conditions need shifting of the stencil
-    Δ = idx == 1              ?  1 :
+    Δ = idx == 0              ?  2 : # this can only happen if the above check fails
+        idx == 1              ?  1 :
         idx == length(ts)     ? -2 :
         idx == length(ts) - 1 ? -1 : 0
     idx += Δ
