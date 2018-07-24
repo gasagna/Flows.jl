@@ -11,7 +11,8 @@ end
 
 # allowed scheme tags. We convert tableaux to Float64. This should cover most cases.
 D = Dict{Symbol, Tuple{AbstractTableau, Int, Symbol}}
-const __allowed__ =  D(:RK4       => (convert(Tableau{Float64},     RK4),  5, :_RK4),
+const __allowed__ =  D(:ETD1      => (convert(Tableau{Float64},     NONE), 2, :_ETD1)
+                       :RK4       => (convert(Tableau{Float64},     RK4),  5, :_RK4),
                        :CB2_3R2R  => (convert(IMEXTableau{Float64}, CB2),  3, :_3R2R),
                        :CB3c_3R2R => (convert(IMEXTableau{Float64}, CB3c), 3, :_3R2R),
                        :CB3e_3R2R => (convert(IMEXTableau{Float64}, CB3e), 3, :_3R2R),
@@ -23,6 +24,27 @@ function Scheme(tag::Symbol, x::X, q...) where {X}
     tab, nstores, impl = __allowed__[tag]
     Scheme{impl}(tab, nstores, aug_state(x, q...))
 end
+
+# ETD1
+function step!(scheme::Scheme{X, :_ETD1},
+               sys::System,
+               t::Real,
+               Δt::Real,
+               x::X) where {X}
+    # aliases
+    IF = scheme.storage[1]
+    ϕ1 = scheme.storage[2]
+    k1 = scheme.storage[3]
+
+    # eval nonlinear term
+    sys(t, x, k1)
+
+    # stages
+    x .= IF.*x .+ Δt.*ϕ₁.*k1
+
+    return nothing
+end
+
 
 # Classical Fourth order Runge Kutta scheme
 function step!(scheme::Scheme{X, :_RK4},
