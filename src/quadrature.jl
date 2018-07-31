@@ -7,8 +7,8 @@ struct AugmentedState{X, Q}
     q::Q
 end
 
-aug_state(x, q) = AugmentedState(x, q)
-aug_state(x)    = x
+augment(x, q) = AugmentedState(x, q)
+augment(x)    = x
 
 # extract parts from augmented state object
 @inline _state(x::AugmentedState) = x.x
