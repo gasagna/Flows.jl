@@ -168,9 +168,11 @@ function step!(method::CB3R2R_ADJ{X, NS},
         # D
         ImcAt!(sys, tab[:aᴵ, k, k]*Δt, z, v)
         s .= v .+ s
+        z .= 0
         # E
         At_mul_B!(v, sys, s)
         y .= v .+ y
+        s .= 0
         # F
         if k == 1
             x .= x .+ y
