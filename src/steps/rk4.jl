@@ -2,29 +2,29 @@ export RK4, RK4_Tan, RK4_Adj
 
 # ---------------------------------------------------------------------------- #
 # Classical fourth order Runge-Kutta
-struct RK4{X, CACHESTAGES} <: AbstractMethod
-    cache::NTuple{5, X}
+struct RK4{X, ISCACHE} <: AbstractMethod
+    store::NTuple{5, X}
 end
 
-RK4(x::X, cache::Bool=false) where {X} = RK4{X, cache}(ntuple(i->similar(x), 5))
+RK4(x::X, store::Bool=false) where {X} = RK4{X, store}(ntuple(i->similar(x), 5))
 
-function step!(method::RK4{X, CACHESTAGES},
+function step!(method::RK4{X, ISCACHE},
                   sys::System,
                     t::Real,
                    Δt::Real,
                     x::X,
-              stcache::C) where {X, CACHESTAGES, C<:AbstractStageCache{4, X}}
+              stcache::C) where {X, ISCACHE, C<:AbstractStageCache{4, X}}
     # aliases
-    k1, k2, k3, k4, y = method.cache
+    k1, k2, k3, k4, y = method.store
 
     # stages
-    y .= x;              sys(t,        y, k1); CACHESTAGES && (s1 = copy(y))
-    y .= x .+ Δt.*k1./2; sys(t + Δt/2, y, k2); CACHESTAGES && (s2 = copy(y))
-    y .= x .+ Δt.*k2./2; sys(t + Δt/2, y, k3); CACHESTAGES && (s3 = copy(y))
-    y .= x .+ Δt.*k3   ; sys(t + Δt,   y, k4); CACHESTAGES && (s4 = copy(y))
+    y .= x;              sys(t,        y, k1); ISCACHE && (s1 = copy(y))
+    y .= x .+ Δt.*k1./2; sys(t + Δt/2, y, k2); ISCACHE && (s2 = copy(y))
+    y .= x .+ Δt.*k2./2; sys(t + Δt/2, y, k3); ISCACHE && (s3 = copy(y))
+    y .= x .+ Δt.*k3   ; sys(t + Δt,   y, k4); ISCACHE && (s4 = copy(y))
 
-    # cache stages if requested
-    CACHESTAGES && push!(stcache, t, Δt, (s1, s2, s3, s4))
+    # store stages if requested
+    ISCACHE && push!(stcache, t, Δt, (s1, s2, s3, s4))
 
     # wrap up
     x .= x .+ Δt./6 .* (k1 .+ 2.0.*k2 .+ 2.0.*k3 .+ k4)
@@ -35,7 +35,7 @@ end
 # ---------------------------------------------------------------------------- #
 # Linearisation of classical fourth order Runge-Kutta
 struct RK4_Tan{X} <: AbstractMethod
-    cache::NTuple{5, X}
+    store::NTuple{5, X}
 end
 
 # constructor
@@ -49,7 +49,7 @@ function step!(method::RK4_Tan{X},   #
                x::X,
                stages::NTuple{4, X}) where {X}
     # aliases
-    k1, k2, k3, k4, y = method.cache
+    k1, k2, k3, k4, y = method.store
 
     # stages
     y .= x               ; sys(t,        stages[1], y, k1)
@@ -66,7 +66,7 @@ end
 # ---------------------------------------------------------------------------- #
 # Adjoint of linearisation of classical fourth order Runge-Kutta
 struct RK4_Adj{X} <: AbstractMethod
-    cache::NTuple{5, X}
+    store::NTuple{5, X}
 end
 
 # constructor
@@ -80,15 +80,13 @@ function step!(method::RK4_Adj{X},   #
                x::X,
                stages::NTuple{4, X}) where {X}
     # aliases
-    j1, j2, j3, j4, y = method.cache
+    j1, j2, j3, j4, y = method.store
 
     # stages
     y .= x               ; sys(t + Δt  , stages[4], y, j4)
     y .= x .+ 0.5.*Δt.*j4; sys(t + Δt/2, stages[3], y, j3)
     y .= x .+ 0.5.*Δt.*j3; sys(t + Δt/2, stages[2], y, j2)
     y .= x .+      Δt.*j2; sys(t       , stages[1], y, j1)
-
-    # wrap up
     x .= x .+ Δt./6 .* (j1 .+ 2.0.*j2 .+ 2.0.*j3 .+ j4)
 
     return nothing
