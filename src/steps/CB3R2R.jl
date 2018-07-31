@@ -28,6 +28,10 @@ function CB3R2R(x::X, tag::Symbol, iscache::Bool=false) where {X}
     return CB3R2R{iscache}(ntuple(i->similar(x), 3), __allowed_3R2R__[tag])
 end
 
+# with quadrature part provided
+CB3R2R(x::X, q::Q, tag::Symbol, iscache::Bool=false) where {X, Q} =
+    CB3R2R(augment(x, q), tag, iscache)
+
 # perform step
 function step!(method::CB3R2R{X, ISCACHE, NS},
                   sys::System,
@@ -83,6 +87,10 @@ function CB3R2R_TAN(x::X, tag::Symbol) where {X}
     return CB3R2R_TAN(ntuple(i->similar(x), 3), __allowed_3R2R__[tag])
 end
 
+# with quadrature part provided
+CB3R2R_TAN(x::X, q::Q, tag::Symbol, iscache::Bool=false) where {X, Q} =
+    CB3R2R_TAN(augment(x, q), tag, iscache)
+
 # perform step
 function step!(method::CB3R2R_TAN{X, NS},
                   sys::System,
@@ -136,6 +144,10 @@ function CB3R2R_ADJ(x::X, tag::Symbol) where {X}
     tag ∈ keys(__allowed_3R2R__) || error("invalid scheme tag")
     return CB3R2R_ADJ(ntuple(i->similar(x), 5), __allowed_3R2R__[tag])
 end
+
+# with quadrature part provided
+CB3R2R_ADJ(x::X, q::Q, tag::Symbol, iscache::Bool=false) where {X, Q} =
+    CB3R2R_ADJ(augment(x, q), tag, iscache)
 
 # perform step
 function step!(method::CB3R2R_ADJ{X, NS},
