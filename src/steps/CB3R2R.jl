@@ -12,13 +12,13 @@ const __allowed_3R2R__ = Dict(:_2 => CB2, :_3c =>CB3c, :_3e =>CB3e)
 struct CB3R2R{X, ISCACHE, NS, TAB} <: AbstractMethod
     store::NTuple{3, X} # these are low storage methods!
     tableau::TAB
-    function CB3R2R{ISCACHE}(store::NTuple{3, X}, t::TAB) where {ISCACHE, X, TAB}
+    function CB3R2R{ISCACHE}(st::NTuple{3, X}, t::TAB) where {ISCACHE, X, TAB}
         # convert tableau to use required element type. Note that when
-        # `x` is a `AugmentedState` the `eltype` of the tableau is the 
+        # `x` is a `AugmentedState` the `eltype` of the tableau is the
         # promotion of the types of state and quadrature components.
-        T = promote_type(eltype.(_state_quad(store[1]))...)
+        T = promote_type(eltype.(_state_quad(st[1]))...)
         _t = convert(IMEXTableau{T, nstages(t)}, t)
-        new{X, ISCACHE, nstages(_t), typeof(_t)}(store, _t)
+        new{X, ISCACHE, nstages(_t), typeof(_t)}(st, _t)
     end
 end
 
@@ -33,7 +33,7 @@ function step!(method::CB3R2R{X, ISCACHE, NS},
                   sys::System,
                     t::Real,
                    Δt::Real,
-                    x::X, 
+                    x::X,
               stcache::C) where {X, ISCACHE, NS, C<:AbstractStageCache{NS, X}}
 
     # hoist temporaries out
@@ -66,14 +66,14 @@ end
 
 
 # ---------------------------------------------------------------------------- #
-# Linearisation 
+# Linearisation
 struct CB3R2R_TAN{X, NS, TAB} <: AbstractMethod
     store::NTuple{3, X} # these are low storage methods!
     tableau::TAB
-    function CB3R2R_TAN(store::NTuple{3, X}, t::TAB) where {X, TAB}
-        T = promote_type(eltype.(_state_quad(store[1]))...)
+    function CB3R2R_TAN(st::NTuple{3, X}, t::TAB) where {X, TAB}
+        T = promote_type(eltype.(_state_quad(st[1]))...)
         _t = convert(IMEXTableau{T, nstages(t)}, t)
-        new{X, nstages(_t), typeof(_t)}(store, _t)
+        new{X, nstages(_t), typeof(_t)}(st, _t)
     end
 end
 
@@ -88,9 +88,8 @@ function step!(method::CB3R2R_TAN{X, NS},
                   sys::System,
                     t::Real,
                    Δt::Real,
-                    x::X, 
+                    x::X,
                stages::NTuple{NS, X}) where {X, NS}
-
     # hoist temporaries out
     y, z, w  = method.store
     tab = method.tableau
@@ -125,10 +124,10 @@ end
 struct CB3R2R_ADJ{X, NS, TAB} <: AbstractMethod
     store::NTuple{5, X} # these are low storage methods!
     tableau::TAB
-    function CB3R2R_ADJ(store::NTuple{5, X}, t::TAB) where {X, TAB}
-        T = promote_type(eltype.(_state_quad(store[1]))...)
+    function CB3R2R_ADJ(st::NTuple{5, X}, t::TAB) where {X, TAB}
+        T = promote_type(eltype.(_state_quad(st[1]))...)
         _t = convert(IMEXTableau{T, nstages(t)}, t)
-        new{X, nstages(_t), typeof(_t)}(store, _t)
+        new{X, nstages(_t), typeof(_t)}(st, _t)
     end
 end
 
@@ -143,9 +142,8 @@ function step!(method::CB3R2R_ADJ{X, NS},
                   sys::System,
                     t::Real,
                    Δt::Real,
-                    x::X, 
+                    x::X,
                stages::NTuple{NS, X}) where {X, NS}
-
     # hoist temporaries out
     y, z, w, v, s  = method.store
     y .= 0; z .= 0; w .= 0; v .= 0; s .= 0;
