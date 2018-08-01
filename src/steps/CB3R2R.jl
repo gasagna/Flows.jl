@@ -96,7 +96,7 @@ end
 # ---------------------------------------------------------------------------- #
 # Adjoint version
 # takes x_{n+1} and overwrites it with x_{n}
-function step!(method::$name{X, NS, :ADJ, true},
+function step!(method::$name{X, NS, :LIN, true},
                   sys::System,
                     t::Real,
                    Δt::Real,
