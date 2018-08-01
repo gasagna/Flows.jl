@@ -9,6 +9,8 @@ abstract type AbstractStageCache{N, X} end
 # ---------------------------------------------------------------------------- #
 # Do not cache the stages
 struct NoCache{N, X} <: AbstractStageCache{N, X} end
+_iscache(::Any) = false
+_iscache(::AbstractCache) = true
 
 # ---------------------------------------------------------------------------- #
 # Stage cache where all stages are cached in RAM.

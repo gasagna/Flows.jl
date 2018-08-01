@@ -19,17 +19,42 @@ integrator(g, A,    scheme::Scheme, stepping::AbstractTimeStepping) =
     Integrator(System(g, A,       nothing), scheme, stepping)
 integrator(g,       scheme::Scheme, stepping::AbstractTimeStepping) = 
     Integrator(System(g, nothing, nothing), scheme, stepping)
+# ---------------------------------------------------------------------------- #
+# PROPAGATION FUNCTIONS
 
-# Main entry points. Integrators are callable objects ...
-@inline (I::Integrator)(x, span::NTuple{2, Real}, mon::Vararg{AbstractMonitor}) =
-    _propagate!(I.scheme, I.system, Float64.(span), I.stepping, x, mon...)
+# ---------------------------------------------------------------------------- #
+# PROPAGATION FUNCTION FOR CONSTANT TIME STEPPING
+function _propagate!(method::AbstractMethod{X},
+                   stepping::TimeStepConstant
+                     system::System,
+                       span::NTuple{2, Real},
+                          z::X,
+                        mon::M,
+                      cache::C) where {X, 
+                                       M<:Union{Void, AbstractMonitor}, 
+                                       C<:Union{Void, AbstractCache}}
+    # only allow forward integration
+    span[1] == span[2] && return z
+    span[1]  > span[2] && throw(ArgumentError("invalid integration time span"))
 
-# Integrator augmented with a quadrature function are callable with an additional argument.
-@inline (I::Integrator)(x, q, span::NTuple{2, Real}, mon::Vararg{AbstractMonitor}) =
-    _propagate!(I.scheme, I.system, Float64.(span), I.stepping, aug_state(x, q), mon...)
+    # define integration times
+    ts = LossLessRange(span[1], span[2], stepping.Δt)
 
-# Propagation function for constant time stepping
-@generated function _propagate!(scheme::Scheme{S},
+    # push initial state monitor
+    _ismonitor(M) && push!(mon, ts[1], _state(z))
+
+    # start integration
+    for j = 2:length(ts)
+
+        # advance
+        step!(method, system, ts[j-1], ts[j]-ts[j-1], z, cache)
+
+        # store solution into monitor
+        _ismonitor(M) && push!(mon, ts[j], _state(z))
+    end
+
+    return z
+end
                                 system::System,
                                 span::NTuple{2, Real},
                                 stepping::TimeStepConstant,

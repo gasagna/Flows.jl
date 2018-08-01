@@ -9,6 +9,8 @@ abstract type AbstractMonitor{T, X} end
 # whether t is between low and high
 isbetween(t::Real, low::Real, high::Real) = (t ≥ low && t ≤ high)
 
+_ismonitor(::Any) = false
+_ismonitor(::AbstractMonitor) = true
 
 
 # /// Monitor to save all time steps ///
