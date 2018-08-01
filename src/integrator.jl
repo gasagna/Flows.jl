@@ -146,7 +146,8 @@ function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
                      system::System,
                        span::_Span,
                           z::Z,
-                        mon::M) where {Z, NS, ISADJ,
+                        mon::M, 
+                          c::C) where {Z, NS, ISADJ, C,
                                        M<:Union{Void, AbstractMonitor}}
     # check span is sane
     @_checkspan(span, z)
@@ -155,15 +156,15 @@ function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
     _ismonitor(M) && push!(mon, ts[1], _state(z))
 
     # TODO: fix this with proper iteration support for the stage cache
-    ts  = stepping.stcache.ts
-    Δts = stepping.stcache.Δts
-    xs  = stepping.stcache.xs
+    ts  = stepping.cache.ts
+    Δts = stepping.cache.Δts
+    xs  = stepping.cache.xs
 
     # integrate forward or backward based on type of linear equation
     rng = ISADJ == true ? reverse(1:length(ts)) : 1:length(ts)
     for i in rng
-        step!(method, system, t[i], Δt[i], z, stages[i])
-        _ismonitor(M) && push!(mon, t[i]+Δt[i], _state(z))
+        step!(method, system, ts[i], Δts[i], z, xs[i])
+        _ismonitor(M) && push!(mon, ts[i]+Δts[i], _state(z))
     end
 
     return z
