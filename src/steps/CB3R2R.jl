@@ -9,7 +9,7 @@ const __allowed_3R2R__ = Dict(:_2 => CB2, :_3c =>CB3c, :_3e =>CB3e)
 
 # ---------------------------------------------------------------------------- #
 # Three-register version of [2R] IMEXRK schemes from section 1.2.1 of CB 2015
-struct CB3R2R{X, ISCACHE, NS, TAB} <: AbstractMethod
+struct CB3R2R{X, ISCACHE, NS, TAB} <: AbstractMethod{ISCACHE}
     store::NTuple{3, X} # these are low storage methods!
     tableau::TAB
     function CB3R2R{ISCACHE}(st::NTuple{3, X}, t::TAB) where {ISCACHE, X, TAB}
@@ -48,7 +48,7 @@ function step!(method::CB3R2R{X, ISCACHE, NS},
     ISCACHE && (stages = sizehint!(X[], NS))
 
     # loop over stages
-    for k = 1:NS
+    @inbounds for k = 1:NS
         if k == 1
             y .= x
         else
@@ -71,7 +71,7 @@ end
 
 # ---------------------------------------------------------------------------- #
 # Linearisation
-struct CB3R2R_TAN{X, NS, TAB} <: AbstractMethod
+struct CB3R2R_TAN{X, NS, TAB} <: AbstractMethod{false}
     store::NTuple{3, X} # these are low storage methods!
     tableau::TAB
     function CB3R2R_TAN(st::NTuple{3, X}, t::TAB) where {X, TAB}
@@ -103,7 +103,7 @@ function step!(method::CB3R2R_TAN{X, NS},
     tab = method.tableau
 
     # loop over stages
-    for k = 1:NS
+    @inbounds for k = 1:NS
         # F
         if k == 1
             y .= x
@@ -129,10 +129,10 @@ end
 
 # ---------------------------------------------------------------------------- #
 # Adjoint version
-struct CB3R2R_ADJ{X, NS, TAB} <: AbstractMethod
-    store::NTuple{5, X} # these are low storage methods!
+struct CB3R2R_ADJ{X, NS, TAB} <: AbstractMethod{false}
+    store::NTuple{3, X} # these are low storage methods!
     tableau::TAB
-    function CB3R2R_ADJ(st::NTuple{5, X}, t::TAB) where {X, TAB}
+    function CB3R2R_ADJ(st::NTuple{3, X}, t::TAB) where {X, TAB}
         T = promote_type(eltype.(_state_quad(st[1]))...)
         _t = convert(IMEXTableau{T, nstages(t)}, t)
         new{X, nstages(_t), typeof(_t)}(st, _t)
@@ -142,7 +142,7 @@ end
 # outer constructor
 function CB3R2R_ADJ(x::X, tag::Symbol) where {X}
     tag ∈ keys(__allowed_3R2R__) || error("invalid scheme tag")
-    return CB3R2R_ADJ(ntuple(i->similar(x), 5), __allowed_3R2R__[tag])
+    return CB3R2R_ADJ(ntuple(i->similar(x), 3), __allowed_3R2R__[tag])
 end
 
 # with quadrature part provided
@@ -157,39 +157,29 @@ function step!(method::CB3R2R_ADJ{X, NS},
                     x::X,
                stages::NTuple{NS, X}) where {X, NS}
     # hoist temporaries out
-    y, z, w, v, s  = method.store
-    y .= 0; z .= 0; w .= 0; v .= 0; s .= 0;
+    y, z, w  = method.store
+    y .= 0; z .= 0; w .= 0;
     tab = method.tableau
 
     # loop over stages backwards
-    for k = reverse(1:NS)
+    @inbounds for k = reverse(1:NS)
         # A
         z .= z .+ tab[:bᴵ, k].*Δt.*x
         y .= y .+ tab[:bᴱ, k].*Δt.*x
         # B
-        v .= w # temporary
-        sys(t + tab[:cᴱ, k]*Δt, stages[k], y, v)
-        w .= w .+ v
-        y .= 0
+        sys(t + tab[:cᴱ, k]*Δt, stages[k], y, w)
         # C
         z .= z .+ tab[:aᴵ, k, k].*Δt.*w
-        y .= y .+ w
-        w .= 0
+        y .= w
         # D
-        ImcAt!(sys, tab[:aᴵ, k, k]*Δt, z, v)
-        s .= v .+ s
-        z .= 0
+        ImcAt!(sys, tab[:aᴵ, k, k]*Δt, z, w)
         # E
-        At_mul_B!(v, sys, s)
-        y .= v .+ y
-        s .= 0
+        At_mul_B!(z, sys, w)
+        y .= z .+ y
         # F
-        if k == 1
-            x .= x .+ y
-            y .= 0
-        else
-            x .= y .+ x
-            z .= (tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*y .+ z
+        x .= x .+ y
+        if k > 1
+            z .= (tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*y
             y .= (tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*Δt.*y
         end
     end

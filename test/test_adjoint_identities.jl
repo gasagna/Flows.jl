@@ -1,3 +1,4 @@
+using BenchmarkTools
 using Base.Test
 using Flows
 
@@ -91,8 +92,12 @@ const A = Diagonal([-10, -1, -8/3])
 
     a = dot(y0, [4, 5, 7])
     b = dot(q1, [1, 2, 3])
-
     @test abs(a-b)/abs(a) < 1e-14
+
+    # these take the same time
+    # ta = @belapsed Flows.step!($l_adj, $sys_l_adj, 0, 1e-2, $q1, $(scache.xs[1]))
+    # tb = @belapsed Flows.step!($l_tan, $sys_l_tan, 0, 1e-2, $q1, $(scache.xs[1]))
+    # println(ta/tb)
 end
 
 @testset "CB3R2R                                 " begin 
@@ -132,5 +137,10 @@ end
         a = dot(y0, [4, 5, 7])
         b = dot(q1, [1, 2, 3])
         @test abs(a-b)/abs(a) < 1e-14
+
+        # the adjoint code is ~30% slower here
+        # ta = @belapsed Flows.step!($l_adj, $sys_l_adj, 0, 1e-2, $q1, $(scache.xs[1]))
+        # tb = @belapsed Flows.step!($l_tan, $sys_l_tan, 0, 1e-2, $q1, $(scache.xs[1]))
+        # println(ta/tb)
     end
 end
