@@ -1,6 +1,6 @@
 # This defines a type that wraps the main state vector `x::X` augmented
 # with an appropriate object `q::Q` used for pure quadrature integration.
-# Note that the type is immutable, hence if a scalar function need to be 
+# Note that the type is immutable, hence if a scalar function need to be
 # integrated, its value is stored in a one-element vector
 struct AugmentedState{X, Q}
     x::X
@@ -26,7 +26,7 @@ _state_quad(x) = x
         broadcast!(f,  _quad(dest), map(_quad,  args)...)
         return dest
     end
-end    
+end
 
 # Used in the definition of a scheme for proper allocation of storage. Note
 # that `Y` cannot be a `Number`, because `similar` would raise an error. The

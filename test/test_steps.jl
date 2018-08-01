@@ -8,22 +8,21 @@
     # also define full explicit term for RK4
     gfull(t, x, ẋ) = (ẋ .= x; ẋ)
 
-    # the type of the solution space 
+    # the type of the solution space
     x0 = Float64[1.0]
 
-    #                                      method                      ord  bounds
-    for (scheme, order, bnd, _g, _A) in [(Scheme(:RK4,       x0), 4, (0.008300, 0.008700), gfull, nothing),
-                                         (Scheme(:CB2_3R2R,  x0), 2, (0.025000, 0.027100), g,     A),
-                                         (Scheme(:CB3e_3R2R, x0), 3, (0.006900, 0.008100), g,     A),
-                                         (Scheme(:CB3c_3R2R, x0), 3, (0.007300, 0.008600), g,     A),
-                                         (Scheme(:CB4_4R3R,  x0), 4, (0.000037, 0.000076), g,     A)]
+    #                                     method             ord  bounds
+    for (scheme, order, bnd, _g, _A) in [(RK4(     x0, :NL), 4, (0.008300, 0.008700), gfull, nothing),
+                                         (CB3R2R2( x0, :NL), 2, (0.025000, 0.027100), g,     A),
+                                         (CB3R2R3e(x0, :NL), 3, (0.006900, 0.008100), g,     A),
+                                         (CB3R2R3c(x0, :NL), 3, (0.007300, 0.008600), g,     A)]
 
         # ensure that the error decays with expected rate
         for Δt = [5^(-i) for i in linspace(1, 3, 5)]
 
             # step forward
             x0 = Float64[1.0]
-            Flows.step!(scheme, Flows.System(_g, _A, nothing), 0., Δt, x0)
+            Flows.step!(scheme, Flows.System(_g, _A, nothing), 0., Δt, x0, nothing)
 
             # check error decays with expected power. The bounds bnd are used
             # to check whether the error decays at the expected rate, up
@@ -37,9 +36,9 @@
         # test allocation
         function fun(g, A, scheme, Δt, x0)
             sys = Flows.System(g, A, nothing)
-            @allocated Flows.step!(scheme, sys, 0., Δt, x0)
+            @allocated Flows.step!(scheme, sys, 0., Δt, x0, nothing)
         end
-        # @code_warntype 
+        # @code_warntype
         @test fun(g, A, scheme, 0.1, x0) == 0
     end
 end

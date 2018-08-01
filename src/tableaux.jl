@@ -1,25 +1,32 @@
-abstract type AbstractTableau{T<:Real} end
-Base.eltype(::AbstractTableau{T}) where {T} = T
+# ---------------------------------------------------------------------------- #
+# Abstract tableau definition
+abstract type AbstractTableau{T, NS} end
 
-struct Tableau{T} <: AbstractTableau{T}
+# number of stages
+nstages(::AbstractTableau{T, NS}) where {T, NS} = NS
+
+# ---------------------------------------------------------------------------- #
+# Single tableau
+struct Tableau{T, NS} <: AbstractTableau{T, NS}
     a::Matrix{T}
     b::Vector{T}
     e::Vector{T}
     c::Vector{T}
-    function Tableau(a::Matrix{T}, b::Vector{T}, e::Vector{T}, c::Vector{T}) where {T}
-        size(a, 1) == size(a, 2) == length(b) == length(c) == length(e) ||
+    function Tableau{NS}(a::Matrix{T},
+                         b::Vector{T},
+                         e::Vector{T},
+                         c::Vector{T}) where {T, NS}
+        NS == size(a, 1) == size(a, 2) == length(b) == length(c) == length(e) ||
             error("invalid tableau input")
-        new{T}(a, b, e, c)
+        new{T, NS}(a, b, e, c)
     end
 end
 
+# outer constructor
 function Tableau(a::Matrix, b::Vector, e::Vector, c::Vector)
     T = promote_type(eltype.((a, b, e, c))...)
-    Tableau(convert(Matrix{T}, a), convert.(Vector{T}, (b, e, c))...)
+    Tableau{length(c)}(convert(Matrix{T}, a), convert.(Vector{T}, (b, e, c))...)
 end
-
-# number of stages
-nstages(tab::Tableau) = size(tab.a, 1)
 
 # get coefficients of the tableau
 Base.getindex(tab::Tableau, ::Symbol, i::Integer, j::Integer) = tab.a[i, j]
@@ -30,31 +37,33 @@ function Base.getindex(tab::Tableau{T}, t::Symbol, i::Integer)::T where {T}
 end
 
 # Convert a tableau to have coefficient of given type
-Base.convert(::Type{Tableau{T}}, tab::Tableau{S}) where {T, S} =
+Base.convert(::Type{Tableau{T, NS}}, tab::Tableau{S, NS}) where {T, S, NS} =
     Tableau(convert(Matrix{T}, tab.a), convert(Vector{T}, tab.b),
             convert(Vector{T}, tab.e), convert(Vector{T}, tab.c))
 
 # ~~ Tableau for IMEX schemes ~~~
-struct IMEXTableau{T} <: AbstractTableau{T}
-    tabI::Tableau{T}
-    tabE::Tableau{T}
+struct IMEXTableau{T, NS} <: AbstractTableau{T, NS}
+    tabI::Tableau{T, NS}
+    tabE::Tableau{T, NS}
 end
 
 # outer constructor
-function IMEXTableau(tabI::Tableau{TI}, tabE::Tableau{TE}) where {TI, TE} 
-    nstages(tabI) == nstages(tabE) || error("tableaux must have same number of stage")
+function IMEXTableau(tabI::Tableau{TI, NS},
+                     tabE::Tableau{TE, NS}) where {TI, TE, NS}
     T = promote_type(TI, TE)
-    IMEXTableau(convert(Tableau{T}, tabI), convert(Tableau{T}, tabE))
+    IMEXTableau(convert(Tableau{T, NS}, tabI), convert(Tableau{T, NS}, tabE))
 end
 
-# number of stages
-nstages(tab::IMEXTableau) = nstages(tab.tabI)
-
-Base.convert(::Type{IMEXTableau{T}}, tab::IMEXTableau{S}) where {T, S} =
-    IMEXTableau(convert(Tableau{T}, tab.tabI), convert(Tableau{T}, tab.tabE))
+Base.convert(::Type{IMEXTableau{T, NS}},
+          tab::IMEXTableau{S, NS}) where {T, S, NS} =
+    IMEXTableau(convert(Tableau{T, NS}, tab.tabI),
+                convert(Tableau{T, NS}, tab.tabE))
 
 # get coefficients of the tableau
-function Base.getindex(tab::IMEXTableau{T},  t::Symbol, i::Integer, j::Integer)::T where {T}
+function Base.getindex(tab::IMEXTableau{T},
+                         t::Symbol,
+                         i::Integer,
+                         j::Integer)::T where {T}
     t == :aᴵ && return tab.tabI[:a, i, j]
     t == :aᴱ && return tab.tabE[:a, i, j]
     throw(ArgumentError("symbol $t not recognized"))
@@ -70,14 +79,6 @@ function Base.getindex(tab::IMEXTableau{T}, t::Symbol, i::Integer)::T where {T}
     throw(ArgumentError("symbol $t not recognized"))
 end
 
-# Dummy Tableaux for classical Runge-Kutta method
-const RK4 = Tableau([0//1  0//1   0//1  0//1;
-                     0//1  0//1   0//1  0//1;
-                     0//1  0//1   0//1  0//1;
-                     0//1  0//1   0//1  0//1],
-                    [0//1, 0//1,  0//1, 0//1],
-                    [0//1, 0//1,  0//1, 0//1],
-                    [0//1, 0//1,  0//1, 0//1])
 
 # Tableaux from Cavaglieri and Bewley 2015
 
@@ -143,7 +144,7 @@ const CB4_I = Tableau([0//1                          0//1                       
                       [0,                            1//4,                         3//4,                         3//8,                        1//2,                       1//1])
 
 const CB4_E = Tableau([0//1                          0//1                          0//1                          0//1                          0//1                         0//1;
-                       1//4                          0//1                          0//1                          0//1                          0//1                         0//1; 
+                       1//4                          0//1                          0//1                          0//1                          0//1                         0//1;
                        153985248130//1004999853329   902825336800//1512825644809   0//1                          0//1                          0//1                         0//1;
                        232049084587//1377130630063   99316866929//820744730663     82888780751//969573940619     0//1                          0//1                         0//1;
                        232049084587//1377130630063   322009889509//2243393849156   57501241309//765040883867     76345938311//676824576433     0//1                         0//1;
@@ -152,8 +153,8 @@ const CB4_E = Tableau([0//1                          0//1                       
                       [5590918588//49191225249,      92380217342//122399335103,   -29257529014//55608238079,    -126677396901//66917692409,    384446411890//169364936833,  58325237543//207682037557],
                       [0,                            1//4,                         3//4,                         3//8,                         1//2,                        1//1])
 
-# PR to add more are welcome!
-const CB3c = IMEXTableau(CB3c_I, CB3c_E)
-const CB3e = IMEXTableau(CB3e_I, CB3e_E)
-const CB2  = IMEXTableau(CB2_I,  CB2_E)
-const CB4  = IMEXTableau(CB4_I,  CB4_E)
+# PR to add more are welcome! Defaults to Float64: FIXME
+const CB2  = convert(IMEXTableau{Float64, 3}, IMEXTableau(CB2_I,   CB2_E))
+const CB3c = convert(IMEXTableau{Float64, 4}, IMEXTableau(CB3c_I, CB3c_E))
+const CB3e = convert(IMEXTableau{Float64, 4}, IMEXTableau(CB3e_I, CB3e_E))
+const CB4  = convert(IMEXTableau{Float64, 6}, IMEXTableau(CB4_I,   CB4_E))

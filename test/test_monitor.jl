@@ -36,38 +36,35 @@ end
     A = Diagonal([0.0])
 
     # integration scheme
-    scheme = Scheme(:CB3e_3R2R, Float64[0.0])
+    scheme = CB3R2R3e(Float64[0.0], :NL)
 
     # monitors
-    m1 = Monitor([1.0], x->x[1]^2; sizehint=10000)
-    m2 = Monitor([1.0], x->x[1]^3; sizehint=10000)
+    m = Monitor([1.0], x->x[1]^2; sizehint=10000)
 
     # forward map
-    ϕ = integrator(g, A, scheme, TimeStepConstant(0.01))
+    ϕ = flow(g, A, scheme, TimeStepConstant(0.01))
 
     # initial condition
     x₀ = [0.0]
 
     # test end point is calculated correctly
-    ϕ(x₀, (0, 1.005), m1, m2)
+    ϕ(x₀, (0, 1.005), m)
 
-    @test times(m1)[end  ] == 1.005
-    @test times(m1)[end-1] == 1.000
-    @test times(m1)[end-2] == 0.990
+    @test times(m)[end  ] == 1.005
+    @test times(m)[end-1] == 1.000
+    @test times(m)[end-2] == 0.990
 
     # warm up
-    fun(ϕ, x₀, span, m1, m2) = @allocated ϕ(x₀, span, m1, m2)
+    fun(ϕ, x₀, span, m) = @allocated ϕ(x₀, span, m)
 
     # does not allocate because we do not grow the arrays in the monitor
-    @test fun(ϕ, x₀, (0, 1), m1, m2) == 0
+    @test fun(ϕ, x₀, (0, 1), m) == 0
 
     # try resetting and see we still do not allocate
-    for m = [m1, m2]
-        reset!(m)
-        @test (@allocated reset!(m)) == 0
-    end
+    reset!(m)
+    @test (@allocated reset!(m)) == 0
 
-    @test fun(ϕ, x₀, (0, 1), m1, m2) == 0
+    @test fun(ϕ, x₀, (0, 1), m) == 0
 end
 
 @testset "reset monitors                         " begin

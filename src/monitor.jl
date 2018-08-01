@@ -9,8 +9,8 @@ abstract type AbstractMonitor{T, X} end
 # whether t is between low and high
 isbetween(t::Real, low::Real, high::Real) = (t ≥ low && t ≤ high)
 
+_ismonitor(::Type{<:AbstractMonitor}) = true
 _ismonitor(::Any) = false
-_ismonitor(::AbstractMonitor) = true
 
 
 # /// Monitor to save all time steps ///
@@ -19,8 +19,8 @@ mutable struct Monitor{T, X, O, S<:AbstractStorage{T, X}, F} <: AbstractMonitor{
            f::F  # action on what is begin pushed
     oneevery::Int
        count::Int
-    Monitor{O}(store::S, 
-               f::F, 
+    Monitor{O}(store::S,
+               f::F,
                oneevery::Int) where {T, X, O, S<:AbstractStorage{T, X}, F} =
         new{T, X, O, S, F}(store, f, oneevery, 0)
 end
@@ -90,7 +90,7 @@ function (mon::Monitor{T, X, 3})(out::X, t::Real, deg::Val=Val{0}()) where {T, X
     # Aliases. These should be lazy objects
     ts, xs = times(mon), samples(mon)
 
-    # check if t is inbounds. Note that although time never goes out the bounds of 
+    # check if t is inbounds. Note that although time never goes out the bounds of
     # the span, it might be possible in the runge kutta steps that
     # we do so by a very small amount, so we take care of that here.
     isbetween(t,  min(ts[1], ts[end]) - 1e-10, max(ts[1], ts[end]) + 1e-10) ||

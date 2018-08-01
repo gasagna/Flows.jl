@@ -1,51 +1,37 @@
 # ---------------------------------------------------------------------------- #
-export CB3R2R,
-       CB3R2R_TAN,
-       CB3R2R_ADJ
-
-# ---------------------------------------------------------------------------- #
-# Allowed tags for 3R2R schemes
-const __allowed_3R2R__ = Dict(:_2 => CB2, :_3c =>CB3c, :_3e =>CB3e)
+export CB3R2R2, CB3R2R3e, CB3R2R3c
 
 # ---------------------------------------------------------------------------- #
 # Three-register version of [2R] IMEXRK schemes from section 1.2.1 of CB 2015
-struct CB3R2R{X, ISCACHE, NS, TAB} <: AbstractMethod{ISCACHE}
-    store::NTuple{3, X} # these are low storage methods!
-    tableau::TAB
-    function CB3R2R{ISCACHE}(st::NTuple{3, X}, t::TAB) where {ISCACHE, X, TAB}
-        # convert tableau to use required element type. Note that when
-        # `x` is a `AugmentedState` the `eltype` of the tableau is the
-        # promotion of the types of state and quadrature components.
-        T = promote_type(eltype.(_state_quad(st[1]))...)
-        _t = convert(IMEXTableau{T, nstages(t)}, t)
-        new{X, ISCACHE, nstages(_t), typeof(_t)}(st, _t)
-    end
+
+for (name, tab) in zip((:CB3R2R2, :CB3R2R3e, :CB3R2R3c), (CB2, CB3e, CB3c))
+@eval begin
+
+# type
+struct $name{X, NS, TAG, ISADJ} <: AbstractMethod{X, NS, TAG, ISADJ}
+    store::NTuple{3, X}
 end
 
 # outer constructor
-function CB3R2R(x::X, tag::Symbol, iscache::Bool=false) where {X}
-    tag ∈ keys(__allowed_3R2R__) || error("invalid scheme tag")
-    return CB3R2R{iscache}(ntuple(i->similar(x), 3), __allowed_3R2R__[tag])
-end
+$name(x, q, tag::Symbol) = $name(augment(x, q), tag)
+$name(x::X, tag::Symbol) where {X} =
+    $name{X, $(nstages(tab)), _tag_map(tag)...}(ntuple(i->similar(x), 3))
 
-# with quadrature part provided
-CB3R2R(x::X, q::Q, tag::Symbol, iscache::Bool=false) where {X, Q} =
-    CB3R2R(augment(x, q), tag, iscache)
-
-# perform step
-function step!(method::CB3R2R{X, ISCACHE, NS},
+# ---------------------------------------------------------------------------- #
+# Nonlinear problem with stage caching
+function step!(method::$name{X, NS, :NL},
                   sys::System,
                     t::Real,
                    Δt::Real,
                     x::X,
-              stcache::C) where {X, ISCACHE, NS, C<:AbstractStageCache{NS, X}}
+                    c::C) where {X, NS, C<:Union{Void, AbstractCache{NS, X}}}
 
     # hoist temporaries out
     y, z, w  = method.store
-    tab = method.tableau
+    tab = $tab
 
     # temporary vector for storing stages
-    ISCACHE && (stages = sizehint!(X[], NS))
+    _iscache(C) && (stages = sizehint!(X[], NS))
 
     # loop over stages
     @inbounds for k = 1:NS
@@ -58,12 +44,12 @@ function step!(method::CB3R2R{X, ISCACHE, NS},
         A_mul_B!(z, sys, y)                 # compute z = A*y then
         ImcA!(sys, tab[:aᴵ, k, k]*Δt, z, z) # get z = (I-cA)⁻¹*(A*y) in place
         w .= y .+ tab[:aᴵ, k, k].*Δt.*z     # w is the temp input, output is y
-        sys(t + tab[:cᴱ, k]*Δt, w, y); ISCACHE && (push!(stages, copy(w)))
+        sys(t + tab[:cᴱ, k]*Δt, w, y); _iscache(C) && (push!(stages, copy(w)))
         x .= x .+ tab[:bᴵ, k].*Δt.*z .+ tab[:bᴱ, k].*Δt.*y
     end
 
     # cache stages if requested
-    ISCACHE && push!(stcache, t, Δt, tuple(stages...))
+    _iscache(C) && push!(c, t, Δt, tuple(stages...))
 
     return nothing
 end
@@ -71,28 +57,8 @@ end
 
 # ---------------------------------------------------------------------------- #
 # Linearisation
-struct CB3R2R_TAN{X, NS, TAB} <: AbstractMethod{false}
-    store::NTuple{3, X} # these are low storage methods!
-    tableau::TAB
-    function CB3R2R_TAN(st::NTuple{3, X}, t::TAB) where {X, TAB}
-        T = promote_type(eltype.(_state_quad(st[1]))...)
-        _t = convert(IMEXTableau{T, nstages(t)}, t)
-        new{X, nstages(_t), typeof(_t)}(st, _t)
-    end
-end
-
-# outer constructor
-function CB3R2R_TAN(x::X, tag::Symbol) where {X}
-    tag ∈ keys(__allowed_3R2R__) || error("invalid scheme tag")
-    return CB3R2R_TAN(ntuple(i->similar(x), 3), __allowed_3R2R__[tag])
-end
-
-# with quadrature part provided
-CB3R2R_TAN(x::X, q::Q, tag::Symbol, iscache::Bool=false) where {X, Q} =
-    CB3R2R_TAN(augment(x, q), tag, iscache)
-
-# perform step
-function step!(method::CB3R2R_TAN{X, NS},
+# takes x_{n} and overwrites it with x_{n+1}
+function step!(method::$name{X, NS, :LIN, false},
                   sys::System,
                     t::Real,
                    Δt::Real,
@@ -100,7 +66,7 @@ function step!(method::CB3R2R_TAN{X, NS},
                stages::NTuple{NS, X}) where {X, NS}
     # hoist temporaries out
     y, z, w  = method.store
-    tab = method.tableau
+    tab = $tab
 
     # loop over stages
     @inbounds for k = 1:NS
@@ -129,28 +95,8 @@ end
 
 # ---------------------------------------------------------------------------- #
 # Adjoint version
-struct CB3R2R_ADJ{X, NS, TAB} <: AbstractMethod{false}
-    store::NTuple{3, X} # these are low storage methods!
-    tableau::TAB
-    function CB3R2R_ADJ(st::NTuple{3, X}, t::TAB) where {X, TAB}
-        T = promote_type(eltype.(_state_quad(st[1]))...)
-        _t = convert(IMEXTableau{T, nstages(t)}, t)
-        new{X, nstages(_t), typeof(_t)}(st, _t)
-    end
-end
-
-# outer constructor
-function CB3R2R_ADJ(x::X, tag::Symbol) where {X}
-    tag ∈ keys(__allowed_3R2R__) || error("invalid scheme tag")
-    return CB3R2R_ADJ(ntuple(i->similar(x), 3), __allowed_3R2R__[tag])
-end
-
-# with quadrature part provided
-CB3R2R_ADJ(x::X, q::Q, tag::Symbol, iscache::Bool=false) where {X, Q} =
-    CB3R2R_ADJ(augment(x, q), tag, iscache)
-
-# perform step
-function step!(method::CB3R2R_ADJ{X, NS},
+# takes x_{n+1} and overwrites it with x_{n}
+function step!(method::$name{X, NS, :ADJ, true},
                   sys::System,
                     t::Real,
                    Δt::Real,
@@ -159,7 +105,7 @@ function step!(method::CB3R2R_ADJ{X, NS},
     # hoist temporaries out
     y, z, w  = method.store
     y .= 0; z .= 0; w .= 0;
-    tab = method.tableau
+    tab = $tab
 
     # loop over stages backwards
     @inbounds for k = reverse(1:NS)
@@ -185,4 +131,7 @@ function step!(method::CB3R2R_ADJ{X, NS},
     end
 
     return nothing
+end
+
+end
 end

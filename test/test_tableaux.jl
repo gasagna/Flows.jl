@@ -1,18 +1,18 @@
 @testset "nstages                                " begin
     t = Flows.Tableau([1 2;
-                          3 4],
-                         [5, 6],
-                         [7, 8],
-                         [9, 0.])
+                       3 4],
+                      [5, 6],
+                      [7, 8],
+                      [9, 0.])
     @test Flows.nstages(t) == 2
 end
 
 @testset "promote                                " begin
     t = Flows.Tableau([1 2;
-                          3 4],
-                         [5, 6],
-                         [7, 8],
-                         [9, 0.])
+                       3 4],
+                      [5, 6],
+                      [7, 8],
+                      [9, 0.])
     @test typeof(t[:a, 1, 1]) == Float64
     @test typeof(t[:b, 1]   ) == Float64
     @test typeof(t[:e, 1]   ) == Float64
@@ -21,12 +21,12 @@ end
 
 @testset "convert                                " begin
     t = Flows.Tableau([1 2;
-                          3 4],
-                         [5, 6],
-                         [7, 8],
-                         [9, 0.])
+                       3 4],
+                      [5, 6],
+                      [7, 8],
+                      [9, 0.])
     for T in [Float64, Float32, Rational{Int}]
-        tf = convert(Flows.Tableau{T}, t)
+        tf = convert(Flows.Tableau{T, 2}, t)
         @test typeof(tf[:a, 1, 1]) == T
         @test typeof(tf[:b, 1]   ) == T
         @test typeof(tf[:e, 1]   ) == T
@@ -36,10 +36,10 @@ end
 
 @testset "indexing                               " begin
     t = Flows.Tableau([1 2;
-                          3 4],
-                         [5, 6],
-                         [7, 8],
-                         [9, 0])
+                       3 4],
+                      [5, 6],
+                      [7, 8],
+                      [9, 0])
 
     @test t[:a, 1, 1] == 1
     @test t[:a, 1, 2] == 2
@@ -57,21 +57,21 @@ end
     for T in [Int128, Int64, Float32, Float64]
         c = one(T)
         ti = Flows.Tableau([1  2;
-                               3  4],
-                              [5, 6],
-                              [7, 8],
-                              [9, 0])
+                            3  4],
+                           [5, 6],
+                           [7, 8],
+                           [9, 0])
 
         te = Flows.Tableau([11  12;   #a
-                               13  14],
-                              [15, 16],  #b
-                              [17, 18],  #e
-                              [19,  c])   #c
+                            13  14],
+                           [15, 16],  #b
+                           [17, 18],  #e
+                           [19,  c])  #c
 
         # constructor
         t  = Flows.IMEXTableau(ti, te)
-        tf = convert(Flows.IMEXTableau{Float64}, t) 
-        @test typeof(tf) == Flows.IMEXTableau{Float64}
+        tf = convert(Flows.IMEXTableau{Float64, 2}, t)
+        @test typeof(tf) == Flows.IMEXTableau{Float64, 2}
     end
 end
 
@@ -79,34 +79,34 @@ end
     for T in [Int128, Int64, Float32, Float64]
         c = one(T)
         ti = Flows.Tableau([1  2;
-                               3  4],
-                              [5, 6],
-                              [7, 8],
-                              [9, 0])
+                            3  4],
+                           [5, 6],
+                           [7, 8],
+                           [9, 0])
 
         te = Flows.Tableau([11  12;   #a
-                               13  14],
-                              [15, 16],  #b
-                              [17, 18],  #e
-                              [19,  c])   #c
+                            13  14],
+                           [15, 16],  #b
+                           [17, 18],  #e
+                           [19,  c])  #c
         # constructor
         t = Flows.IMEXTableau(ti, te)
-        @test typeof(t) == Flows.IMEXTableau{T}
+        @test typeof(t) == Flows.IMEXTableau{T, 2}
     end
 end
 
 @testset "IMEXTableau indexing                   " begin
     ti = Flows.Tableau([1  2;
-                           3  4],
-                          [5, 6],
-                          [7, 8],
-                          [9, 0])
+                        3  4],
+                       [5, 6],
+                       [7, 8],
+                       [9, 0])
 
     te = Flows.Tableau([11  12;   #a
-                           13  14],
-                          [15, 16],  #b
-                          [17, 18],  #e
-                          [19, 10])  #c
+                        13  14],
+                       [15, 16],  #b
+                       [17, 18],  #e
+                       [19, 10])  #c
 
     # constructor
     t = Flows.IMEXTableau(ti, te)
