@@ -26,5 +26,8 @@ RAMStageCache(NS::Int, x::X) where {X} =
                     x::NTuple{NS, X}) where {NS, X} =
     (push!(ss.ts, t); push!(ss.Δts, Δt); push!(ss.xs, x); nothing)
 
+reset!(ss::RAMStageCache) =
+    (resize!(ss.ts, 0); resize!(ss.Δts, 0); resize!(ss.xs, 0); ss)
+
 # ---------------------------------------------------------------------------- #
 # Stage cache where all stages are cached on disk: TODO
