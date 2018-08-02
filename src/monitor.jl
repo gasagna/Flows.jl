@@ -1,4 +1,4 @@
-using DataStructures
+import DataStructures: searchsortedlast
 
 export Monitor, reset!
 

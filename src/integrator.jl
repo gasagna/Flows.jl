@@ -2,63 +2,69 @@ export flow
 
 # ---------------------------------------------------------------------------- #
 # The Flow type!
-struct Flow{S<:System, M<:AbstractMethod, TS<:AbstractTimeStepping}
-      sys::S  # the system to be integrated
-     meth::M  # the method, with storage, implementation and time stepping
+struct Flow{TS<:AbstractTimeStepping, M<:AbstractMethod, S<:System}
     tstep::TS # the method used for time stepping
-    Flow(sys::S, m::M, ts::TS) where {S, M, TS} = new{S, M, TS}(sys, m, ts)
+     meth::M  # the method, with storage, implementation and time stepping
+      sys::S  # the system to be integrated
+    Flow(ts::TS, m::M, sys::S) where {TS, M, S} = new{TS, M, S}(ts, m, sys)
 end
 
 # main entry point specifying explicit, implicit and quadrature parts
 flow(g, A, q, m::AbstractMethod, ts::AbstractTimeStepping) =
-     Flow(System(g, A, q), m, ts)
+     Flow(ts, m, System(g, A, q))
 
 flow(g, A,    m::AbstractMethod, ts::AbstractTimeStepping) =
-     Flow(System(g, A, nothing), m, ts)
+     Flow(ts, m, System(g, A, nothing))
 
 flow(g,       m::AbstractMethod, ts::AbstractTimeStepping) =
-     Flow(System(g, nothing, nothing), m, ts)
+     Flow(ts, m, System(g, nothing, nothing))
 
 # ---------------------------------------------------------------------------- #
 # FLOWS ARE CALLABLE OBJECTS: THIS IS THE MAIN INTERFACE
 
-const _Span = NTuple{2, Real}
+const MayBe{T} = Union{T, Void}
 
-@inline (I::Flow)(x, span::_Span) =
+# normal stepping
+(I::Flow)(x, span::NTuple{2, Real}) =
     _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, nothing)
 
-@inline (I::Flow)(x, span::_Span, m::AbstractMonitor) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, m, nothing)
+# fill a monitor
+(I::Flow)(x, span::NTuple{2, Real}, m::AbstractMonitor) =
+    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, m)
 
-@inline (I::Flow)(x, span::_Span, c::AbstractCache) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, c)
+# fill a cache and optionally a monitor
+(I::Flow)(x, span::NTuple{2, Real}, 
+          c::AbstractCache, m::MayBe{<:AbstractMonitor}=nothing) =
+    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, c, m)
 
-@inline (I::Flow)(x, span::_Span, c::AbstractCache, m::AbstractMonitor) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, m, c)
+# stepping based on cache only 
+(I::Flow{TimeStepFromCache})(x, 
+                             c::AbstractCache, 
+                             m::MayBe{<:AbstractMonitor}=nothing) =
+    _propagate!(I.meth, I.sys, x, c, m)
 
-@inline (I::Flow)(x, span::_Span, m::AbstractMonitor, c::AbstractCache) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, m, c)
-
-# same with quadrature
-@inline (I::Flow)(x, q, span::_Span) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span),
+# ---------------------------------------------------------------------------- #
+# SAME WITH QUADRATURE
+# normal stepping
+(I::Flow)(x, q, span::NTuple{2, Real}) =
+    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), 
                 augment(x, q), nothing, nothing)
 
-@inline (I::Flow)(x, q, span::_Span, m::AbstractMonitor) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span),
+# fill a monitor
+(I::Flow)(x, q, span::NTuple{2, Real}, m::AbstractMonitor) =
+    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), 
                 augment(x, q), nothing, m)
 
-@inline (I::Flow)(x, q, span::_Span, c::AbstractCache) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span),
-                augment(x, q), c, nothing)
+# fill a cache and optionally a monitor
+(I::Flow)(x, q, span::NTuple{2, Real}, 
+          c::AbstractCache, m::MayBe{<:AbstractMonitor}=nothing) =
+    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), augment(x, q), c, m)
 
-@inline (I::Flow)(x, q, span::_Span, c::AbstractCache, m::AbstractMonitor) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span),
-                augment(x, q), c, m)
-
-@inline (I::Flow)(x, q, span::_Span, m::AbstractMonitor, c::AbstractCache) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span),
-                augment(x, q), c, m)
+# stepping based on cache only, calculating a quadrature
+(I::Flow{TimeStepFromCache})(x, q,
+                             c::AbstractCache, 
+                             m::MayBe{<:AbstractMonitor}=nothing) =
+    _propagate!(I.meth, I.sys, augment(x, q), c, m)
 
 
 # ---------------------------------------------------------------------------- #
@@ -77,10 +83,10 @@ end
 function _propagate!(method::AbstractMethod{Z, NS, :NL},
                    stepping::TimeStepConstant,
                      system::System,
-                       span::_Span,
+                       span::NTuple{2, Real},
                           z::Z,
-                        mon::M,
-                      cache::C) where {Z, NS,
+                      cache::C,
+                        mon::M) where {Z, NS,
                                        M<:Union{Void, AbstractMonitor},
                                        C<:Union{Void, AbstractCache}}
     # check span is sane
@@ -106,10 +112,10 @@ end
 function _propagate!(method::AbstractMethod{Z, NS, :NL},
                        hook::AbstractTimeStepFromHook,
                      system::System,
-                       span::_Span,
+                       span::NTuple{2, Real},
                           z::Z,
-                        mon::M,
-                      cache::C) where {Z, NS,
+                      cache::C,
+                        mon::M) where {Z, NS,
                                        M<:Union{Void, AbstractMonitor},
                                        C<:Union{Void, AbstractCache}}
     # check span is sane
@@ -139,26 +145,28 @@ function _propagate!(method::AbstractMethod{Z, NS, :NL},
     return z
 end
 
+# return next time and time step that allows hitting the end point exactly
+function _next_Δt(t, T, Δt::S) where {S<:Real}
+    @assert Δt > 0 "negative time step encountered"
+    t_next = ifelse(t ≤ T, min(t+Δt, T), max(t-Δt, T))
+    return t_next, S(t_next - t)
+end
+
 # ---------------------------------------------------------------------------- #
 # TIME STEPPING BASED ON CACHED STAGES, ONLY FOR LINEARISED EQUATIONS
 function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
-                   stepping::TimeStepFromCache{NS},
                      system::System,
-                       span::_Span,
                           z::Z,
-                        mon::M, 
-                          c::C) where {Z, NS, ISADJ, C,
+                      cache::AbstractCache{NS},
+                        mon::M) where {Z, NS, ISADJ,
                                        M<:Union{Void, AbstractMonitor}}
-    # check span is sane
-    @_checkspan(span, z)
-
     # store initial state in monitors
     _ismonitor(M) && push!(mon, ts[1], _state(z))
 
     # TODO: fix this with proper iteration support for the stage cache
-    ts  = stepping.cache.ts
-    Δts = stepping.cache.Δts
-    xs  = stepping.cache.xs
+    ts  = cache.ts
+    Δts = cache.Δts
+    xs  = cache.xs
 
     # integrate forward or backward based on type of linear equation
     rng = ISADJ == true ? reverse(1:length(ts)) : 1:length(ts)
@@ -168,11 +176,4 @@ function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
     end
 
     return z
-end
-
-# return next time and time step that allows hitting the end point exactly
-function _next_Δt(t, T, Δt::S) where {S<:Real}
-    @assert Δt > 0 "negative time step encountered"
-    t_next = ifelse(t ≤ T, min(t+Δt, T), max(t-Δt, T))
-    return t_next, S(t_next - t)
 end

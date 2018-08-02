@@ -28,6 +28,3 @@ RAMStageCache(NS::Int, x::X) where {X} =
 
 reset!(ss::RAMStageCache) =
     (resize!(ss.ts, 0); resize!(ss.Δts, 0); resize!(ss.xs, 0); ss)
-
-# ---------------------------------------------------------------------------- #
-# Stage cache where all stages are cached on disk: TODO

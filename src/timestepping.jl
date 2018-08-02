@@ -23,10 +23,4 @@ end
 
 # ---------------------------------------------------------------------------- #
 # Provide time stepping based on a stage cache from a nonlinear solution
-struct TimeStepFromCache{NS, C<:AbstractCache{NS}} <: AbstractTimeStepping
-    cache::C
-end
-
-# constructor
-TimeStepFromCache(c::C) where {NS, C<:AbstractCache{NS}} = 
-    TimeStepFromCache{NS, C}(c)
+struct TimeStepFromCache <: AbstractTimeStepping end
