@@ -34,12 +34,12 @@ const MayBe{T} = Union{T, Void}
 
 # fill a cache and optionally a monitor
 (I::Flow)(x, span::NTuple{2, Real}, 
-          c::AbstractCache, m::MayBe{<:AbstractMonitor}=nothing) =
+          c::AbstractStageCache, m::MayBe{<:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, c, m)
 
 # stepping based on cache only 
 (I::Flow{TimeStepFromCache})(x, 
-                             c::AbstractCache, 
+                             c::AbstractStageCache, 
                              m::MayBe{<:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.sys, x, c, m)
 
@@ -57,12 +57,12 @@ const MayBe{T} = Union{T, Void}
 
 # fill a cache and optionally a monitor
 (I::Flow)(x, q, span::NTuple{2, Real}, 
-          c::AbstractCache, m::MayBe{<:AbstractMonitor}=nothing) =
+          c::AbstractStageCache, m::MayBe{<:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.tstep, I.sys, Float64.(span), augment(x, q), c, m)
 
 # stepping based on cache only, calculating a quadrature
 (I::Flow{TimeStepFromCache})(x, q,
-                             c::AbstractCache, 
+                             c::AbstractStageCache, 
                              m::MayBe{<:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.sys, augment(x, q), c, m)
 
@@ -88,7 +88,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :NL},
                       cache::C,
                         mon::M) where {Z, NS,
                                        M<:Union{Void, AbstractMonitor},
-                                       C<:Union{Void, AbstractCache}}
+                                       C<:Union{Void, AbstractStageCache}}
     # check span is sane
     @_checkspan(span, z)
 
@@ -117,7 +117,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :NL},
                       cache::C,
                         mon::M) where {Z, NS,
                                        M<:Union{Void, AbstractMonitor},
-                                       C<:Union{Void, AbstractCache}}
+                                       C<:Union{Void, AbstractStageCache}}
     # check span is sane
     @_checkspan(span, z)
 
@@ -157,7 +157,7 @@ end
 function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
                      system::System,
                           z::Z,
-                      cache::AbstractCache{NS},
+                      cache::AbstractStageCache{NS},
                         mon::M) where {Z, NS, ISADJ,
                                        M<:Union{Void, AbstractMonitor}}
     # store initial state in monitors

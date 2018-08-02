@@ -1,17 +1,17 @@
-export RAMStageCache
+export AbstractStageCache, RAMStageCache
 
 # ---------------------------------------------------------------------------- #
 # Abstract type for all stage caches. The first parameters is the number
 # of cached intermediate stage values, and the second is their type, e.g.
 # some subtype of an AbstractArray.
-abstract type AbstractCache{NS, X} end
+abstract type AbstractStageCache{NS, X} end
 
-_iscache(::Type{<:AbstractCache}) = true
+_iscache(::Type{<:AbstractStageCache}) = true
 _iscache(::Any) = false
 
 # ---------------------------------------------------------------------------- #
 # Stage cache where all stages are cached in RAM.
-struct RAMStageCache{NS, X} <: AbstractCache{NS, X}
+struct RAMStageCache{NS, X} <: AbstractStageCache{NS, X}
      ts::Vector{Float64}
     Δts::Vector{Float64}
      xs::Vector{NTuple{NS, X}}
