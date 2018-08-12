@@ -1,4 +1,4 @@
-export coupled
+export Couple, coupled
 
 # This is basically a 2-tuple. We could use Base.Tuple{Any, Any}, obtaining 
 # most of the functionality except `similar` and `copy`, which we would need to
