@@ -30,15 +30,15 @@ end
 # that for quadrature integration the previous methods will apply. This is
 # a bit auto-magical, but works well.
 # TODO: we might want to pass dzdt to the quadrature too, if needed. 
-(sys::System{Couple, A, Q})(t::Real,
-                            z::Couple{Couple},
-                         dzdt::Couple{Couple}) where {A, Q} =
+(sys::System{<:Couple, A, Q})(t::Real,
+                              z::Couple{Couple},
+                           dzdt::Couple{Couple}) where {A, Q} =
     (first(sys.g)(t, first(first(z)), first(first(dzdt)));
       last(sys.g)(t, first(first(z)), first(first(dzdt)),
                       first(last(z)),  first(last(dzdt)));
      sys.q(t, first(z), last(dzdt)); dzdt)
 
-(sys::System{Couple, A, Void})(t::Real, z::Couple, dzdt::Couple) where {A} =
+(sys::System{<:Couple, A, Void})(t::Real, z::Couple, dzdt::Couple) where {A} =
     (first(sys.g)(t, first(z), first(dzdt));
       last(sys.g)(t, first(z), first(dzdt), last(z), last(dzdt)); dzdt)
 
@@ -58,14 +58,16 @@ for fun in [:A_mul_B!, :At_mul_B!]
         # when A is a `Couple` object. Obviously, we need `y` and `z` to be
         # `Couple` as well - this is with quadrature
         Base.$fun(out::Couple{Couple},
-                  sys::System{G, Couple, Q},
+                  sys::System{G, <:Couple, Q},
                     z::Couple{Couple}) where {G, Q} =
             ($fun(first(first(out)), first(sys.A), first(first(z)));
              $fun(first( last(out)),  last(sys.A), first( last(z)));
              last(out) .= 0; out)
 
         # and for no quadrature
-        Base.$fun(out::Couple, sys::System{G, Couple, Void}, z::Couple) where {G} =
+        Base.$fun(out::Couple, 
+                  sys::System{G, <:Couple, Void}, 
+                    z::Couple) where {G} =
             ($fun(first(out), first(sys.A), first(z));
              $fun( last(out),  last(sys.A),  last(z)); out)
 
@@ -94,7 +96,7 @@ for fun in [:ImcA!, :ImcAt!]
 
         # when A is a `Couple` object. Obviously, we need `y` and `z` to be
         # `Couple` as well - this is with quadrature.
-        $fun(sys::System{G, Couple, Q}, 
+        $fun(sys::System{G, <:Couple, Q}, 
                c::Real, 
                y::Couple{Couple}, 
                z::Couple{Couple}) where {G, Q} =
@@ -103,7 +105,10 @@ for fun in [:ImcA!, :ImcAt!]
                 last(z) .= last(y); z)
 
         # and with no quadrature.
-        $fun(sys::System{G, Couple, Void}, c::Real, y::Couple, z::Couple) where {G} =
+        $fun(sys::System{G, <:Couple, Void},
+               c::Real,
+               y::Couple,
+               z::Couple) where {G} =
             ($fun(first(sys.A), c, first(y), first(z));
              $fun( last(sys.A), c,  last(y),  last(z)); z)
 
