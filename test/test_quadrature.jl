@@ -36,10 +36,10 @@ end
     x, q = Float64[0.0], Float64[0.0, 0.0, 0.0]
 
     # integration method
-    for (method, order, value, _g, _A) in [(RK4(     x, q, :NORMAL), 4, 6.2, gfull, nothing),
-                                           (CB3R2R2( x, q, :NORMAL), 2, 19 , g,     A),
-                                           (CB3R2R3e(x, q, :NORMAL), 3, 5.5, g,     A),
-                                           (CB3R2R3c(x, q, :NORMAL), 3, 5.8, g,     A)]
+    for (method, order, value, _g, _A) in [(RK4(     coupled(x, q), :NORMAL), 4, 6.2, gfull, nothing),
+                                           (CB3R2R2( coupled(x, q), :NORMAL), 2, 19 , g,     A),
+                                           (CB3R2R3e(coupled(x, q), :NORMAL), 3, 5.5, g,     A),
+                                           (CB3R2R3c(coupled(x, q), :NORMAL), 3, 5.8, g,     A)]
                                            # (CB4R3R4( x, q, :NORMAL), 4, 0.16)]
 
         # exact values of integral

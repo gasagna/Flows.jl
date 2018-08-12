@@ -13,7 +13,6 @@ struct $name{X, NS, TAG, ISADJ} <: AbstractMethod{X, NS, TAG, ISADJ}
 end
 
 # outer constructor
-$name(x, q, tag::Symbol) = $name(coupled(x, q), tag)
 $name(x::X, tag::Symbol) where {X} =
     $name{X, $(nstages(tab)), _tag_map(tag)...}(ntuple(i->similar(x), 3))
 
