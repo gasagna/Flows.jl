@@ -1,10 +1,10 @@
-@testset "augmented state broadcast              " begin
+@testset "coupled state broadcast                " begin
     x = [1,   2,   3]
     q = [3.0, 4.0, 5.0]
 
-    # define two augmented states
-    z = Flows.augment(x, q)
-    y = Flows.augment(copy(x)+1, copy(q)+1)
+    # define two coupled states
+    z = Flows.coupled(x, q)
+    y = Flows.coupled(copy(x)+1, copy(q)+1)
 
     # define some operation
     fun!(z, y) = (z .= 2.0.*z .+ 1.0.*y .- 1; z)
@@ -13,8 +13,8 @@
     fun!(z, y)
 
     # value
-    @test Flows._state(z) == [3, 6, 9]
-    @test Flows._quad(z)  == [9.0, 12.0, 15.0]
+    @test first(z) == [3, 6, 9]
+    @test  last(z) == [9.0, 12.0, 15.0]
 
     # allocation
     @test (@allocated fun!(z, y)) == 0

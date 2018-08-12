@@ -7,7 +7,7 @@ struct RK4{X, TAG, ISADJ} <: AbstractMethod{X, 4, TAG, ISADJ}
 end
 
 # outer constructor
-RK4(x, q, tag::Symbol) = RK4(augment(x, q), tag)
+RK4(x, q, tag::Symbol) = RK4(coupled(x, q), tag)
 RK4(x::X, tag::Symbol) where {X} =
     RK4{X, _tag_map(tag)...}(ntuple(i->similar(x), 5))
 

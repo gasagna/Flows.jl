@@ -3,7 +3,6 @@ module Flows
 
 # ---------------------------------------------------------------------------- #
 include("couple.jl")
-include("quadrature.jl")
 include("tableaux.jl")
 include("stagecache.jl")
 include("system.jl")
