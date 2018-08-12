@@ -85,7 +85,7 @@ end
 
 # ---------------------------------------------------------------------------- #
 # CONSTANT FORWARD TIME STEPPING, ONLY FOR STATE EQUATIONS
-function _propagate!(method::AbstractMethod{Z, NS, :NL},
+function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
                    stepping::TimeStepConstant,
                      system::System,
                        span::NTuple{2, Real},
@@ -114,7 +114,7 @@ end
 
 # ---------------------------------------------------------------------------- #
 # PROPAGATION BASED ON SYSTEMS HOOK: ONLY FOR STATE EQUATIONS
-function _propagate!(method::AbstractMethod{Z, NS, :NL},
+function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
                        hook::AbstractTimeStepFromHook,
                      system::System,
                        span::NTuple{2, Real},

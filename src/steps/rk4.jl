@@ -12,8 +12,8 @@ RK4(x::X, tag::Symbol) where {X} =
     RK4{X, _tag_map(tag)...}(ntuple(i->similar(x), 5))
 
 # ---------------------------------------------------------------------------- #
-# Nonlinear problem with stage caching
-function step!(method::RK4{X, :NL},
+# Normal time stepping with optional stage caching
+function step!(method::RK4{X, :NORMAL},
                   sys::System,
                     t::Real,
                    Δt::Real,

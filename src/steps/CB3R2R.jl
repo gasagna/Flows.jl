@@ -19,7 +19,7 @@ $name(x::X, tag::Symbol) where {X} =
 
 # ---------------------------------------------------------------------------- #
 # Nonlinear problem with stage caching
-function step!(method::$name{X, NS, :NL},
+function step!(method::$name{X, NS, :NORMAL},
                   sys::System,
                     t::Real,
                    Δt::Real,
