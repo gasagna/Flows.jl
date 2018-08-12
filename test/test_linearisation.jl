@@ -247,3 +247,50 @@ end
         @test abs(a - b)/a < 1e-14
     end
 end
+
+# ---------------------------------------------------------------------------- #
+# COUPLED INTEGRATION OF THE GOVERNING EQUATIONS PLUS LINEARISED EQUATIONS
+@testset "coupled integration                    " begin
+    # initial conditions
+    x0 = Float64[9.1419853, 1.648665, 35.21793]
+
+    # INTEGRATE USING COUPLED INTEGRATION
+    # explicit integrator
+    method = RK4(coupled(x0, x0), :NORMAL)
+
+    # linear flow map note we first pass the nonlinear equations
+    ψ = flow(coupled(Lorenz(0), LorenzTan(0)), method, TimeStepConstant(1e-2))
+
+    # initial condition for the linearised equations
+    y0 = Float64[1.0, 0.0, 0.0]
+
+    # propagate
+    ψ(coupled(copy(x0), y0), (0, 10))
+
+    # get norm
+    n_coupled = norm(y0)
+
+
+    # INTEGRATE USING CACHE
+    # stage cache
+    scache = RAMStageCache(4, x0)
+
+    # non linear flow map
+    ϕ = flow(Lorenz(0), RK4(x0, :NORMAL), TimeStepConstant(1e-2))
+
+    # linearised propagator and adjoint
+    ψ  = flow(LorenzTan(0), RK4(x0, :TAN), TimeStepFromCache())
+
+    # propagate nonlinear operator
+    ϕ(copy(x0), (0, 10), reset!(scache))
+
+    # propagate linear operators forward/backward
+    y0 = Float64[1.0, 0.0, 0.0]
+    ψ(y0, scache)
+    
+    # get norm
+    n_cache = norm(y0)
+
+    # the two methods should really be the same
+    @test n_coupled == n_cache
+end
