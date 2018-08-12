@@ -22,8 +22,6 @@ flow(g,       m::AbstractMethod, ts::AbstractTimeStepping) =
 # ---------------------------------------------------------------------------- #
 # FLOWS ARE CALLABLE OBJECTS: THIS IS THE MAIN INTERFACE
 
-const MayBe{T} = Union{T, Void}
-
 # normal stepping
 (I::Flow)(x, span::NTuple{2, Real}) =
     _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, nothing)
@@ -34,13 +32,13 @@ const MayBe{T} = Union{T, Void}
 
 # fill a cache and optionally a monitor
 (I::Flow)(x, span::NTuple{2, Real}, 
-          c::AbstractStageCache, m::MayBe{<:AbstractMonitor}=nothing) =
+          c::AbstractStageCache, m::Union{Void, <:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, c, m)
 
 # stepping based on cache only 
 (I::Flow{TimeStepFromCache})(x, 
                              c::AbstractStageCache, 
-                             m::MayBe{<:AbstractMonitor}=nothing) =
+                             m::Union{Void, <:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.sys, x, c, m)
 
 # ---------------------------------------------------------------------------- #
@@ -57,13 +55,13 @@ const MayBe{T} = Union{T, Void}
 
 # fill a cache and optionally a monitor
 (I::Flow)(x, q, span::NTuple{2, Real}, 
-          c::AbstractStageCache, m::MayBe{<:AbstractMonitor}=nothing) =
+          c::AbstractStageCache, m::Union{Void, <:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.tstep, I.sys, Float64.(span), augment(x, q), c, m)
 
 # stepping based on cache only, calculating a quadrature
 (I::Flow{TimeStepFromCache})(x, q,
                              c::AbstractStageCache, 
-                             m::MayBe{<:AbstractMonitor}=nothing) =
+                             m::Union{Void, <:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.sys, augment(x, q), c, m)
 
 
