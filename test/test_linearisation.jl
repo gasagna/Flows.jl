@@ -4,8 +4,8 @@ using Flows
 # ---------------------------------------------------------------------------- #
 # NONLINEAR EQUATIONS. We arbitrarily split the equations into explicit and
 # implicit components, for testing purposes. To do so, we integrate the 
-# diagonal part implicitly, which does also not depend on the state.
-
+# diagonal part implicitly, which does also not depend on the state. 
+# If you set flag to zero, you do not need the linear part.
 struct Lorenz
     flag::Int
 end
@@ -25,7 +25,13 @@ struct LorenzTan
     flag::Int
 end
 
-function (eq::LorenzTan)(t::Real, u::V, v::V, dvdt::V) where {V<:AbstractVector}
+# define two methods, with and without dudt
+(eq::LorenzTan)(t::Real, u::V, dudt::V,
+                         v::V, dvdt::V) where {V<:AbstractVector} =
+    eq(t, u, v, dvdt)
+
+function (eq::LorenzTan)(t::Real, u::V,
+                                  v::V, dvdt::V) where {V<:AbstractVector}
     # extract components
     x′, y′, z′ = v
     x,  y,  z  = u
@@ -111,9 +117,9 @@ end
     # initial conditions
     x0 = Float64[15, 16, 20]
 
-    for (nl, l_t, l_adj, NS) in [(CB3R2R2(x0, :NORMAL),  CB3R2R2(x0, :TAN),  CB3R2R2(x0, :ADJ),  3),
-                                   (CB3R2R3e(x0, :NORMAL), CB3R2R3e(x0, :TAN), CB3R2R3e(x0, :ADJ), 4),
-                                   (CB3R2R3c(x0, :NORMAL), CB3R2R3c(x0, :TAN), CB3R2R3c(x0, :ADJ), 4)]
+    for (nl, l_t, l_adj, NS) in [(CB3R2R2(x0,  :NORMAL),  CB3R2R2(x0, :TAN),  CB3R2R2(x0, :ADJ),  3),
+                                 (CB3R2R3e(x0, :NORMAL), CB3R2R3e(x0, :TAN), CB3R2R3e(x0, :ADJ), 4),
+                                 (CB3R2R3c(x0, :NORMAL), CB3R2R3c(x0, :TAN), CB3R2R3c(x0, :ADJ), 4)]
 
         # stage cache
         scache = RAMStageCache(NS, x0)
@@ -158,12 +164,12 @@ end
     x0 = zeros(Complex128, 3)
 
     # complex step
-    ϵ = 1e-12
+    ϵ = 1e-100
 
-    for (nl, l_t, NS, _g_nl, _g_t, _A) in [(RK4(x0,:NORMAL),       RK4(real.(x0), :TAN),      4, Lorenz(0), LorenzTan(0), nothing),
-                                             (CB3R2R2(x0, :NORMAL),  CB3R2R2(real.(x0), :TAN),  3, Lorenz(1), LorenzTan(1), A),
-                                             (CB3R2R3e(x0, :NORMAL), CB3R2R3e(real.(x0), :TAN), 4, Lorenz(1), LorenzTan(1), A),
-                                             (CB3R2R3c(x0, :NORMAL), CB3R2R3c(real.(x0), :TAN), 4, Lorenz(1), LorenzTan(1), A)]
+    for (nl, l_t, NS, _g_nl, _g_t, _A) in [(RK4(x0,      :NORMAL),      RK4(real.(x0), :TAN), 4, Lorenz(0), LorenzTan(0), nothing),
+                                           (CB3R2R2(x0,  :NORMAL),  CB3R2R2(real.(x0), :TAN), 3, Lorenz(1), LorenzTan(1), A),
+                                           (CB3R2R3e(x0, :NORMAL), CB3R2R3e(real.(x0), :TAN), 4, Lorenz(1), LorenzTan(1), A),
+                                           (CB3R2R3c(x0, :NORMAL), CB3R2R3c(real.(x0), :TAN), 4, Lorenz(1), LorenzTan(1), A)]
 
         for i = 1:3
             x0 = [9.1419853, 1.648665, 35.21793] + im*[0.0, 0.0, 0.0]
@@ -210,8 +216,8 @@ end
     # initial conditions
     x0 = Float64[9.1419853, 1.648665, 35.21793]
 
-    for (nl, l_t, l_a, NS, _g_nl, _g_t, _g_a, _A) in [(RK4(x0,:NORMAL),       RK4(x0,      :TAN), RK4(x0,      :ADJ), 4, Lorenz(0), LorenzTan(0), LorenzAdj(0), nothing),
-                                                      (CB3R2R2(x0, :NORMAL),  CB3R2R2(x0,  :TAN), CB3R2R2(x0,  :ADJ), 3, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
+    for (nl, l_t, l_a, NS, _g_nl, _g_t, _g_a, _A) in [(RK4(x0,      :NORMAL),      RK4(x0, :TAN), RK4(x0,      :ADJ), 4, Lorenz(0), LorenzTan(0), LorenzAdj(0), nothing),
+                                                      (CB3R2R2(x0,  :NORMAL),  CB3R2R2(x0, :TAN), CB3R2R2(x0,  :ADJ), 3, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
                                                       (CB3R2R3e(x0, :NORMAL), CB3R2R3e(x0, :TAN), CB3R2R3e(x0, :ADJ), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
                                                       (CB3R2R3c(x0, :NORMAL), CB3R2R3c(x0, :TAN), CB3R2R3c(x0, :ADJ), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A)]
 
