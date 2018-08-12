@@ -29,14 +29,26 @@ end
 # these two will not get called if only `z` and `dzdt` are `Couple`. This means
 # that for quadrature integration the previous methods will apply. This is
 # a bit auto-magical, but works well.
-# TODO: we might want to pass dzdt to the quadrature too, if needed. 
-(sys::System{<:Couple, A, Q})(t::Real,
-                              z::Couple{Couple},
-                           dzdt::Couple{Couple}) where {A, Q} =
-    (first(sys.g)(t, first(first(z)), first(first(dzdt)));
-      last(sys.g)(t, first(first(z)), first(first(dzdt)),
-                      first(last(z)),  first(last(dzdt)));
-     sys.q(t, first(z), last(dzdt)); dzdt)
+# TODO: we might want to pass dzdt to the quadrature too, if needed.
+function (sys::System{<:Couple, A, Q})(t::Real,
+                                       z::Couple{C},
+                                    dzdt::Couple{C}) where {A, Q, C<:Couple}
+    # unpack things
+     x, y,   q = first(first(z)),    last(first(z)),    last(z)
+    dx, dy, dq = first(first(dzdt)), last(first(dzdt)), last(dzdt)
+
+    # call nonlinear equations first
+    first(sys.g)(t, x, dx)
+
+    # call linearised equations second
+     last(sys.g)(t, x, dx, y, dy)
+
+    # call quadrature
+    sys.q(t, first(z), dq)
+
+    # return
+    return dzdt
+end
 
 (sys::System{<:Couple, A, Void})(t::Real, z::Couple, dzdt::Couple) where {A} =
     (first(sys.g)(t, first(z), first(dzdt));
