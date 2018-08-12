@@ -12,10 +12,10 @@
     x0 = Float64[1.0]
 
     #                                     method             ord  bounds
-    for (scheme, order, bnd, _g, _A) in [(RK4(     x0, :NL), 4, (0.008300, 0.008700), gfull, nothing),
-                                         (CB3R2R2( x0, :NL), 2, (0.025000, 0.027100), g,     A),
-                                         (CB3R2R3e(x0, :NL), 3, (0.006900, 0.008100), g,     A),
-                                         (CB3R2R3c(x0, :NL), 3, (0.007300, 0.008600), g,     A)]
+    for (scheme, order, bnd, _g, _A) in [(RK4(     x0, :NORMAL), 4, (0.008300, 0.008700), gfull, nothing),
+                                         (CB3R2R2( x0, :NORMAL), 2, (0.025000, 0.027100), g,     A),
+                                         (CB3R2R3e(x0, :NORMAL), 3, (0.006900, 0.008100), g,     A),
+                                         (CB3R2R3c(x0, :NORMAL), 3, (0.007300, 0.008600), g,     A)]
 
         # ensure that the error decays with expected rate
         for Δt = [5^(-i) for i in linspace(1, 3, 5)]

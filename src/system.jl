@@ -7,7 +7,8 @@ end
 
 # Explicit part
 (sys::System{G, A, Q})(t::Real, z, dzdt) where {G, A, Q} =
-    (sys.g(t, _state(z), _state(dzdt)); sys.q(t, _state(z), _quad(dzdt)); dzdt)
+    (sys.g(t, _state(z), _state(dzdt)); 
+     sys.q(t, _state(z),  _quad(dzdt)); dzdt)
 
 (sys::System{G, A, Void})(t::Real, z, dzdt) where {G, A} = 
     (sys.g(t, z, dzdt); dzdt)
@@ -15,13 +16,35 @@ end
 # Explicit part for linearised problems
 (sys::System{G, A, Q})(t::Real, u, z, dzdt) where {G, A, Q} =
     (sys.g(t, u, _state(z), _state(dzdt));
-     sys.q(t,    _state(z), _quad(dzdt)); dzdt)
+     sys.q(t,    _state(z),  _quad(dzdt)); dzdt)
 
 (sys::System{G, A, Void})(t::Real, u, z, dzdt) where {G, A} = 
     (sys.g(t, u, z, dzdt); dzdt)
 
-# Implicit part. We also define methods for At_mul_B!, for the adjoint 
-# code, hence the user must also provide At_mul_B! for his linear implicit type
+# Explicit part for coupled integration. We execute the FIRST function first,
+# then use the output for evaluating the second function too. This assumes
+# essentially that the coupled system is lower triangular. If passing a
+# quadrature, we expect if will work with Couple objects. The way this is 
+# coded up does not assume that the implicit part is coupled too.
+
+# TODO: we might want to pass dzdt to the quadrature too, if needed. 
+(sys::System{Couple, A, Q})(t::Real,
+                            z::Augmented{Couple},
+                         dzdt::Augmented{Couple}) where {A, Q} =
+    (first(sys.g)(t, _state(first(z)), _state(first(dzdt)));
+      last(sys.g)(t, _state(first(z)), _state(first(dzdt)),
+                      _state(last(z)),  _state(last(dzdt)));
+     sys.q(t, _state(z), _quad(dzdt)); dzdt)
+
+(sys::System{Couple, A, Void})(t::Real, z::Couple, dzdt::Couple) where {A} =
+    (first(sys.g)(t, first(z), first(dzdt));
+      last(sys.g)(t, first(z), first(dzdt), last(z), last(dzdt)); dzdt)
+
+
+# Implicit part. We also define methods for At_mul_B!, for the adjoint
+# code, hence the user must also provide At_mul_B! for his linear implicit
+# type. Note we set the quadrature part to zero, since we are treating it
+# fully explicitly.
 for fun in [:A_mul_B!, :At_mul_B!]
     @eval begin
         Base.$fun(out, sys::System{G, A, Q}, z) where {G, A, Q} =
@@ -30,6 +53,23 @@ for fun in [:A_mul_B!, :At_mul_B!]
         Base.$fun(out, sys::System{G, A, Void}, z) where {G, A} =
             $fun(out, sys.A, z)
 
+        # when A is a `Couple` object. Obviously, we need `y` and `z` to be
+        # `Couple` as well - this is with quadrature
+        Base.$fun(out::Augmented{Couple},
+                  sys::System{G, Couple, Q},
+                    z::Augmented{Couple}) where {G, Q} =
+            ($fun(_state(first(out)), first(sys.A), _state(first(z)));
+             $fun(_state( last(out)),  last(sys.A), _state( last(z)));
+             _quad(out) .= 0; out)
+
+        # and for no quadrature
+        Base.$fun(out::Couple, sys::System{G, Couple, Void}, z::Couple) where {G} =
+            ($fun(first(out), first(sys.A), first(z));
+             $fun( last(out),  last(sys.A),  last(z)); out)
+
+        # this is for fully explicit problems. We do not add methods for when
+        # G, out and z are `Couple` objects, since `out::Couple` should
+        # support broadcasting operations
         Base.$fun(out, sys::System{G, Void, Q}, z) where {G, Q} =
             (out .= 0; out)
 
@@ -50,6 +90,21 @@ for fun in [:ImcA!, :ImcAt!]
         $fun(sys::System{G, A, Void}, c::Real, y, z) where {G, A} =
             ($fun(sys.A, c, y, z); z)
 
+        # when A is a `Couple` object. Obviously, we need `y` and `z` to be
+        # `Couple` as well - this is with quadrature.
+        $fun(sys::System{G, Couple, Q}, c::Real, y::Couple, z::Couple) where {G, Q} =
+            ($fun(first(sys.A), c, _state(first(y)), _state(first(z)));
+             $fun( last(sys.A), c, _state( last(y)), _state( last(z)));
+                _quad(z) .= _quad(y); z)
+
+        # and with no quadrature.
+        $fun(sys::System{G, Couple, Void}, c::Real, y::Couple, z::Couple) where {G} =
+            ($fun(first(sys.A), c, first(y), first(z));
+             $fun( last(sys.A), c,  last(y),  last(z)); z)
+
+        # this is for fully explicit systems. We do not add methods for when
+        # G, y and z are `Couple` objects, since `z` and `y` as `Couple` objects 
+        # should support broadcasting operations
         $fun(sys::System{G, Void, Q}, c::Real, y, z) where {G, Q} =
             (z .= y; z)
 

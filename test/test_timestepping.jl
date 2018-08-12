@@ -10,7 +10,7 @@ g(t, x, ẋ) = (ẋ .= -1; ẋ)
 
 @testset "from hook                              " begin
     # integration scheme
-    scheme = RK4(zeros(1), :NL)
+    scheme = RK4(zeros(1), :NORMAL)
 
     # forward map
     ϕ = flow(g, scheme, TestFromHook())
@@ -30,12 +30,12 @@ g(t, x, ẋ) = (ẋ .= -1; ẋ)
     @test abs(samples(mon)[end]) < 2e-16
 
     # backward integration fails
-    @test_throws ArgumentError ϕ([1.0], (1, 0), reset!(mon))
+    @test_throws InvalidSpanError ϕ([1.0], (1, 0), reset!(mon))
 end
 
 @testset "constant time step                     " begin
     # integration scheme
-    scheme = RK4(zeros(1), :NL)
+    scheme = RK4(zeros(1), :NORMAL)
 
     # forward map
     ϕ = flow(g, scheme, TimeStepConstant(0.5))
@@ -56,5 +56,5 @@ end
     @test abs(samples(mon)[end]) < 2e-16
 
     # backward integration fails
-    @test_throws ArgumentError ϕ([1.0], (1, 0), reset!(mon))
+    @test_throws InvalidSpanError ϕ([1.0], (1, 0), reset!(mon))
 end

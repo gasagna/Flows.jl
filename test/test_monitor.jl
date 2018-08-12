@@ -36,7 +36,7 @@ end
     A = Diagonal([0.0])
 
     # integration scheme
-    scheme = CB3R2R3e(Float64[0.0], :NL)
+    scheme = CB3R2R3e(Float64[0.0], :NORMAL)
 
     # monitors
     m = Monitor([1.0], x->x[1]^2; sizehint=10000)
