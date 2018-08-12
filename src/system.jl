@@ -25,8 +25,10 @@ end
 # then use the output for evaluating the second function too. This assumes
 # essentially that the coupled system is lower triangular. If passing a
 # quadrature, we expect if will work with Couple objects. The way this is 
-# coded up does not assume that the implicit part is coupled too.
-
+# coded up does not assume that the implicit part is coupled too. Note that
+# these two will not get called if only `z` and `dzdt` are `Couple`. This means
+# that for quadrature integration the previous methods will apply. This is
+# a bit auto-magical, but works well.
 # TODO: we might want to pass dzdt to the quadrature too, if needed. 
 (sys::System{Couple, A, Q})(t::Real,
                             z::Couple{Couple},
