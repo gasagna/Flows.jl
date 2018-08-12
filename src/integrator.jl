@@ -1,4 +1,4 @@
-export flow
+export flow, InvalidSpanError
 
 # ---------------------------------------------------------------------------- #
 # The Flow type!
@@ -70,11 +70,18 @@ const MayBe{T} = Union{T, Void}
 # ---------------------------------------------------------------------------- #
 # PROPAGATION FUNCTIONS & UTILS
 
+struct InvalidSpanError{S} <: Exception 
+    span::S
+end
+
+Base.showerror(io::IO, e::InvalidSpanError) =
+    print(io, "Invalid time span ", e.span, ". Time must be increasing.\n")
+
 # check span and/or return
 macro _checkspan(span, z)
     quote
        $(esc(span))[1] ==$(esc(span))[2] && return $z
-       $(esc(span))[1]  >$(esc(span))[2] && throw(ArgumentError("invalid span"))
+       $(esc(span))[1]  >$(esc(span))[2] && throw(InvalidSpanError($(esc(span))))
     end
 end
 
