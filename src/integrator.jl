@@ -101,12 +101,12 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
     ts = LossLessRange(span[1], span[2], stepping.Δt)
 
     # push initial state monitor
-    _ismonitor(M) && push!(mon, ts[1], first(z))
+    _ismonitor(M) && push!(mon, ts[1], z)
 
     # start integration
     for j = 2:length(ts)
         step!(method, system, ts[j-1], ts[j]-ts[j-1], z, cache)
-        _ismonitor(M) && push!(mon, ts[j], first(z))
+        _ismonitor(M) && push!(mon, ts[j], z)
     end
 
     return z
@@ -130,7 +130,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
     t, T = span
 
     # store initial state in monitors
-    _ismonitor(M) && push!(mon, t, first(z))
+    _ismonitor(M) && push!(mon, t, z)
 
     # run until condition
     while t != T
@@ -144,7 +144,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
         t = t_next
 
         # store solution into monitor
-        _ismonitor(M) && push!(mon, t, first(z))
+        _ismonitor(M) && push!(mon, t, z)
     end
 
     return z
@@ -165,9 +165,6 @@ function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
                       cache::AbstractStageCache{NS},
                         mon::M) where {Z, NS, ISADJ,
                                        M<:Union{Void, AbstractMonitor}}
-    # store initial state in monitors
-    _ismonitor(M) && push!(mon, ts[1], first(z))
-
     # TODO: fix this with proper iteration support for the stage cache
     ts  = cache.ts
     Δts = cache.Δts
@@ -175,9 +172,14 @@ function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
 
     # integrate forward or backward based on type of linear equation
     rng = ISADJ == true ? reverse(1:length(ts)) : 1:length(ts)
+    
+    # store initial state in monitors
+    _ismonitor(M) && push!(mon, ts[rng[1]], z)
+
+    # THIS NEED CHECKING
     for i in rng
         step!(method, system, ts[i], Δts[i], z, xs[i])
-        _ismonitor(M) && push!(mon, ts[i]+Δts[i], first(z))
+        _ismonitor(M) && push!(mon, ts[i]+Δts[i], z)
     end
 
     return z
