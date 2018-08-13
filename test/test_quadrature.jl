@@ -30,7 +30,14 @@ end
     gfull(t, x, ẋ) = (ẋ .= x; ẋ)
 
     # define example quadrature functions
-    @inline quad(t, x, q̇) = (q̇[1] = 1; q̇[2] = x[1]; q̇[3] = t; return q̇)
+    @inline function quad(t, xq::Coupled, q̇)
+        # unpack state. This results in lots of allocations on v
+        # x = first(xq)
+        q̇[1] = 1
+        q̇[2] = xq.a[1]
+        q̇[3] = t
+        return q̇
+    end
 
     # state and quadrature
     x, q = Float64[0.0], Float64[0.0, 0.0, 0.0]
