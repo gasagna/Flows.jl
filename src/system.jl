@@ -8,7 +8,7 @@ end
 # Explicit part
 (sys::System{G, A, Q})(t::Real, z, dzdt) where {G, A, Q} =
     (sys.g(t, first(z), first(dzdt)); 
-     sys.q(t, first(z),  last(dzdt)); dzdt)
+     sys.q(t,       z ,  last(dzdt)); dzdt)
 
 (sys::System{G, A, Void})(t::Real, z, dzdt) where {G, A} = 
     (sys.g(t, z, dzdt); dzdt)
@@ -16,7 +16,7 @@ end
 # Explicit part for linearised problems
 (sys::System{G, A, Q})(t::Real, u, z, dzdt) where {G, A, Q} =
     (sys.g(t, u, first(z), first(dzdt));
-     sys.q(t,    first(z),  last(dzdt)); dzdt)
+     sys.q(t,          z ,  last(dzdt)); dzdt)
 
 (sys::System{G, A, Void})(t::Real, u, z, dzdt) where {G, A} = 
     (sys.g(t, u, z, dzdt); dzdt)
@@ -44,7 +44,7 @@ function (sys::System{<:Coupled, A, Q})(t::Real,
     last(sys.g)(t, x, dx, y, dy)
 
     # call quadrature
-    sys.q(t, first(z), dq)
+    sys.q(t, z, dq)
 
     # return
     return dzdt
