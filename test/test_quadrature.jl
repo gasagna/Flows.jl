@@ -35,6 +35,9 @@ end
     # state and quadrature
     x, q = Float64[0.0], Float64[0.0, 0.0, 0.0]
 
+    # monitor first quadrature equation
+    mon = Monitor(couple(x, q), copy)
+
     # integration method
     for (method, order, value, _g, _A) in [(RK4(     x, q, :NORMAL), 4, 6.2, gfull, nothing),
                                            (CB3R2R2( x, q, :NORMAL), 2, 19 , g,     A),
@@ -56,7 +59,10 @@ end
             q₀ = Float64[0.0, 0.0, 0.0]
 
             # call
-            f(x₀, q₀, (0, 5))
+            f(x₀, q₀, (0, 5), mon)
+
+            # test 
+            @test eltype(samples(mon)) == Coupled{Vector{Float64}, Vector{Float64}}
 
             # integrals
             @test norm(abs.(q₀ - exact)) / Δt^order < value
