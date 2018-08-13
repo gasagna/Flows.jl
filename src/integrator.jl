@@ -171,15 +171,25 @@ function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
     xs  = cache.xs
 
     # integrate forward or backward based on type of linear equation
-    rng = ISADJ == true ? reverse(1:length(ts)) : 1:length(ts)
-    
-    # store initial state in monitors
-    _ismonitor(M) && push!(mon, ts[rng[1]], z)
+    if ISADJ == false
+        # store final state in monitors. Note cache does not contain final T.
+        _ismonitor(M) && push!(mon, ts[1], z)
 
-    # THIS NEED CHECKING
-    for i in rng
-        step!(method, system, ts[i], Δts[i], z, xs[i])
-        _ismonitor(M) && push!(mon, ts[i]+Δts[i], z)
+        for i in 1:length(ts)
+            # make step
+            step!(method, system, ts[i], Δts[i], z, xs[i])
+
+            # then save current state
+            _ismonitor(M) && push!(mon, ts[i]+Δts[i], z)
+        end
+    else 
+        # store final state in monitors. Note cache does not contain final T.
+        _ismonitor(M) && push!(mon, ts[end] + Δts[end], z)
+
+        for i in reverse(1:length(ts))
+            step!(method, system, ts[i], Δts[i], z, xs[i])
+            _ismonitor(M) && push!(mon, ts[i], z)
+        end
     end
 
     return z

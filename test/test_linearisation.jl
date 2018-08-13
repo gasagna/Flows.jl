@@ -235,16 +235,27 @@ end
         # propagate nonlinear operator
         ϕ(copy(x0), (0, 5), reset!(scache))
 
+        # also make sure monitor are good
+        mon_tan = Monitor(x0, copy)
+        mon_adj = Monitor(x0, copy)
+
         # propagate linear operators forward/backward
         y0 = Float64[1, 2, 3]
-        ψ(y0, scache)
+        ψ(y0, scache, mon_tan)
+
         qT = Float64[4, 5, 6]
-        ψ⁺(qT, scache)
+        ψ⁺(qT, scache, mon_adj)
 
         # test 
         a = dot(y0, [4, 5, 6])
         b = dot(qT, [1, 2, 3])
         @test abs(a - b)/a < 1e-14
+
+        # test monitors
+        @test times(mon_tan)[1]   == 0
+        @test times(mon_tan)[end] == 5
+        @test times(mon_adj)[1]   == 5
+        @test times(mon_adj)[end] == 0
     end
 end
 
