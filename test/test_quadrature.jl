@@ -3,8 +3,8 @@
     q = [3.0, 4.0, 5.0]
 
     # define two coupled states
-    z = Flows.coupled(x, q)
-    y = Flows.coupled(copy(x)+1, copy(q)+1)
+    z = Flows.couple(x, q)
+    y = Flows.couple(copy(x)+1, copy(q)+1)
 
     # define some operation
     fun!(z, y) = (z .= 2.0.*z .+ 1.0.*y .- 1; z)

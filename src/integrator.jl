@@ -46,23 +46,23 @@ flow(g,       m::AbstractMethod, ts::AbstractTimeStepping) =
 # normal stepping
 (I::Flow)(x, q, span::NTuple{2, Real}) =
     _propagate!(I.meth, I.tstep, I.sys, Float64.(span), 
-                coupled(x, q), nothing, nothing)
+                couple(x, q), nothing, nothing)
 
 # fill a monitor
 (I::Flow)(x, q, span::NTuple{2, Real}, m::AbstractMonitor) =
     _propagate!(I.meth, I.tstep, I.sys, Float64.(span), 
-                coupled(x, q), nothing, m)
+                couple(x, q), nothing, m)
 
 # fill a cache and optionally a monitor
 (I::Flow)(x, q, span::NTuple{2, Real}, 
           c::AbstractStageCache, m::Union{Void, <:AbstractMonitor}=nothing) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), coupled(x, q), c, m)
+    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), couple(x, q), c, m)
 
 # stepping based on cache only, calculating a quadrature
 (I::Flow{TimeStepFromCache})(x, q,
                              c::AbstractStageCache, 
                              m::Union{Void, <:AbstractMonitor}=nothing) =
-    _propagate!(I.meth, I.sys, coupled(x, q), c, m)
+    _propagate!(I.meth, I.sys, couple(x, q), c, m)
 
 
 # ---------------------------------------------------------------------------- #
