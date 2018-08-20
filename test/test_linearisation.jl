@@ -67,244 +67,244 @@ end
 # The diagonal term is integrated implicitly
 const A = Diagonal([-10, -1, -8/3])
 
-# # ---------------------------------------------------------------------------- #
-# # TEST DISCRETE ADJOINT
-# @testset "RK4                                    " begin 
+# ---------------------------------------------------------------------------- #
+# TEST DISCRETE ADJOINT
+@testset "RK4                                    " begin 
 
-#     # initial conditions
-#     x0 = Float64[1, 1, 2]
+    # initial conditions
+    x0 = Float64[1, 1, 2]
 
-#     # methods
-#     nl    = RK4(x0, :NORMAL)
-#     l_t = RK4(x0, :TAN)
-#     l_adj = RK4(x0, :ADJ)
+    # methods
+    nl    = RK4(x0, :NORMAL)
+    l_t = RK4(x0, :TAN)
+    l_adj = RK4(x0, :ADJ)
 
-#     # stage cache
-#     scache = RAMStageCache(4, x0)
+    # stage cache
+    scache = RAMStageCache(4, x0)
 
-#     # system (without diagonal)
-#     sys_nl    = Flows.System(Lorenz(0),    nothing, nothing)
-#     sys_l_tan = Flows.System(LorenzTan(0), nothing, nothing)
-#     sys_l_adj = Flows.System(LorenzAdj(0), nothing, nothing)
+    # system (without diagonal)
+    sys_nl    = Flows.System(Lorenz(0),    nothing, nothing)
+    sys_l_tan = Flows.System(LorenzTan(0), nothing, nothing)
+    sys_l_adj = Flows.System(LorenzAdj(0), nothing, nothing)
 
-#     # execute step
-#     N = 5
-#     for i = 1:N
-#         Flows.step!(nl, sys_nl,    0, 1e-2, x0, scache)
-#     end
+    # execute step
+    N = 5
+    for i = 1:N
+        Flows.step!(nl, sys_nl,    0, 1e-2, x0, scache)
+    end
 
-#     y0 = Float64[1, 2, 3]
-#     for i = 1:N
-#         Flows.step!(l_t, sys_l_tan, 0, 1e-2, y0, scache.xs[i])
-#     end
+    y0 = Float64[1, 2, 3]
+    for i = 1:N
+        Flows.step!(l_t, sys_l_tan, 0, 1e-2, y0, scache.xs[i])
+    end
 
-#     q1 = Float64[4, 5, 7]
-#     for i = N:-1:1
-#         Flows.step!(l_adj, sys_l_adj, 0, 1e-2, q1, scache.xs[i])
-#     end
+    q1 = Float64[4, 5, 7]
+    for i = N:-1:1
+        Flows.step!(l_adj, sys_l_adj, 0, 1e-2, q1, scache.xs[i])
+    end
 
-#     a = dot(y0, [4, 5, 7])
-#     b = dot(q1, [1, 2, 3])
-#     @test abs(a-b)/abs(a) < 1e-14
+    a = dot(y0, [4, 5, 7])
+    b = dot(q1, [1, 2, 3])
+    @test abs(a-b)/abs(a) < 1e-14
 
-#     # these take the same time
-#     # ta = @belapsed Flows.step!($l_adj, $sys_l_adj, 0, 1e-2, $q1, $(scache.xs[1]))
-#     # tb = @belapsed Flows.step!($l_t, $sys_l_tan, 0, 1e-2, $q1, $(scache.xs[1]))
-#     # println(ta/tb)
-# end
+    # these take the same time
+    # ta = @belapsed Flows.step!($l_adj, $sys_l_adj, 0, 1e-2, $q1, $(scache.xs[1]))
+    # tb = @belapsed Flows.step!($l_t, $sys_l_tan, 0, 1e-2, $q1, $(scache.xs[1]))
+    # println(ta/tb)
+end
 
-# @testset "CB3R2R                                 " begin 
-#     # initial conditions
-#     x0 = Float64[15, 16, 20]
+@testset "CB3R2R                                 " begin 
+    # initial conditions
+    x0 = Float64[15, 16, 20]
 
-#     for (nl, l_t, l_adj, NS) in [(CB3R2R2(x0,  :NORMAL),  CB3R2R2(x0, :TAN),  CB3R2R2(x0, :ADJ),  3),
-#                                  (CB3R2R3e(x0, :NORMAL), CB3R2R3e(x0, :TAN), CB3R2R3e(x0, :ADJ), 4),
-#                                  (CB3R2R3c(x0, :NORMAL), CB3R2R3c(x0, :TAN), CB3R2R3c(x0, :ADJ), 4)]
+    for (nl, l_t, l_adj, NS) in [(CB3R2R2(x0,  :NORMAL),  CB3R2R2(x0, :TAN),  CB3R2R2(x0, :ADJ),  3),
+                                 (CB3R2R3e(x0, :NORMAL), CB3R2R3e(x0, :TAN), CB3R2R3e(x0, :ADJ), 4),
+                                 (CB3R2R3c(x0, :NORMAL), CB3R2R3c(x0, :TAN), CB3R2R3c(x0, :ADJ), 4)]
 
-#         # stage cache
-#         scache = RAMStageCache(NS, x0)
+        # stage cache
+        scache = RAMStageCache(NS, x0)
 
-#         # system
-#         sys_nl    = Flows.System(Lorenz(1),    A, nothing)
-#         sys_l_tan = Flows.System(LorenzTan(1), A, nothing)
-#         sys_l_adj = Flows.System(LorenzAdj(1), A, nothing)
+        # system
+        sys_nl    = Flows.System(Lorenz(1),    A, nothing)
+        sys_l_tan = Flows.System(LorenzTan(1), A, nothing)
+        sys_l_adj = Flows.System(LorenzAdj(1), A, nothing)
 
-#         # execute step
-#         N = 50
-#         for i = 1:N
-#             Flows.step!(nl, sys_nl,    0, 1e-2, x0, scache)
-#         end
+        # execute step
+        N = 50
+        for i = 1:N
+            Flows.step!(nl, sys_nl,    0, 1e-2, x0, scache)
+        end
 
-#         y0 = Float64[1, 2, 3]
-#         for i = 1:N
-#             Flows.step!(l_t, sys_l_tan, 0, 1e-2, y0, scache.xs[i])
-#         end
+        y0 = Float64[1, 2, 3]
+        for i = 1:N
+            Flows.step!(l_t, sys_l_tan, 0, 1e-2, y0, scache.xs[i])
+        end
 
-#         q1 = Float64[4, 5, 7]
-#         for i = N:-1:1
-#             Flows.step!(l_adj, sys_l_adj, 0, 1e-2, q1, scache.xs[i])
-#         end
+        q1 = Float64[4, 5, 7]
+        for i = N:-1:1
+            Flows.step!(l_adj, sys_l_adj, 0, 1e-2, q1, scache.xs[i])
+        end
 
-#         a = dot(y0, [4, 5, 7])
-#         b = dot(q1, [1, 2, 3])
-#         @test abs(a-b)/abs(a) < 1e-14
+        a = dot(y0, [4, 5, 7])
+        b = dot(q1, [1, 2, 3])
+        @test abs(a-b)/abs(a) < 1e-14
 
-#         # the adjoint code is ~30% slower here
-#         # ta = @belapsed Flows.step!($l_adj, $sys_l_adj, 0, 1e-2, $q1, $(scache.xs[1]))
-#         # tb = @belapsed Flows.step!($l_t, $sys_l_tan, 0, 1e-2, $q1, $(scache.xs[1]))
-#         # println(ta/tb)
-#     end
-# end
+        # the adjoint code is ~30% slower here
+        # ta = @belapsed Flows.step!($l_adj, $sys_l_adj, 0, 1e-2, $q1, $(scache.xs[1]))
+        # tb = @belapsed Flows.step!($l_t, $sys_l_tan, 0, 1e-2, $q1, $(scache.xs[1]))
+        # println(ta/tb)
+    end
+end
 
-# # ---------------------------------------------------------------------------- #
-# # TEST LINEARISED STEP IS REALLY THE LINEARISATION OF THE NONLINEAR STEP
-# @testset "Complex step derivative                " begin
+# ---------------------------------------------------------------------------- #
+# TEST LINEARISED STEP IS REALLY THE LINEARISATION OF THE NONLINEAR STEP
+@testset "Complex step derivative                " begin
 
-#     # initial conditions using complex numbers
-#     x0 = zeros(Complex128, 3)
+    # initial conditions using complex numbers
+    x0 = zeros(Complex128, 3)
 
-#     # complex step
-#     ϵ = 1e-100
+    # complex step
+    ϵ = 1e-100
 
-#     for (nl, l_t, NS, _g_nl, _g_t, _A) in [(RK4(x0,      :NORMAL),      RK4(real.(x0), :TAN), 4, Lorenz(0), LorenzTan(0), nothing),
-#                                            (CB3R2R2(x0,  :NORMAL),  CB3R2R2(real.(x0), :TAN), 3, Lorenz(1), LorenzTan(1), A),
-#                                            (CB3R2R3e(x0, :NORMAL), CB3R2R3e(real.(x0), :TAN), 4, Lorenz(1), LorenzTan(1), A),
-#                                            (CB3R2R3c(x0, :NORMAL), CB3R2R3c(real.(x0), :TAN), 4, Lorenz(1), LorenzTan(1), A)]
+    for (nl, l_t, NS, _g_nl, _g_t, _A) in [(RK4(x0,      :NORMAL),      RK4(real.(x0), :TAN), 4, Lorenz(0), LorenzTan(0), nothing),
+                                           (CB3R2R2(x0,  :NORMAL),  CB3R2R2(real.(x0), :TAN), 3, Lorenz(1), LorenzTan(1), A),
+                                           (CB3R2R3e(x0, :NORMAL), CB3R2R3e(real.(x0), :TAN), 4, Lorenz(1), LorenzTan(1), A),
+                                           (CB3R2R3c(x0, :NORMAL), CB3R2R3c(real.(x0), :TAN), 4, Lorenz(1), LorenzTan(1), A)]
 
-#         for i = 1:3
-#             x0 = [9.1419853, 1.648665, 35.21793] + im*[0.0, 0.0, 0.0]
+        for i = 1:3
+            x0 = [9.1419853, 1.648665, 35.21793] + im*[0.0, 0.0, 0.0]
 
-#             # stage cache
-#             scache = RAMStageCache(NS, x0)
+            # stage cache
+            scache = RAMStageCache(NS, x0)
 
-#             # system (without diagonal)
-#             sys_nl    = Flows.System(_g_nl, _A, nothing)
-#             sys_l_tan = Flows.System(_g_t,  _A, nothing)
+            # system (without diagonal)
+            sys_nl    = Flows.System(_g_nl, _A, nothing)
+            sys_l_tan = Flows.System(_g_t,  _A, nothing)
 
-#             # go to attractor
-#             for j = 1:100
-#                 Flows.step!(nl, sys_nl, 0, 1e-2, x0, nothing)
-#             end
+            # go to attractor
+            for j = 1:100
+                Flows.step!(nl, sys_nl, 0, 1e-2, x0, nothing)
+            end
 
-#             # reset perturbation
-#             x0 .= real.(x0)
-#             x0[i] += ϵ*im
+            # reset perturbation
+            x0 .= real.(x0)
+            x0[i] += ϵ*im
 
-#             # number of steps
-#             N = 1000
+            # number of steps
+            N = 1000
 
-#             for j = 1:N
-#                 Flows.step!(nl, sys_nl, 0, 1e-2, x0, scache)
-#             end
+            for j = 1:N
+                Flows.step!(nl, sys_nl, 0, 1e-2, x0, scache)
+            end
 
-#             # perturb z component only
-#             y0 = Float64[0, 0, 0]
-#             y0[i] += 1
-#             for j = 1:N
-#                 Flows.step!(l_t, sys_l_tan, 0, 1e-2, y0, real.(scache.xs[j]))
-#             end
+            # perturb z component only
+            y0 = Float64[0, 0, 0]
+            y0[i] += 1
+            for j = 1:N
+                Flows.step!(l_t, sys_l_tan, 0, 1e-2, y0, real.(scache.xs[j]))
+            end
 
-#             @test norm(imag.(x0)./ϵ - y0)/norm(y0) < 5e-14
-#         end
-#     end
-# end
+            @test norm(imag.(x0)./ϵ - y0)/norm(y0) < 5e-14
+        end
+    end
+end
 
-# # ---------------------------------------------------------------------------- #
-# # TEST LINEARISED EQUATIONS API
-# @testset "linear api                             " begin
+# ---------------------------------------------------------------------------- #
+# TEST LINEARISED EQUATIONS API
+@testset "linear api                             " begin
 
-#     # initial conditions
-#     x0 = Float64[9.1419853, 1.648665, 35.21793]
+    # initial conditions
+    x0 = Float64[9.1419853, 1.648665, 35.21793]
 
-#     for (nl, l_t, l_a, NS, _g_nl, _g_t, _g_a, _A) in [(RK4(x0,      :NORMAL),      RK4(x0, :TAN), RK4(x0,      :ADJ), 4, Lorenz(0), LorenzTan(0), LorenzAdj(0), nothing),
-#                                                       (CB3R2R2(x0,  :NORMAL),  CB3R2R2(x0, :TAN), CB3R2R2(x0,  :ADJ), 3, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
-#                                                       (CB3R2R3e(x0, :NORMAL), CB3R2R3e(x0, :TAN), CB3R2R3e(x0, :ADJ), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
-#                                                       (CB3R2R3c(x0, :NORMAL), CB3R2R3c(x0, :TAN), CB3R2R3c(x0, :ADJ), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A)]
-
-
-#         # stage cache
-#         scache = RAMStageCache(NS, x0)
-
-#         # non linear flow map
-#         ϕ = flow(_g_nl, _A, nl, TimeStepConstant(1e-2))
-
-#         # linearised propagator and adjoint
-#         ψ  = flow(_g_t, _A, l_t, TimeStepFromCache())
-#         ψ⁺ = flow(_g_a, _A, l_a, TimeStepFromCache())
-
-#         # propagate nonlinear operator
-#         ϕ(copy(x0), (0, 5), reset!(scache))
-
-#         # also make sure monitor are good
-#         mon_tan = Monitor(x0, copy)
-#         mon_adj = Monitor(x0, copy)
-
-#         # propagate linear operators forward/backward
-#         y0 = Float64[1, 2, 3]
-#         ψ(y0, scache, mon_tan)
-
-#         qT = Float64[4, 5, 6]
-#         ψ⁺(qT, scache, mon_adj)
-
-#         # test 
-#         a = dot(y0, [4, 5, 6])
-#         b = dot(qT, [1, 2, 3])
-#         @test abs(a - b)/a < 1e-14
-
-#         # test monitors
-#         @test times(mon_tan)[1]   == 0
-#         @test times(mon_tan)[end] == 5
-#         @test times(mon_adj)[1]   == 5
-#         @test times(mon_adj)[end] == 0
-#     end
-# end
-
-# # ---------------------------------------------------------------------------- #
-# # COUPLED INTEGRATION OF THE GOVERNING EQUATIONS PLUS LINEARISED EQUATIONS
-# @testset "coupled integration                    " begin
-#     # initial conditions
-#     x0 = Float64[9.1419853, 1.648665, 35.21793]
-
-#     # INTEGRATE USING COUPLED INTEGRATION
-#     # explicit integrator
-#     method = RK4(couple(x0, x0), :NORMAL)
-
-#     # linear flow map note we first pass the nonlinear equations
-#     ψ = flow(couple(Lorenz(0), LorenzTan(0)), method, TimeStepConstant(1e-2))
-
-#     # initial condition for the linearised equations
-#     y0 = Float64[1.0, 0.0, 0.0]
-
-#     # propagate
-#     ψ(couple(copy(x0), y0), (0, 10))
-
-#     # get norm
-#     n_coupled = norm(y0)
+    for (nl, l_t, l_a, NS, _g_nl, _g_t, _g_a, _A) in [(RK4(x0,      :NORMAL),      RK4(x0, :TAN), RK4(x0,      :ADJ), 4, Lorenz(0), LorenzTan(0), LorenzAdj(0), nothing),
+                                                      (CB3R2R2(x0,  :NORMAL),  CB3R2R2(x0, :TAN), CB3R2R2(x0,  :ADJ), 3, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
+                                                      (CB3R2R3e(x0, :NORMAL), CB3R2R3e(x0, :TAN), CB3R2R3e(x0, :ADJ), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
+                                                      (CB3R2R3c(x0, :NORMAL), CB3R2R3c(x0, :TAN), CB3R2R3c(x0, :ADJ), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A)]
 
 
-#     # INTEGRATE USING CACHE
-#     # stage cache
-#     scache = RAMStageCache(4, x0)
+        # stage cache
+        scache = RAMStageCache(NS, x0)
 
-#     # non linear flow map
-#     ϕ = flow(Lorenz(0), RK4(x0, :NORMAL), TimeStepConstant(1e-2))
+        # non linear flow map
+        ϕ = flow(_g_nl, _A, nl, TimeStepConstant(1e-2))
 
-#     # linearised propagator and adjoint
-#     ψ  = flow(LorenzTan(0), RK4(x0, :TAN), TimeStepFromCache())
+        # linearised propagator and adjoint
+        ψ  = flow(_g_t, _A, l_t, TimeStepFromCache())
+        ψ⁺ = flow(_g_a, _A, l_a, TimeStepFromCache())
 
-#     # propagate nonlinear operator
-#     ϕ(copy(x0), (0, 10), reset!(scache))
+        # propagate nonlinear operator
+        ϕ(copy(x0), (0, 5), reset!(scache))
 
-#     # propagate linear operators forward/backward
-#     y0 = Float64[1.0, 0.0, 0.0]
-#     ψ(y0, scache)
+        # also make sure monitor are good
+        mon_tan = Monitor(x0, copy)
+        mon_adj = Monitor(x0, copy)
+
+        # propagate linear operators forward/backward
+        y0 = Float64[1, 2, 3]
+        ψ(y0, scache, mon_tan)
+
+        qT = Float64[4, 5, 6]
+        ψ⁺(qT, scache, mon_adj)
+
+        # test 
+        a = dot(y0, [4, 5, 6])
+        b = dot(qT, [1, 2, 3])
+        @test abs(a - b)/a < 1e-14
+
+        # test monitors
+        @test times(mon_tan)[1]   == 0
+        @test times(mon_tan)[end] == 5
+        @test times(mon_adj)[1]   == 5
+        @test times(mon_adj)[end] == 0
+    end
+end
+
+# ---------------------------------------------------------------------------- #
+# COUPLED INTEGRATION OF THE GOVERNING EQUATIONS PLUS LINEARISED EQUATIONS
+@testset "coupled integration                    " begin
+    # initial conditions
+    x0 = Float64[9.1419853, 1.648665, 35.21793]
+
+    # INTEGRATE USING COUPLED INTEGRATION
+    # explicit integrator
+    method = RK4(couple(x0, x0), :NORMAL)
+
+    # linear flow map note we first pass the nonlinear equations
+    ψ = flow(couple(Lorenz(0), LorenzTan(0)), method, TimeStepConstant(1e-2))
+
+    # initial condition for the linearised equations
+    y0 = Float64[1.0, 0.0, 0.0]
+
+    # propagate
+    ψ(couple(copy(x0), y0), (0, 10))
+
+    # get norm
+    n_coupled = norm(y0)
+
+
+    # INTEGRATE USING CACHE
+    # stage cache
+    scache = RAMStageCache(4, x0)
+
+    # non linear flow map
+    ϕ = flow(Lorenz(0), RK4(x0, :NORMAL), TimeStepConstant(1e-2))
+
+    # linearised propagator and adjoint
+    ψ  = flow(LorenzTan(0), RK4(x0, :TAN), TimeStepFromCache())
+
+    # propagate nonlinear operator
+    ϕ(copy(x0), (0, 10), reset!(scache))
+
+    # propagate linear operators forward/backward
+    y0 = Float64[1.0, 0.0, 0.0]
+    ψ(y0, scache)
     
-#     # get norm
-#     n_cache = norm(y0)
+    # get norm
+    n_cache = norm(y0)
 
-#     # the two methods should really be the same
-#     @test n_coupled == n_cache
-# end
+    # the two methods should really be the same
+    @test n_coupled == n_cache
+end
 
 
 # ---------------------------------------------------------------------------- #
