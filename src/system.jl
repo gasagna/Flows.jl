@@ -94,35 +94,35 @@ Base.A_mul_B!(out, sys::System{G, Void, Void}, z) where {G} =
 # (I-cA)z = y for the quadrature part is simply z = y, because the
 # component of A associated to this part is zero and the state
 # and quadrature parts are decoupled. Same for no linear term.
-ImcA(sys::System{G, A, Q}, c::Real, y, z) where {G, A, Q} =
-    (ImcA(sys.A, c, first(y), first(z)); last(z) .= last(y); z)
+ImcA!(sys::System{G, A, Q}, c::Real, y, z) where {G, A, Q} =
+    (ImcA!(sys.A, c, first(y), first(z)); last(z) .= last(y); z)
 
-ImcA(sys::System{G, A, Void}, c::Real, y, z) where {G, A} =
-    (ImcA(sys.A, c, y, z); z)
+ImcA!(sys::System{G, A, Void}, c::Real, y, z) where {G, A} =
+    (ImcA!(sys.A, c, y, z); z)
 
 # when A is a `Coupled` object. Obviously, we need `y` and `z` to be
 # `Coupled` as well - this is with quadrature.
-ImcA(sys::System{G, <:Coupled, Q}, 
+ImcA!(sys::System{G, <:Coupled, Q}, 
         c::Real, 
         y::Coupled{Coupled}, 
         z::Coupled{Coupled}) where {G, Q} =
-    (ImcA(first(sys.A), c, first(first(y)), first(first(z)));
-        ImcA( last(sys.A), c, first( last(y)), first( last(z)));
+    (ImcA!(first(sys.A), c, first(first(y)), first(first(z)));
+        ImcA!( last(sys.A), c, first( last(y)), first( last(z)));
         last(z) .= last(y); z)
 
 # and with no quadrature.
-ImcA(sys::System{G, <:Coupled, Void},
+ImcA!(sys::System{G, <:Coupled, Void},
         c::Real,
         y::Coupled,
         z::Coupled) where {G} =
-    (ImcA(first(sys.A), c, first(y), first(z));
-        ImcA( last(sys.A), c,  last(y),  last(z)); z)
+    (ImcA!(first(sys.A), c, first(y), first(z));
+        ImcA!( last(sys.A), c,  last(y),  last(z)); z)
 
 # this is for fully explicit systems. We do not add methods for when
 # G, y and z are `Coupled` objects, since `z` and `y` as `Coupled` objects 
 # should support broadcasting operations
-ImcA(sys::System{G, Void, Q}, c::Real, y, z) where {G, Q} =
+ImcA!(sys::System{G, Void, Q}, c::Real, y, z) where {G, Q} =
     (z .= y; z)
 
-ImcA(sys::System{G, Void, Void}, c::Real, y, z) where {G} =
+ImcA!(sys::System{G, Void, Void}, c::Real, y, z) where {G} =
     (z .= y; z)
