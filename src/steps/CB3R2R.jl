@@ -118,9 +118,9 @@ function step!(method::$name{X, NS, :LIN, true},
         z .= z .+ tab[:aᴵ, k, k].*Δt.*w
         y .= w
         # D
-        ImcAt!(sys, tab[:aᴵ, k, k]*Δt, z, w)
+        ImcA!(sys, tab[:aᴵ, k, k]*Δt, z, w)
         # E
-        At_mul_B!(z, sys, w)
+        A_mul_B!(z, sys, w)
         y .= z .+ y
         # F
         x .= x .+ y
