@@ -56,8 +56,9 @@ end
 
 
 # ---------------------------------------------------------------------------- #
-# Linearisation
-# takes x_{n} and overwrites it with x_{n+1}
+# Linearisation: takes x_{n} and overwrites it with x_{n+1}
+# A good reason to keep this is to check the discrete consistency of the adjoint
+# version of this method.
 function step!(method::$name{X, NS, :LIN, false},
                   sys::System,
                     t::Real,
@@ -84,6 +85,8 @@ function step!(method::$name{X, NS, :LIN, false},
         # C
         w .= y .+ tab[:aᴵ, k, k].*Δt.*z     # w is the temp input, output is y
         # B
+        # We will probably have to think to another way to define the forcings 
+        # for linearised system that require the time derivative of the main state.
         sys(t + tab[:cᴱ, k]*Δt, stages[k], w, y)
         # A
         x .= x .+ tab[:bᴵ, k].*Δt.*z .+ tab[:bᴱ, k].*Δt.*y
@@ -113,6 +116,8 @@ function step!(method::$name{X, NS, :LIN, true},
         z .= z .+ tab[:bᴵ, k].*Δt.*x
         y .= y .+ tab[:bᴱ, k].*Δt.*x
         # B
+        # We will probably have to think to another way to define the forcings 
+        # for linearised system that require the time derivative of the main state.
         sys(t + tab[:cᴱ, k]*Δt, stages[k], y, w)
         # C
         z .= z .+ tab[:aᴵ, k, k].*Δt.*w
