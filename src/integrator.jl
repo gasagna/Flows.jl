@@ -78,7 +78,7 @@ Base.showerror(io::IO, e::InvalidSpanError) =
 # check span and/or return
 macro _checkspan(span, z)
     quote
-       $(esc(span))[1] ==$(esc(span))[2] && return $z
+       $(esc(span))[1] ==$(esc(span))[2] && return $(esc(z))
        $(esc(span))[1]  >$(esc(span))[2] && throw(InvalidSpanError($(esc(span))))
     end
 end
