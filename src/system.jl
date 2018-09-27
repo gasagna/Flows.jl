@@ -52,7 +52,7 @@ end
 
 (sys::System{<:Coupled, A, Void})(t::Real, z::Coupled, dzdt::Coupled) where {A} =
     (first(sys.g)(t, first(z), first(dzdt));
-      last(sys.g)(t, first(z), first(dzdt), last(z), last(dzdt)); dzdt)
+      last(sys.g)(t, first(z), last(z), last(dzdt)); dzdt)
 
 
 # Implicit part. We also define methods for At_mul_B!, for the adjoint
