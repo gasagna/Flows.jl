@@ -25,7 +25,7 @@ end
 @inline reset!(rs::RAMStorage, sizehint::Int=0) = 
     (sizehint!(empty!(rs.ts), sizehint); sizehint!(empty!(rs.xs), sizehint); rs)
 
-@inline Base.push!(rs::RAMStorage{T, X}, t::T, x::X) where {T, X} =
+@inline Base.push!(rs::RAMStorage{T, X}, t::Real, x::X) where {T, X} =
     (push!(rs.ts, t); push!(rs.xs, x); nothing)
 
 times(  rs::RAMStorage) = rs.ts
