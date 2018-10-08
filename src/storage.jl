@@ -4,8 +4,7 @@ export RAMStorage, times, samples
 abstract type AbstractStorage{T, X} end
 
 # interface for subtypes
-Base.sizehint!(store::AbstractStorage, hint::Int) = error("not implemented")
-Base.resize!(store::AbstractStorage, size::Int) = error("not implemented")
+reset!(store::AbstractStorage, sizehint::Int) = error("not implemented")
 Base.push!(store::AbstractStorage{T, X}, t::T, x::X) where {T, X} =
     error("not implemented")
 
@@ -23,14 +22,11 @@ struct RAMStorage{T,
     RAMStorage{T, X}() where {T, X} = new{T, X, Vector{T}, Vector{X}}(T[], X[])
 end
 
-@inline Base.sizehint!(rs::RAMStorage, hint::Int) =
-    (sizehint!(rs.ts, hint); sizehint!(rs.xs, hint); rs)
-@inline Base.resize!(rs::RAMStorage, size::Int) =
-	(resize!(rs.ts, size); resize!(rs.xs, size); rs)
+@inline reset!(rs::RAMStorage, sizehint::Int=0) = 
+    (sizehint!(empty!(rs.ts), sizehint); sizehint!(empty!(rs.xs), sizehint); rs)
+
 @inline Base.push!(rs::RAMStorage{T, X}, t::T, x::X) where {T, X} =
     (push!(rs.ts, t); push!(rs.xs, x); nothing)
 
-times(rs::RAMStorage) = rs.ts
+times(  rs::RAMStorage) = rs.ts
 samples(rs::RAMStorage) = rs.xs
-
-# /// Lazy disk storage ///
