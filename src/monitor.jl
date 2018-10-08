@@ -22,8 +22,9 @@ mutable struct Monitor{T, X, O, S<:AbstractStorage{T, X}, F} <: AbstractMonitor{
           count::Int                     # how many items we have in the store
     Monitor{O}(store::S,
                f::F,
-               oneevery::Int) where {T, X, O, S<:AbstractStorage{T, X}, F} =
-        new{T, X, O, S, F}(store, f, oneevery, 0)
+               oneevery::Int, 
+               savebetween::Tuple{Real, Real}) where {T, X, O, S<:AbstractStorage{T, X}, F} =
+        new{T, X, O, S, F}(store, f, oneevery, savebetween, 0)
 end
 
 # Provide a sample of what will be pushed
@@ -34,7 +35,7 @@ Monitor(x,
         savebetween::Tuple{Real, Real}=(-Inf, Inf),
         order::Int=3,
         sizehint::Int=0) where {S<:AbstractStorage} =
-    Monitor{order}(sizehint!(store, sizehint), f, oneevery)
+    Monitor{order}(reset!(store, sizehint), f, oneevery, savebetween)
 
 # Add sample and time to the storage
 @inline function Base.push!(mon::Monitor, t::Real, x)

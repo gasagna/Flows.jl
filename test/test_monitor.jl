@@ -83,6 +83,15 @@ end
     @test samples(m) == []
 end
 
+@testset "savebetween                            " begin
+    m = Monitor([0.0], copy; savebetween=(1, 2))
+    push!(m, 0, [0.0])
+    push!(m, 1, [0.0])
+    push!(m, 2, [0.0])
+    push!(m, 3, [0.0])
+    @test length(times(m)) == 2
+end
+
 @testset "cubic interpolation                    " begin
     # data
     ts = 0.0:0.1:1
