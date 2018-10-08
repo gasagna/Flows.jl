@@ -30,7 +30,7 @@ end
 # Provide a sample of what will be pushed
 Monitor(x,
         f::Base.Callable=identity,
-        store::S = RAMStorage{Float64, typeof(f(x))}();
+        store::S=RAMStorage{Float64, typeof(f(x))}();
         oneevery::Int=1,
         savebetween::Tuple{Real, Real}=(-Inf, Inf),
         order::Int=3,
