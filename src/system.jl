@@ -1,4 +1,4 @@
-import LinearAlgebra: A_mul_B!
+import LinearAlgebra: mul!
 
 # Type for ODE/PDE problems
 struct System{G, A, Q}
@@ -61,35 +61,35 @@ end
 # code, hence the user must also provide At_mul_B! for his linear implicit
 # type. Note we set the quadrature part to zero, since we are treating it
 # fully explicitly.
-A_mul_B!(out, sys::System{G, A, Q}, z) where {G, A, Q} =
-    (A_mul_B!(first(out), sys.A, first(z)); last(out) .= 0; out)
+mul!(out, sys::System{G, A, Q}, z) where {G, A, Q} =
+    (mul!(first(out), sys.A, first(z)); last(out) .= 0; out)
 
-A_mul_B!(out, sys::System{G, A, Nothing}, z) where {G, A} =
-    A_mul_B!(out, sys.A, z)
+mul!(out, sys::System{G, A, Nothing}, z) where {G, A} =
+    mul!(out, sys.A, z)
 
 # when A is a `Coupled` object. Obviously, we need `y` and `z` to be
 # `Coupled` as well - this is with quadrature
-A_mul_B!(out::Coupled{Coupled},
+mul!(out::Coupled{Coupled},
             sys::System{G, <:Coupled, Q},
             z::Coupled{Coupled}) where {G, Q} =
-    (A_mul_B!(first(first(out)), first(sys.A), first(first(z)));
-     A_mul_B!(first( last(out)),  last(sys.A), first( last(z)));
+    (mul!(first(first(out)), first(sys.A), first(first(z)));
+     mul!(first( last(out)),  last(sys.A), first( last(z)));
      last(out) .= 0; out)
 
 # and for no quadrature
-A_mul_B!(out::Coupled, 
+mul!(out::Coupled, 
             sys::System{G, <:Coupled, Nothing}, 
             z::Coupled) where {G} =
-    (A_mul_B!(first(out), first(sys.A), first(z));
-        A_mul_B!( last(out),  last(sys.A),  last(z)); out)
+    (mul!(first(out), first(sys.A), first(z));
+        mul!( last(out),  last(sys.A),  last(z)); out)
 
 # this is for fully explicit problems. We do not add methods for when
 # G, out and z are `Coupled` objects, since `out::Coupled` should
 # support broadcasting operations
-A_mul_B!(out, sys::System{G, Nothing, Q}, z) where {G, Q} =
+mul!(out, sys::System{G, Nothing, Q}, z) where {G, Q} =
     (out .= 0; out)
 
-A_mul_B!(out, sys::System{G, Nothing, Nothing}, z) where {G} = 
+mul!(out, sys::System{G, Nothing, Nothing}, z) where {G} = 
     (out .= 0; out)
 
 # Since we treat the quadrature fully explicitly, the solution of
