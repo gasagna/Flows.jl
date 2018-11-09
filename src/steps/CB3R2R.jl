@@ -24,7 +24,7 @@ function step!(method::$name{X, NS, :NORMAL},
                     t::Real,
                    Δt::Real,
                     x::X,
-                    c::C) where {X, NS, C<:Union{Void, AbstractStageCache{NS, X}}}
+                    c::C) where {X, NS, C<:Union{Nothing, AbstractStageCache{NS, X}}}
 
     # hoist temporaries out
     y, z, w  = method.store

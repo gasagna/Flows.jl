@@ -1,8 +1,8 @@
 # Type for ODE/PDE problems
 struct System{G, A, Q}
     g::G # explicit term
-    A::A # linear implicit term: can be Void if not provided
-    q::Q # quadrature function: can be Void if not provided
+    A::A # linear implicit term: can be Nothing if not provided
+    q::Q # quadrature function: can be Nothing if not provided
 end
 
 # Explicit part
@@ -10,7 +10,7 @@ end
     (sys.g(t, first(z), first(dzdt)); 
      sys.q(t,       z ,  last(dzdt)); dzdt)
 
-(sys::System{G, A, Void})(t::Real, z, dzdt) where {G, A} = 
+(sys::System{G, A, Nothing})(t::Real, z, dzdt) where {G, A} = 
     (sys.g(t, z, dzdt); dzdt)
 
 # Explicit part for linearised problems
@@ -18,7 +18,7 @@ end
     (sys.g(t, u, first(z), first(dzdt));
      sys.q(t,          z ,  last(dzdt)); dzdt)
 
-(sys::System{G, A, Void})(t::Real, u, z, dzdt) where {G, A} = 
+(sys::System{G, A, Nothing})(t::Real, u, z, dzdt) where {G, A} = 
     (sys.g(t, u, z, dzdt); dzdt)
 
 # Explicit part for coupled integration. We execute the FIRST function first,
@@ -50,7 +50,7 @@ function (sys::System{<:Coupled, A, Q})(t::Real,
     return dzdt
 end
 
-(sys::System{<:Coupled, A, Void})(t::Real, z::Coupled, dzdt::Coupled) where {A} =
+(sys::System{<:Coupled, A, Nothing})(t::Real, z::Coupled, dzdt::Coupled) where {A} =
     (first(sys.g)(t, first(z), first(dzdt));
       last(sys.g)(t, first(z), last(z), last(dzdt)); dzdt)
 
@@ -62,7 +62,7 @@ end
 Base.A_mul_B!(out, sys::System{G, A, Q}, z) where {G, A, Q} =
     (A_mul_B!(first(out), sys.A, first(z)); last(out) .= 0; out)
 
-Base.A_mul_B!(out, sys::System{G, A, Void}, z) where {G, A} =
+Base.A_mul_B!(out, sys::System{G, A, Nothing}, z) where {G, A} =
     A_mul_B!(out, sys.A, z)
 
 # when A is a `Coupled` object. Obviously, we need `y` and `z` to be
@@ -76,7 +76,7 @@ Base.A_mul_B!(out::Coupled{Coupled},
 
 # and for no quadrature
 Base.A_mul_B!(out::Coupled, 
-            sys::System{G, <:Coupled, Void}, 
+            sys::System{G, <:Coupled, Nothing}, 
             z::Coupled) where {G} =
     (A_mul_B!(first(out), first(sys.A), first(z));
         A_mul_B!( last(out),  last(sys.A),  last(z)); out)
@@ -84,10 +84,10 @@ Base.A_mul_B!(out::Coupled,
 # this is for fully explicit problems. We do not add methods for when
 # G, out and z are `Coupled` objects, since `out::Coupled` should
 # support broadcasting operations
-Base.A_mul_B!(out, sys::System{G, Void, Q}, z) where {G, Q} =
+Base.A_mul_B!(out, sys::System{G, Nothing, Q}, z) where {G, Q} =
     (out .= 0; out)
 
-Base.A_mul_B!(out, sys::System{G, Void, Void}, z) where {G} = 
+Base.A_mul_B!(out, sys::System{G, Nothing, Nothing}, z) where {G} = 
     (out .= 0; out)
 
 # Since we treat the quadrature fully explicitly, the solution of
@@ -97,7 +97,7 @@ Base.A_mul_B!(out, sys::System{G, Void, Void}, z) where {G} =
 ImcA!(sys::System{G, A, Q}, c::Real, y, z) where {G, A, Q} =
     (ImcA!(sys.A, c, first(y), first(z)); last(z) .= last(y); z)
 
-ImcA!(sys::System{G, A, Void}, c::Real, y, z) where {G, A} =
+ImcA!(sys::System{G, A, Nothing}, c::Real, y, z) where {G, A} =
     (ImcA!(sys.A, c, y, z); z)
 
 # when A is a `Coupled` object. Obviously, we need `y` and `z` to be
@@ -111,7 +111,7 @@ ImcA!(sys::System{G, <:Coupled, Q},
         last(z) .= last(y); z)
 
 # and with no quadrature.
-ImcA!(sys::System{G, <:Coupled, Void},
+ImcA!(sys::System{G, <:Coupled, Nothing},
         c::Real,
         y::Coupled,
         z::Coupled) where {G} =
@@ -121,8 +121,8 @@ ImcA!(sys::System{G, <:Coupled, Void},
 # this is for fully explicit systems. We do not add methods for when
 # G, y and z are `Coupled` objects, since `z` and `y` as `Coupled` objects 
 # should support broadcasting operations
-ImcA!(sys::System{G, Void, Q}, c::Real, y, z) where {G, Q} =
+ImcA!(sys::System{G, Nothing, Q}, c::Real, y, z) where {G, Q} =
     (z .= y; z)
 
-ImcA!(sys::System{G, Void, Void}, c::Real, y, z) where {G} =
+ImcA!(sys::System{G, Nothing, Nothing}, c::Real, y, z) where {G} =
     (z .= y; z)

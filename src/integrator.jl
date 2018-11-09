@@ -32,13 +32,13 @@ flow(g,       m::AbstractMethod, ts::AbstractTimeStepping) =
 
 # fill a cache and optionally a monitor
 (I::Flow)(x, span::NTuple{2, Real}, 
-          c::AbstractStageCache, m::Union{Void, <:AbstractMonitor}=nothing) =
+          c::AbstractStageCache, m::Union{Nothing, <:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, c, m)
 
 # stepping based on cache only 
 (I::Flow{TimeStepFromCache})(x, 
                              c::AbstractStageCache, 
-                             m::Union{Void, <:AbstractMonitor}=nothing) =
+                             m::Union{Nothing, <:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.sys, x, c, m)
 
 # ---------------------------------------------------------------------------- #
@@ -55,13 +55,13 @@ flow(g,       m::AbstractMethod, ts::AbstractTimeStepping) =
 
 # fill a cache and optionally a monitor
 (I::Flow)(x, q, span::NTuple{2, Real}, 
-          c::AbstractStageCache, m::Union{Void, <:AbstractMonitor}=nothing) =
+          c::AbstractStageCache, m::Union{Nothing, <:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.tstep, I.sys, Float64.(span), couple(x, q), c, m)
 
 # stepping based on cache only, calculating a quadrature
 (I::Flow{TimeStepFromCache})(x, q,
                              c::AbstractStageCache, 
-                             m::Union{Void, <:AbstractMonitor}=nothing) =
+                             m::Union{Nothing, <:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.sys, couple(x, q), c, m)
 
 
@@ -92,8 +92,8 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
                           z::Z,
                       cache::C,
                         mon::M) where {Z, NS,
-                                       M<:Union{Void, AbstractMonitor},
-                                       C<:Union{Void, AbstractStageCache}}
+                                       M<:Union{Nothing, AbstractMonitor},
+                                       C<:Union{Nothing, AbstractStageCache}}
     # check span is sane
     @_checkspan(span, z)
 
@@ -121,8 +121,8 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
                           z::Z,
                       cache::C,
                         mon::M) where {Z, NS,
-                                       M<:Union{Void, AbstractMonitor},
-                                       C<:Union{Void, AbstractStageCache}}
+                                       M<:Union{Nothing, AbstractMonitor},
+                                       C<:Union{Nothing, AbstractStageCache}}
     # check span is sane
     @_checkspan(span, z)
 
@@ -164,7 +164,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
                           z::Z,
                       cache::AbstractStageCache{NS},
                         mon::M) where {Z, NS, ISADJ,
-                                       M<:Union{Void, AbstractMonitor}}
+                                       M<:Union{Nothing, AbstractMonitor}}
     # TODO: fix this with proper iteration support for the stage cache
     ts  = cache.ts
     Δts = cache.Δts
