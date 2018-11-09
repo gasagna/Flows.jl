@@ -1,3 +1,5 @@
+import LinearAlgebra: A_mul_B!
+
 # Type for ODE/PDE problems
 struct System{G, A, Q}
     g::G # explicit term
@@ -59,15 +61,15 @@ end
 # code, hence the user must also provide At_mul_B! for his linear implicit
 # type. Note we set the quadrature part to zero, since we are treating it
 # fully explicitly.
-Base.A_mul_B!(out, sys::System{G, A, Q}, z) where {G, A, Q} =
+A_mul_B!(out, sys::System{G, A, Q}, z) where {G, A, Q} =
     (A_mul_B!(first(out), sys.A, first(z)); last(out) .= 0; out)
 
-Base.A_mul_B!(out, sys::System{G, A, Nothing}, z) where {G, A} =
+A_mul_B!(out, sys::System{G, A, Nothing}, z) where {G, A} =
     A_mul_B!(out, sys.A, z)
 
 # when A is a `Coupled` object. Obviously, we need `y` and `z` to be
 # `Coupled` as well - this is with quadrature
-Base.A_mul_B!(out::Coupled{Coupled},
+A_mul_B!(out::Coupled{Coupled},
             sys::System{G, <:Coupled, Q},
             z::Coupled{Coupled}) where {G, Q} =
     (A_mul_B!(first(first(out)), first(sys.A), first(first(z)));
@@ -75,7 +77,7 @@ Base.A_mul_B!(out::Coupled{Coupled},
      last(out) .= 0; out)
 
 # and for no quadrature
-Base.A_mul_B!(out::Coupled, 
+A_mul_B!(out::Coupled, 
             sys::System{G, <:Coupled, Nothing}, 
             z::Coupled) where {G} =
     (A_mul_B!(first(out), first(sys.A), first(z));
@@ -84,10 +86,10 @@ Base.A_mul_B!(out::Coupled,
 # this is for fully explicit problems. We do not add methods for when
 # G, out and z are `Coupled` objects, since `out::Coupled` should
 # support broadcasting operations
-Base.A_mul_B!(out, sys::System{G, Nothing, Q}, z) where {G, Q} =
+A_mul_B!(out, sys::System{G, Nothing, Q}, z) where {G, Q} =
     (out .= 0; out)
 
-Base.A_mul_B!(out, sys::System{G, Nothing, Nothing}, z) where {G} = 
+A_mul_B!(out, sys::System{G, Nothing, Nothing}, z) where {G} = 
     (out .= 0; out)
 
 # Since we treat the quadrature fully explicitly, the solution of

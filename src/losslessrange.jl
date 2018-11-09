@@ -1,5 +1,5 @@
 # A lightweight range object that remembers the last element
-struct LossLessRange{T, R<:Range{T}} <: Range{T}
+struct LossLessRange{T, R<:AbstractRange{T}} <: AbstractRange{T}
         rng::R
        stop::T
     isLossy::Bool

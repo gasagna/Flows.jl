@@ -1,3 +1,5 @@
+import LinearAlgebra: A_mul_B!, Diagonal
+
 export ImcA!
 
 """
@@ -16,5 +18,4 @@ ImcA!(A, c::Real, y, z) = error("missing implementation")
 ImcA!( A::Diagonal, c::Real, y, z) = z .= y./(1 .- c.*diag(A))
 ImcAt!(A::Diagonal, c::Real, y, z) = z .= y./(1 .- c.*diag(A))
 
-Base.A_mul_B!( out, A::Diagonal, in) = out .= diag(A).*in
-Base.At_mul_B!(out, A::Diagonal, in) = out .= diag(A).*in
+A_mul_B!( out, A::Diagonal, in) = out .= diag(A).*in
