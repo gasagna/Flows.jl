@@ -18,7 +18,7 @@
                                          (CB3R2R3c(x0, :NORMAL), 3, (0.007300, 0.008600), g,     A)]
 
         # ensure that the error decays with expected rate
-        for Δt = [5^(-i) for i in linspace(1, 3, 5)]
+        for Δt = [5^(-i) for i in range(1, stop=3, length=5)]
 
             # step forward
             x0 = Float64[1.0]

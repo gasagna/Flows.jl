@@ -41,7 +41,7 @@ function step!(method::$name{X, NS, :NORMAL},
             y .= x .+ (tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*z .+
                       (tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*Δt.*y
         end
-        A_mul_B!(z, sys, y)                 # compute z = A*y then
+        mul!(z, sys, y)                 # compute z = A*y then
         ImcA!(sys, tab[:aᴵ, k, k]*Δt, z, z) # get z = (I-cA)⁻¹*(A*y) in place
         w .= y .+ tab[:aᴵ, k, k].*Δt.*z     # w is the temp input, output is y
         sys(t + tab[:cᴱ, k]*Δt, w, y); _iscache(C) && (push!(stages, copy(w)))
@@ -79,7 +79,7 @@ function step!(method::$name{X, NS, :LIN, false},
                       (tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*Δt.*y
         end
         # E
-        A_mul_B!(z, sys, y)                 # compute z = A*y then
+        mul!(z, sys, y)                 # compute z = A*y then
         # D
         ImcA!(sys, tab[:aᴵ, k, k]*Δt, z, z) # get z = (I-cA)⁻¹*(A*y) in place
         # C
@@ -125,7 +125,7 @@ function step!(method::$name{X, NS, :LIN, true},
         # D
         ImcA!(sys, tab[:aᴵ, k, k]*Δt, z, w)
         # E
-        A_mul_B!(z, sys, w)
+        mul!(z, sys, w)
         y .= z .+ y
         # F
         x .= x .+ y

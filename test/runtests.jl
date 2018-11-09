@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 using Flows
 
 include("test_timestepping.jl")
