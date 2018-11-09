@@ -18,7 +18,7 @@ function step!(method::RK4{X, :NORMAL},
                     t::Real,
                    Δt::Real,
                     x::X,
-                    c::C) where {X, C<:Union{Void, AbstractStageCache{4, X}}}
+                    c::C) where {X, C<:Union{Nothing, AbstractStageCache{4, X}}}
     # aliases
     k1, k2, k3, k4, y = method.store
 
