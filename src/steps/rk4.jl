@@ -23,16 +23,16 @@ function step!(method::RK4{X, :NORMAL},
     k1, k2, k3, k4, y = method.store
 
     # stages
-    y .= x;              sys(t,        y, k1); _iscache(C) && (s1 = copy(y))
-    y .= x .+ Δt.*k1./2; sys(t + Δt/2, y, k2); _iscache(C) && (s2 = copy(y))
-    y .= x .+ Δt.*k2./2; sys(t + Δt/2, y, k3); _iscache(C) && (s3 = copy(y))
-    y .= x .+ Δt.*k3   ; sys(t + Δt,   y, k4); _iscache(C) && (s4 = copy(y))
+    @all y .= x;              sys(t,        y, k1); _iscache(C) && (s1 = copy(y))
+    @all y .= x .+ Δt.*k1./2; sys(t + Δt/2, y, k2); _iscache(C) && (s2 = copy(y))
+    @all y .= x .+ Δt.*k2./2; sys(t + Δt/2, y, k3); _iscache(C) && (s3 = copy(y))
+    @all y .= x .+ Δt.*k3   ; sys(t + Δt,   y, k4); _iscache(C) && (s4 = copy(y))
 
     # store stages if requested
     _iscache(C) && push!(c, t, Δt, (s1, s2, s3, s4))
 
     # wrap up
-    x .= x .+ Δt./6 .* (k1 .+ 2.0.*k2 .+ 2.0.*k3 .+ k4)
+    @all x .= x .+ Δt./6 .* (k1 .+ 2.0.*k2 .+ 2.0.*k3 .+ k4)
 
     return nothing
 end
@@ -50,13 +50,13 @@ function step!(method::RK4{X, :LIN, false}, # tags for tangent equations
     k1, k2, k3, k4, y = method.store
 
     # stages
-    y .= x               ; sys(t,        stages[1], y, k1)
-    y .= x .+ 0.5.*Δt.*k1; sys(t + Δt/2, stages[2], y, k2)
-    y .= x .+ 0.5.*Δt.*k2; sys(t + Δt/2, stages[3], y, k3)
-    y .= x .+      Δt.*k3; sys(t + Δt,   stages[4], y, k4)
+    @all y .= x               ; sys(t,        stages[1], y, k1)
+    @all y .= x .+ 0.5.*Δt.*k1; sys(t + Δt/2, stages[2], y, k2)
+    @all y .= x .+ 0.5.*Δt.*k2; sys(t + Δt/2, stages[3], y, k3)
+    @all y .= x .+      Δt.*k3; sys(t + Δt,   stages[4], y, k4)
 
     # wrap up
-    x .= x .+ Δt./6 .* (k1 .+ 2.0.*k2 .+ 2.0.*k3 .+ k4)
+    @all x .= x .+ Δt./6 .* (k1 .+ 2.0.*k2 .+ 2.0.*k3 .+ k4)
 
     return nothing
 end
@@ -74,11 +74,13 @@ function step!(method::RK4{X, :LIN, true}, # tags for adjoint equations
     j1, j2, j3, j4, y = method.store
 
     # stages
-    y .= x               ; sys(t + Δt  , stages[4], y, j4)
-    y .= x .+ 0.5.*Δt.*j4; sys(t + Δt/2, stages[3], y, j3)
-    y .= x .+ 0.5.*Δt.*j3; sys(t + Δt/2, stages[2], y, j2)
-    y .= x .+      Δt.*j2; sys(t       , stages[1], y, j1)
-    x .= x .+ Δt./6 .* (j1 .+ 2.0.*j2 .+ 2.0.*j3 .+ j4)
+    @all y .= x               ; sys(t + Δt  , stages[4], y, j4)
+    @all y .= x .+ 0.5.*Δt.*j4; sys(t + Δt/2, stages[3], y, j3)
+    @all y .= x .+ 0.5.*Δt.*j3; sys(t + Δt/2, stages[2], y, j2)
+    @all y .= x .+      Δt.*j2; sys(t       , stages[1], y, j1)
+
+    # wrap up§
+    @all x .= x .+ Δt./6 .* (j1 .+ 2.0.*j2 .+ 2.0.*j3 .+ j4)
 
     return nothing
 end

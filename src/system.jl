@@ -9,21 +9,21 @@ end
 
 # Explicit part
 (sys::System{G, A, Q})(t::Real, z, dzdt) where {G, A, Q} =
-    (sys.g(t, first(z), first(dzdt)); 
-     sys.q(t,       z ,  last(dzdt)); dzdt)
+    (sys.g(t, arg1(z), arg1(dzdt)); 
+     sys.q(t,       z ,  arg2(dzdt)); dzdt)
 
 (sys::System{G, A, Nothing})(t::Real, z, dzdt) where {G, A} = 
     (sys.g(t, z, dzdt); dzdt)
 
 # Explicit part for linearised problems
 (sys::System{G, A, Q})(t::Real, u, z, dzdt) where {G, A, Q} =
-    (sys.g(t, u, first(z), first(dzdt));
-     sys.q(t,          z ,  last(dzdt)); dzdt)
+    (sys.g(t, u, arg1(z), arg1(dzdt));
+     sys.q(t,          z ,  arg2(dzdt)); dzdt)
 
 (sys::System{G, A, Nothing})(t::Real, u, z, dzdt) where {G, A} = 
     (sys.g(t, u, z, dzdt); dzdt)
 
-# Explicit part for coupled integration. We execute the FIRST function first,
+# Explicit part for coupled integration. We execute the FIRST function arg1,
 # then use the output for evaluating the second function too. This assumes
 # essentially that the coupled system is lower triangular. If passing a
 # quadrature, we expect if will work with Coupled objects. The way this is 
@@ -36,14 +36,14 @@ function (sys::System{<:Coupled, A, Q})(t::Real,
                                        z::Coupled{C},
                                     dzdt::Coupled{C}) where {A, Q, C<:Coupled}
     # unpack things
-     x, y,   q = first(first(z)),    last(first(z)),    last(z)
-    dx, dy, dq = first(first(dzdt)), last(first(dzdt)), last(dzdt)
+     x, y,   q = arg1(arg1(z)),    arg2(arg1(z)),    arg2(z)
+    dx, dy, dq = arg1(arg1(dzdt)), arg2(arg1(dzdt)), arg2(dzdt)
 
-    # call nonlinear equations first
-    first(sys.g)(t, x, dx)
+    # call nonlinear equations arg1
+    arg1(sys.g)(t, x, dx)
 
     # call linearised equations second
-    last(sys.g)(t, x, dx, y, dy)
+    arg2(sys.g)(t, x, dx, y, dy)
 
     # call quadrature
     sys.q(t, z, dq)
@@ -53,8 +53,8 @@ function (sys::System{<:Coupled, A, Q})(t::Real,
 end
 
 (sys::System{<:Coupled, A, Nothing})(t::Real, z::Coupled, dzdt::Coupled) where {A} =
-    (first(sys.g)(t, first(z), first(dzdt));
-      last(sys.g)(t, first(z), last(z), last(dzdt)); dzdt)
+    (arg1(sys.g)(t, arg1(z), arg1(dzdt));
+      arg2(sys.g)(t, arg1(z), arg2(z), arg2(dzdt)); dzdt)
 
 
 # Implicit part. We also define methods for At_mul_B!, for the adjoint
@@ -62,7 +62,7 @@ end
 # type. Note we set the quadrature part to zero, since we are treating it
 # fully explicitly.
 mul!(out, sys::System{G, A, Q}, z) where {G, A, Q} =
-    (mul!(first(out), sys.A, first(z)); last(out) .= 0; out)
+    (mul!(arg1(out), sys.A, arg1(z)); arg2(out) .= 0; out)
 
 mul!(out, sys::System{G, A, Nothing}, z) where {G, A} =
     mul!(out, sys.A, z)
@@ -72,16 +72,16 @@ mul!(out, sys::System{G, A, Nothing}, z) where {G, A} =
 mul!(out::Coupled{Coupled},
             sys::System{G, <:Coupled, Q},
             z::Coupled{Coupled}) where {G, Q} =
-    (mul!(first(first(out)), first(sys.A), first(first(z)));
-     mul!(first( last(out)),  last(sys.A), first( last(z)));
-     last(out) .= 0; out)
+    (mul!(arg1(arg1(out)), arg1(sys.A), arg1(arg1(z)));
+     mul!(arg1( arg2(out)),  arg2(sys.A), arg1( arg2(z)));
+     arg2(out) .= 0; out)
 
 # and for no quadrature
 mul!(out::Coupled, 
             sys::System{G, <:Coupled, Nothing}, 
             z::Coupled) where {G} =
-    (mul!(first(out), first(sys.A), first(z));
-        mul!( last(out),  last(sys.A),  last(z)); out)
+    (mul!(arg1(out), arg1(sys.A), arg1(z));
+        mul!( arg2(out),  arg2(sys.A),  arg2(z)); out)
 
 # this is for fully explicit problems. We do not add methods for when
 # G, out and z are `Coupled` objects, since `out::Coupled` should
@@ -97,7 +97,7 @@ mul!(out, sys::System{G, Nothing, Nothing}, z) where {G} =
 # component of A associated to this part is zero and the state
 # and quadrature parts are decoupled. Same for no linear term.
 ImcA!(sys::System{G, A, Q}, c::Real, y, z) where {G, A, Q} =
-    (ImcA!(sys.A, c, first(y), first(z)); last(z) .= last(y); z)
+    (ImcA!(sys.A, c, arg1(y), arg1(z)); arg2(z) .= arg2(y); z)
 
 ImcA!(sys::System{G, A, Nothing}, c::Real, y, z) where {G, A} =
     (ImcA!(sys.A, c, y, z); z)
@@ -108,17 +108,17 @@ ImcA!(sys::System{G, <:Coupled, Q},
         c::Real, 
         y::Coupled{Coupled}, 
         z::Coupled{Coupled}) where {G, Q} =
-    (ImcA!(first(sys.A), c, first(first(y)), first(first(z)));
-        ImcA!( last(sys.A), c, first( last(y)), first( last(z)));
-        last(z) .= last(y); z)
+    (ImcA!(arg1(sys.A), c, arg1(arg1(y)), arg1(arg1(z)));
+        ImcA!( arg2(sys.A), c, arg1( arg2(y)), arg1( arg2(z)));
+        arg2(z) .= arg2(y); z)
 
 # and with no quadrature.
 ImcA!(sys::System{G, <:Coupled, Nothing},
         c::Real,
         y::Coupled,
         z::Coupled) where {G} =
-    (ImcA!(first(sys.A), c, first(y), first(z));
-        ImcA!( last(sys.A), c,  last(y),  last(z)); z)
+    (ImcA!(arg1(sys.A), c, arg1(y), arg1(z));
+        ImcA!( arg2(sys.A), c,  arg2(y),  arg2(z)); z)
 
 # this is for fully explicit systems. We do not add methods for when
 # G, y and z are `Coupled` objects, since `z` and `y` as `Coupled` objects 

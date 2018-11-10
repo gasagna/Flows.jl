@@ -1,5 +1,3 @@
-using Base.Test
-
 @testset "test RAMStorage                        " begin
     store = RAMStorage{Float64, Tuple{Float64, Int}}()
 

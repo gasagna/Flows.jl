@@ -1,20 +1,22 @@
+import LinearAlgebra: Diagonal, norm
+
 @testset "coupled state broadcast                " begin
     x = [1,   2,   3]
     q = [3.0, 4.0, 5.0]
 
     # define two coupled states
     z = Flows.couple(x, q)
-    y = Flows.couple(copy(x)+1, copy(q)+1)
+    y = Flows.couple(copy(x).+1, copy(q).+1)
 
     # define some operation
-    fun!(z, y) = (z .= 2.0.*z .+ 1.0.*y .- 1; z)
+    fun!(z, y) = (@all z .= 2.0.*z .+ 1.0.*y .- 1; z)
 
     # apply 
     fun!(z, y)
 
     # value
-    @test first(z) == [3, 6, 9]
-    @test  last(z) == [9.0, 12.0, 15.0]
+    @test arg1(z) == [3, 6, 9]
+    @test arg2(z) == [9.0, 12.0, 15.0]
 
     # allocation
     @test (@allocated fun!(z, y)) == 0
@@ -34,7 +36,7 @@ end
         # unpack state. This results in lots of allocations on v
         # x = first(xq)
         q̇[1] = 1
-        q̇[2] = xq.a[1]
+        q̇[2] = arg1(xq)[1]
         q̇[3] = t
         return q̇
     end
@@ -56,7 +58,7 @@ end
         exact = [5, exp(5) - exp(0), 5^2/2]
 
         # error should decrease at certain rate
-        for Δt = logspace(0, -2.5, 5)
+        for Δt = 10 .^ range(0, stop=-2.5, length=5)
 
             # forward map
             f = flow(_g, _A, quad, method, TimeStepConstant(Δt))
@@ -76,7 +78,7 @@ end
 
             # test allocations
             fun(f, x₀, q₀, span) = @allocated f(x₀, q₀, span)
-            @test fun(f, x₀, q₀, (0.0, 100.0)) <= 32
+            @test fun(f, x₀, q₀, (0.0, 1000.0)) <= 384
         end
     end
 end

@@ -1,3 +1,5 @@
+import LinearAlgebra: Diagonal, norm
+
 @testset "test monitor type                      " begin
     m = Monitor(0, string)
     push!(m, 0.0, 0)
