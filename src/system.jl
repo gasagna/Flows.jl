@@ -1,130 +1,62 @@
 import LinearAlgebra: mul!
 
-# Type for ODE/PDE problems
-struct System{G, A, Q}
-    g::G # explicit term
-    A::A # linear implicit term: can be Nothing if not provided
-    q::Q # quadrature function: can be Nothing if not provided
+# ~~~ TYPE FOR INTEGRATING N COUPLED PROBLEMS ~~~
+struct System{N, GT, AT}
+    g::GT # explicit term
+    A::AT # linear implicit term
 end
 
-# Explicit part
-(sys::System{G, A, Q})(t::Real, z, dzdt) where {G, A, Q} =
-    (sys.g(t, arg1(z), arg1(dzdt)); 
-     sys.q(t,       z ,  arg2(dzdt)); dzdt)
+# constructors
+System(g::GT, A::AT) where {GT, AT} = System{1, GT, AT}(g, A)
+System(g::GT, A::AT) where {N, GT<:Coupled{N}, AT<:Coupled{N}} = 
+    System{N, GT, AT}(g, A)
 
-(sys::System{G, A, Nothing})(t::Real, z, dzdt) where {G, A} = 
-    (sys.g(t, z, dzdt); dzdt)
+# ~ Explicit part ~
+(sys::System{1})(t::Real, z, dzdt) = sys.g(t, z, dzdt)
 
-# Explicit part for linearised problems
-(sys::System{G, A, Q})(t::Real, u, z, dzdt) where {G, A, Q} =
-    (sys.g(t, u, arg1(z), arg1(dzdt));
-     sys.q(t,          z ,  arg2(dzdt)); dzdt)
+(sys::System{2})(t::Real, z::Coupled{2}, dzdt::Coupled{2}) =
+    (sys.g[1](t, z[1], dzdt[1]);
+     sys.g[2](t, z[1], dzdt[1], z[2], dzdt[2]); dzdt)
 
-(sys::System{G, A, Nothing})(t::Real, u, z, dzdt) where {G, A} = 
-    (sys.g(t, u, z, dzdt); dzdt)
+(sys::System{3})(t::Real, z::Coupled{3}, dzdt::Coupled{3}) =
+     (sys.g[1](t, z[1], dzdt[1]);
+      sys.g[2](t, z[1], dzdt[1], z[2], dzdt[2]);
+      sys.g[3](t, z[1], dzdt[1], z[2], dzdt[2], z[3], dzdt[3]); dzdt)
 
-# Explicit part for coupled integration. We execute the FIRST function arg1,
-# then use the output for evaluating the second function too. This assumes
-# essentially that the coupled system is lower triangular. If passing a
-# quadrature, we expect if will work with Coupled objects. The way this is 
-# coded up does not assume that the implicit part is coupled too. Note that
-# these two will not get called if only `z` and `dzdt` are `Coupled`. This means
-# that for quadrature integration the previous methods will apply. This is
-# a bit auto-magical, but works well.
-# TODO: we might want to pass dzdt to the quadrature too, if needed.
-function (sys::System{<:Coupled, A, Q})(t::Real,
-                                       z::Coupled{C},
-                                    dzdt::Coupled{C}) where {A, Q, C<:Coupled}
-    # unpack things
-     x, y,   q = arg1(arg1(z)),    arg2(arg1(z)),    arg2(z)
-    dx, dy, dq = arg1(arg1(dzdt)), arg2(arg1(dzdt)), arg2(dzdt)
+# add generic method for larger N if needed
 
-    # call nonlinear equations arg1
-    arg1(sys.g)(t, x, dx)
+# this is for the adjoint schemes
+(sys::System{1})(t::Real, u, z, dzdt) = sys.g(t, u, z, dzdt)
 
-    # call linearised equations second
-    arg2(sys.g)(t, x, dx, y, dy)
+# ~ Implicit part I ~
+mul!(out, sys::System{1, GT, AT}, z) where {GT, AT} =
+    ((AT isa Nothing ? (out .= 0) : mul!(out, sys.A, z)); out)
 
-    # call quadrature
-    sys.q(t, z, dq)
-
-    # return
-    return dzdt
+@generated function mul!(out::Coupled{N},
+                         sys::System{N, Coupled{N, GT}, Coupled{N, AT}},
+                           z::Coupled{N}) where {N, GT, AT}
+    return quote
+        Base.Cartesian.@nexprs $N i->($(AT.parameters)[i] == Nothing ?
+                (out[i] .= 0) : mul!(out[i], sys.A[i], z[i]))
+        return out
+    end
 end
 
-(sys::System{<:Coupled, A, Nothing})(t::Real, z::Coupled, dzdt::Coupled) where {A} =
-    (arg1(sys.g)(t, arg1(z), arg1(dzdt));
-      arg2(sys.g)(t, arg1(z), arg2(z), arg2(dzdt)); dzdt)
-
-
-# Implicit part. We also define methods for At_mul_B!, for the adjoint
-# code, hence the user must also provide At_mul_B! for his linear implicit
-# type. Note we set the quadrature part to zero, since we are treating it
-# fully explicitly.
-mul!(out, sys::System{G, A, Q}, z) where {G, A, Q} =
-    (mul!(arg1(out), sys.A, arg1(z)); arg2(out) .= 0; out)
-
-mul!(out, sys::System{G, A, Nothing}, z) where {G, A} =
-    mul!(out, sys.A, z)
-
-# when A is a `Coupled` object. Obviously, we need `y` and `z` to be
-# `Coupled` as well - this is with quadrature
-mul!(out::Coupled{Coupled},
-            sys::System{G, <:Coupled, Q},
-            z::Coupled{Coupled}) where {G, Q} =
-    (mul!(arg1(arg1(out)), arg1(sys.A), arg1(arg1(z)));
-     mul!(arg1( arg2(out)),  arg2(sys.A), arg1( arg2(z)));
-     arg2(out) .= 0; out)
-
-# and for no quadrature
-mul!(out::Coupled, 
-            sys::System{G, <:Coupled, Nothing}, 
-            z::Coupled) where {G} =
-    (mul!(arg1(out), arg1(sys.A), arg1(z));
-        mul!( arg2(out),  arg2(sys.A),  arg2(z)); out)
-
-# this is for fully explicit problems. We do not add methods for when
-# G, out and z are `Coupled` objects, since `out::Coupled` should
-# support broadcasting operations
-mul!(out, sys::System{G, Nothing, Q}, z) where {G, Q} =
-    (out .= 0; out)
-
-mul!(out, sys::System{G, Nothing, Nothing}, z) where {G} = 
-    (out .= 0; out)
-
+# ~ Implicit part II ~
 # Since we treat the quadrature fully explicitly, the solution of
 # (I-cA)z = y for the quadrature part is simply z = y, because the
 # component of A associated to this part is zero and the state
-# and quadrature parts are decoupled. Same for no linear term.
-ImcA!(sys::System{G, A, Q}, c::Real, y, z) where {G, A, Q} =
-    (ImcA!(sys.A, c, arg1(y), arg1(z)); arg2(z) .= arg2(y); z)
+# and quadrature parts are decoupled.
+ImcA!(sys::System{1, GT, AT}, c::Real, y, z) where {GT, AT} =
+    ((AT isa Nothing ? (z .= y) : ImcA!(sys.A, c, y, z)); z)
 
-ImcA!(sys::System{G, A, Nothing}, c::Real, y, z) where {G, A} =
-    (ImcA!(sys.A, c, y, z); z)
-
-# when A is a `Coupled` object. Obviously, we need `y` and `z` to be
-# `Coupled` as well - this is with quadrature.
-ImcA!(sys::System{G, <:Coupled, Q}, 
-        c::Real, 
-        y::Coupled{Coupled}, 
-        z::Coupled{Coupled}) where {G, Q} =
-    (ImcA!(arg1(sys.A), c, arg1(arg1(y)), arg1(arg1(z)));
-        ImcA!( arg2(sys.A), c, arg1( arg2(y)), arg1( arg2(z)));
-        arg2(z) .= arg2(y); z)
-
-# and with no quadrature.
-ImcA!(sys::System{G, <:Coupled, Nothing},
-        c::Real,
-        y::Coupled,
-        z::Coupled) where {G} =
-    (ImcA!(arg1(sys.A), c, arg1(y), arg1(z));
-        ImcA!( arg2(sys.A), c,  arg2(y),  arg2(z)); z)
-
-# this is for fully explicit systems. We do not add methods for when
-# G, y and z are `Coupled` objects, since `z` and `y` as `Coupled` objects 
-# should support broadcasting operations
-ImcA!(sys::System{G, Nothing, Q}, c::Real, y, z) where {G, Q} =
-    (z .= y; z)
-
-ImcA!(sys::System{G, Nothing, Nothing}, c::Real, y, z) where {G} =
-    (z .= y; z)
+@generated function ImcA!(sys::System{N, Coupled{N, GT}, Coupled{N, AT}},
+                            c::Real,
+                            y::Coupled{N},
+                            z::Coupled{N}) where {N, GT, AT}
+    return quote 
+        Base.Cartesian.@nexprs $N i->($(AT.parameters)[i] == Nothing ?
+                (z[i] .= y[i]) : ImcA!(sys.A[i], c, y[i], z[i]))
+        return z
+    end
+end

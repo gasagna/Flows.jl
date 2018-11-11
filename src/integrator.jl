@@ -9,15 +9,20 @@ struct Flow{TS<:AbstractTimeStepping, M<:AbstractMethod, S<:System}
     Flow(ts::TS, m::M, sys::S) where {TS, M, S} = new{TS, M, S}(ts, m, sys)
 end
 
-# main entry point specifying explicit, implicit and quadrature parts
-flow(g, A, q, m::AbstractMethod, ts::AbstractTimeStepping) =
-     Flow(ts, m, System(g, A, q))
+# single system
+flow(g, m::AbstractMethod, ts::AbstractTimeStepping) =
+    flow(g, nothing, m, ts)
 
-flow(g, A,    m::AbstractMethod, ts::AbstractTimeStepping) =
-     Flow(ts, m, System(g, A, nothing))
+flow(g, A, m::AbstractMethod, ts::AbstractTimeStepping) =
+     Flow(ts, m, System(g, A))
 
-flow(g,       m::AbstractMethod, ts::AbstractTimeStepping) =
-     Flow(ts, m, System(g, nothing, nothing))
+ # coupled systems
+flow(g::Coupled{N}, m::AbstractMethod, ts::AbstractTimeStepping) where {N} =
+     flow(g, couple(ntuple(i->nothing, N)...), m, ts)
+
+ flow(g::Coupled{N}, A::Coupled{N}, m::AbstractMethod,
+                                           ts::AbstractTimeStepping) where {N} =
+     Flow(ts, m, System(g, A))
 
 # ---------------------------------------------------------------------------- #
 # FLOWS ARE CALLABLE OBJECTS: THIS IS THE MAIN INTERFACE
@@ -40,30 +45,6 @@ flow(g,       m::AbstractMethod, ts::AbstractTimeStepping) =
                              c::AbstractStageCache, 
                              m::Union{Nothing, <:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.sys, x, c, m)
-
-# ---------------------------------------------------------------------------- #
-# SAME WITH QUADRATURE
-# normal stepping
-(I::Flow)(x, q, span::NTuple{2, Real}) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), 
-                couple(x, q), nothing, nothing)
-
-# fill a monitor
-(I::Flow)(x, q, span::NTuple{2, Real}, m::AbstractMonitor) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), 
-                couple(x, q), nothing, m)
-
-# fill a cache and optionally a monitor
-(I::Flow)(x, q, span::NTuple{2, Real}, 
-          c::AbstractStageCache, m::Union{Nothing, <:AbstractMonitor}=nothing) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), couple(x, q), c, m)
-
-# stepping based on cache only, calculating a quadrature
-(I::Flow{TimeStepFromCache})(x, q,
-                             c::AbstractStageCache, 
-                             m::Union{Nothing, <:AbstractMonitor}=nothing) =
-    _propagate!(I.meth, I.sys, couple(x, q), c, m)
-
 
 # ---------------------------------------------------------------------------- #
 # PROPAGATION FUNCTIONS & UTILS

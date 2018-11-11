@@ -24,10 +24,8 @@ struct LorenzTan
     flag::Int
 end
 
-# define two methods, with and without dudt
 (eq::LorenzTan)(t::Real, u::V, dudt::V,
-                         v::V, dvdt::V) where {V<:AbstractVector} =
-    eq(t, u, v, dvdt)
+    v::V, dvdt::V) where {V<:AbstractVector} = eq(t, u, v, dvdt)
 
 function (eq::LorenzTan)(t::Real, u::V,
                                   v::V, dvdt::V) where {V<:AbstractVector}
@@ -49,6 +47,10 @@ end
 struct LorenzAdj
     flag::Int
 end
+
+(eq::LorenzAdj)(t::Real, u::V,
+                         v::V, dvdt::V) where {V<:AbstractVector} =
+    eq(t, u, v, dvdt)
 
 function (eq::LorenzAdj)(t::Real, u::V, v::V, dvdt::V) where {V<:AbstractVector}
     # extract components
@@ -75,16 +77,16 @@ const A = Diagonal([-10, -1, -8/3])
 
     # methods
     nl    = RK4(x0, :NORMAL)
-    l_t = RK4(x0, :TAN)
+    l_t   = RK4(x0, :TAN)
     l_adj = RK4(x0, :ADJ)
 
     # stage cache
     scache = RAMStageCache(4, x0)
 
     # system (without diagonal)
-    sys_nl    = Flows.System(Lorenz(0),    nothing, nothing)
-    sys_l_tan = Flows.System(LorenzTan(0), nothing, nothing)
-    sys_l_adj = Flows.System(LorenzAdj(0), nothing, nothing)
+    sys_nl    = Flows.System(Lorenz(0),    nothing)
+    sys_l_tan = Flows.System(LorenzTan(0), nothing)
+    sys_l_adj = Flows.System(LorenzAdj(0), nothing)
 
     # execute step
     N = 5
@@ -124,9 +126,9 @@ end
         scache = RAMStageCache(NS, x0)
 
         # system
-        sys_nl    = Flows.System(Lorenz(1),    A, nothing)
-        sys_l_tan = Flows.System(LorenzTan(1), A, nothing)
-        sys_l_adj = Flows.System(LorenzAdj(1), A, nothing)
+        sys_nl    = Flows.System(Lorenz(1),    A)
+        sys_l_tan = Flows.System(LorenzTan(1), A)
+        sys_l_adj = Flows.System(LorenzAdj(1), A)
 
         # execute step
         N = 50
@@ -177,8 +179,8 @@ end
             scache = RAMStageCache(NS, x0)
 
             # system (without diagonal)
-            sys_nl    = Flows.System(_g_nl, _A, nothing)
-            sys_l_tan = Flows.System(_g_t,  _A, nothing)
+            sys_nl    = Flows.System(_g_nl, _A)
+            sys_l_tan = Flows.System(_g_t,  _A)
 
             # go to attractor
             for j = 1:100
@@ -280,7 +282,6 @@ end
     # get norm
     n_coupled = norm(y0)
 
-
     # INTEGRATE USING CACHE
     # stage cache
     scache = RAMStageCache(4, x0)
@@ -310,59 +311,55 @@ end
 # COUPLED INTEGRATION OF THE GOVERNING EQUATIONS PLUS LINEARISED EQUATIONS
 
 # example quadrature function
-function quadfun(t, xyq::Coupled, dqdt)
-    xy, q = first(xyq), last(xyq)
-    x, y = first(xy), last(xy)
+function quadfun(t, x, dxdt, y, dydt, q, dqdt)
     dqdt[1] = x[1]*y[2]
     return dqdt
 end
 
-# @testset "coupled integration                    " begin
-#     # initial conditions
-#     x0 = Float64[9.1419853, 1.648665, 35.21793]
+@testset "coupled integration                    " begin
+    # initial conditions
+    x0 = Float64[9.1419853, 1.648665, 35.21793]
 
-#     # initial condition for the linearised equations
-#     y0 = Float64[1.0, 0.0, 0.0]
+    # initial condition for the linearised equations
+    y0 = Float64[1.0, 0.0, 0.0]
 
-#     # initial condition for the quadrature
-#     q0 = Float64[0.0]
+    # initial condition for the quadrature
+    q0 = Float64[0.0]
 
-#     # explicit integrator
-#     method = RK4(couple(couple(x0, y0), q0), :NORMAL)
+    # explicit integrator
+    method = RK4(couple(x0, y0, q0), :NORMAL)
 
-#     # linear flow map note we first pass the nonlinear equations
-#     ψ = flow(couple(Lorenz(0), LorenzTan(0)),
-#              nothing,
-#              quadfun,
-#              method,
-#              TimeStepConstant(1e-3))
+    # linear flow map note we first pass the nonlinear equations
+    ψ = flow(couple(Lorenz(0), LorenzTan(0), quadfun),
+             method,
+             TimeStepConstant(1e-3))
 
-#     # propagate
-#     ψ(couple(copy(x0), y0), q0, (0, 1))
+    # propagate
+    ψ(couple(copy(x0), y0, q0), (0, 1))
 
-#     # get norm
-#     val_a = q0[1]
+    # get norm
+    val_a = q0[1]
 
-#     # now compute the same by storing the entire solution
-#     monϕ = Monitor(x0, x->x[1])
-#     ϕ = flow(Lorenz(0), RK4(x0, :NORMAL), TimeStepConstant(1e-3))
+    # now compute the same by storing the entire solution
+    monϕ = Monitor(x0, x->x[1])
+    ϕ = flow(Lorenz(0), RK4(x0, :NORMAL), TimeStepConstant(1e-3))
 
-#     # stage cache
-#     scache = RAMStageCache(4, x0)
+    # stage cache
+    scache = RAMStageCache(4, x0)
 
-#     # linearised propagator and adjoint
-#     monψ = Monitor(x0, x->x[2])
-#     ψ  = flow(LorenzTan(0), RK4(x0, :TAN), TimeStepFromCache())
+    # linearised propagator and adjoint
+    monψ = Monitor(x0, x->x[2])
+    ψ  = flow(LorenzTan(0), RK4(x0, :TAN), TimeStepFromCache())
 
-#     # propagate nonlinear operator
-#     ϕ(copy(x0), (0, 1), reset!(scache), reset!(monϕ))
+    # propagate nonlinear operator
+    ϕ(copy(x0), (0, 1), reset!(scache), reset!(monϕ))
 
-#     # propagate linear operators forward/backward
-#     y0 = Float64[1.0, 0.0, 0.0]
-#     ψ(y0, scache, reset!(monψ))
+    # propagate linear operators forward/backward
+    y0 = Float64[1.0, 0.0, 0.0]
+    ψ(y0, scache, reset!(monψ))
 
-#     # naive rectangle integration
-#     val_b = sum(samples(monψ).*samples(monϕ)) * 1e-3
+    # naive rectangle integration
+    val_b = sum(samples(monψ).*samples(monϕ)) * 1e-3
 
-#     @test abs(val_a - val_b)/abs(val_a) < 1e-4
-# end
+    @test abs(val_a - val_b)/abs(val_a) < 1e-4
+end

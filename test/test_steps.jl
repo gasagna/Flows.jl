@@ -1,3 +1,5 @@
+import LinearAlgebra: Diagonal
+
 @testset "linear system                          " begin
 
     # define linear system ẋ = x, but splitting the right hand side
@@ -22,7 +24,7 @@
 
             # step forward
             x0 = Float64[1.0]
-            Flows.step!(scheme, Flows.System(_g, _A, nothing), 0., Δt, x0, nothing)
+            Flows.step!(scheme, Flows.System(_g, _A), 0., Δt, x0, nothing)
 
             # check error decays with expected power. The bounds bnd are used
             # to check whether the error decays at the expected rate, up
@@ -35,7 +37,7 @@
 
         # test allocation
         function fun(g, A, scheme, Δt, x0)
-            sys = Flows.System(g, A, nothing)
+            sys = Flows.System(g, A)
             @allocated Flows.step!(scheme, sys, 0., Δt, x0, nothing)
         end
         # @code_warntype

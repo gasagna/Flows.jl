@@ -13,7 +13,6 @@ struct $name{X, NS, TAG, ISADJ} <: AbstractMethod{X, NS, TAG, ISADJ}
 end
 
 # outer constructor
-$name(x, q, tag::Symbol) = $name(couple(x, q), tag)
 $name(x::X, tag::Symbol) where {X} =
     $name{X, $(nstages(tab)), _tag_map(tag)...}(ntuple(i->similar(x), 3))
 
@@ -76,7 +75,7 @@ function step!(method::$name{X, NS, :LIN, false},
             @all y .= x
         else
             @all y .= x .+ (tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*z .+
-                          (tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*Δt.*y
+                           (tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*Δt.*y
         end
         # E
         mul!(z, sys, y)                 # compute z = A*y then

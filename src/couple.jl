@@ -1,53 +1,53 @@
 using MacroTools: postwalk
 
-export Coupled, couple, @all, arg1, arg2
+export Coupled, couple, @all
 
-# This is basically a 2-tuple. We could use Base.Tuple{Any, Any}, obtaining 
+# This is basically an N-tuple. We could use Base.Tuple{Any, Any}, obtaining 
 # most of the functionality except `similar` and `copy`, which we would need to
 # overload. That would be type piracy, so we create our implementation.
-# 
-# There are two use cases in this library for this type:
-# 1) a type that wraps the main state vector `a::A` augmented
-#    with an appropriate object `b::B` used for quadrature integration.
-#    Note that the type is immutable, hence if a scalar function need to be
-#    integrated, the quadrature value is stored in a one-element vector, 
-#    in the field `b`
-# 2) a type to integrate a couple system of equations, where the coupling
-#    between the two parts is equivalent to a lower triangular coupling matrix.
-#    This is useful for integrating the tangent equations jointly with the 
-#    nonlinear equations.
-struct Coupled{ARG1, ARG2}
-    arg1::ARG1
-    arg2::ARG2
+struct Coupled{N, ARGS<:NTuple{N, Any}}
+    args::ARGS
+    function Coupled(args::ARGS) where {N, ARGS<:NTuple{N, Any}}
+        N ∈ (1, 2, 3) || throw(ArgumentError("must be 1, 2 or 3 args"))
+        return new{N, ARGS}(args)
+    end
 end
 
-# constructors
-couple(arg1, arg2) = Coupled(arg1, arg2)
+# constructor
+couple(args...) = Coupled(args)
 
-# extract parts
-arg1(x::Coupled) = x.arg1
-arg2(x::Coupled) = x.arg2
-arg1(x::Any) = x
-arg2(x::Any) = x
+# extract parts (up to three)
+Base.getindex(x::Coupled, i::Int) = x.args[i]
+Base.length(x::Coupled) = length(x.args)
+
+# array interface
+Base.similar(x::Coupled{N}) where {N} = couple(ntuple(i->similar(x[i]), N)...)
+Base.copy(x::Coupled{N})    where {N} = couple(ntuple(i->copy(x[i]), N)...)
 
 # stuff for the macro
 _isoperator(s::Symbol) = s ∈ (:+, :-, :*, :/, :.+, :.-, :.*, :./)
 _isoperand(::Union{Expr, Number, QuoteNode}) = false
 _isoperand(s::Symbol) = !_isoperator(s)
 
+_getarg(x::Coupled, i::Int) = x[i]
+_getarg(x,          i::Int) = x
+
+# Broadcast any operations on all arguments of the Coupled object
 macro all(expr)
-    expr_1 = postwalk(s->_isoperand(s) ? :(arg1($s)) : s, expr)
-    expr_2 = postwalk(s->_isoperand(s) ? :(arg2($s)) : s, expr)
+    expr_1 = postwalk(s->_isoperand(s) ? :(Flows._getarg($s, 1)) : s, expr)
+    expr_2 = postwalk(s->_isoperand(s) ? :(Flows._getarg($s, 2)) : s, expr)
+    expr_3 = postwalk(s->_isoperand(s) ? :(Flows._getarg($s, 3)) : s, expr)
     quote
-        if typeof($(esc(expr.args[1]))) <: Coupled
+        if typeof($(esc(expr.args[1]))) <: Coupled{3}
             $(esc(expr_1))
             $(esc(expr_2))
-        else
+            $(esc(expr_3))
+        elseif typeof($(esc(expr.args[1]))) <: Coupled{2}
+            $(esc(expr_1))
+            $(esc(expr_2))
+        else typeof($(esc(expr.args[1])))
             $(esc(expr))
         end
         $(esc(expr.args[1]))
     end
 end
-
-Base.similar(x::Coupled) = couple(similar(arg1(x)), similar(arg2(x)))
-Base.copy(   x::Coupled) = couple(   copy(arg1(x)),    copy(arg2(x)))

@@ -16,6 +16,5 @@ ImcA!(A, c::Real, y, z) = error("missing implementation")
 # types are supposed to have defined broadcasting operations
 # for the dot notation
 ImcA!( A::Diagonal, c::Real, y, z) = z .= y./(1 .- c.*A.diag)
-ImcAt!(A::Diagonal, c::Real, y, z) = z .= y./(1 .- c.*A.diag)
 
 mul!( out, A::Diagonal, in) = out .= A.diag.*in

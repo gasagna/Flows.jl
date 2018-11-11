@@ -1,3 +1,5 @@
+import LinearAlgebra: Diagonal
+
 @testset "integrator                             " begin
     # make system
     g(t, x, ẋ) = (ẋ .= .-0.5.*x; ẋ)
