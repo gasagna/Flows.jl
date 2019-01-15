@@ -2,7 +2,7 @@ export flow, InvalidSpanError
 
 # ---------------------------------------------------------------------------- #
 # The Flow type!
-struct Flow{TS<:AbstractTimeStepping, M<:AbstractMethod, S<:System}
+mutable struct Flow{TS<:AbstractTimeStepping, M<:AbstractMethod, S<:System}
     tstep::TS # the method used for time stepping
      meth::M  # the method, with storage, implementation and time stepping
       sys::S  # the system to be integrated

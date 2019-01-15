@@ -13,7 +13,7 @@ abstract type AbstractTimeStepFromHook <: AbstractTimeStepping end
 
 # ---------------------------------------------------------------------------- #
 # Constant time stepping
-struct TimeStepConstant <: AbstractTimeStepping
+mutable struct TimeStepConstant <: AbstractTimeStepping
     Δt::Float64
     function TimeStepConstant(Δt::Real)
         Δt > 0 || throw(ArgumentError("time step must be positive"))
