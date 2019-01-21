@@ -15,8 +15,8 @@ import LinearAlgebra: Diagonal
         for (method, err, _g, _A) in [(RK4(     x, :NORMAL), 1e-9, gfull, nothing),
                                       (CB3R2R2( x, :NORMAL), 2e-5, g,     A),
                                       (CB3R2R3e(x, :NORMAL), 5e-8, g,     A),
-                                      (CB3R2R3c(x, :NORMAL), 6e-8, g,     A)]
-                                    # (CB4R3R4( x, :NORMAL), 3e-12,g,     A)]
+                                      (CB3R2R3c(x, :NORMAL), 6e-8, g,     A),
+                                      (CB4R3R4( x, :NORMAL), 3e-12,g,     A)]
 
             # forward map
             ϕ = flow(_g, _A, method, TimeStepConstant(0.01123))
