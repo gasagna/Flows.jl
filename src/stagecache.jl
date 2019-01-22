@@ -17,7 +17,10 @@ struct RAMStageCache{NS, X} <: AbstractStageCache{NS, X}
      xs::Vector{NTuple{NS, X}}
 end
 
-RAMStageCache(NS::Int, x::X) where {X} =
+RAMStageCache(NS::Int, x) =
+    RAMStageCache(NS, typeof(x))
+
+RAMStageCache(NS::Int, ::Type{X}) where {X} =
     RAMStageCache{NS, X}(Float64[], Float64[], NTuple{NS, X}[])
 
 @inline Base.push!(ss::RAMStageCache{NS, X},
@@ -28,3 +31,7 @@ RAMStageCache(NS::Int, x::X) where {X} =
 
 reset!(ss::RAMStageCache) =
     (resize!(ss.ts, 0); resize!(ss.Δts, 0); resize!(ss.xs, 0); ss)
+
+# one should be able to construct a similar object
+Base.similar(ss::RAMStageCache{NS, X}) where {X, NS} = 
+    RAMStageCache{NS, X}()
