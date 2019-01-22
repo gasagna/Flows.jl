@@ -32,6 +32,30 @@ end
     @test samples(m) == [0.0, 4.0]
 end
 
+@testset "storeonebutlast                        " begin
+    # integral of t in dt
+    g(t, x, dxdt) = (dxdt[1] = t; dxdt)
+    A = Diagonal([0.0])
+
+    # integration scheme
+    scheme = CB3R2R3e(Float64[0.0], :NORMAL)
+
+    # monitors
+    m = StoreOneButLast(zeros(1), identity)
+
+    # forward map
+    ϕ = flow(g, A, scheme, TimeStepConstant(0.1))
+
+    # initial condition
+    x₀ = [0.0]
+
+    # test end point is calculated correctly
+    ϕ(x₀, (0, 1), m)
+
+    @test m.t == 0.9
+    @test m.x == [0.5*(0.9)^2]
+end
+
 @testset "allocation                             " begin
     # integral of t in dt
     g(t, x, ẋ) = (ẋ[1] = t; ẋ)

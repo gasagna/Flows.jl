@@ -80,15 +80,21 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
 
     # define integration times
     ts = LossLessRange(span[1], span[2], stepping.Δt)
+    Nsteps = length(ts)
 
     # push initial state monitor
     _ismonitor(M) && push!(mon, ts[1], z)
 
     # start integration
-    for j = 2:length(ts)
+    for j = 2:Nsteps
         step!(method, system, ts[j-1], ts[j]-ts[j-1], z, cache)
-        _ismonitor(M) && push!(mon, ts[j], z)
+        if _ismonitor(M) 
+            # skip all pushes except the last but one
+            M <: StoreOneButLast && (j != Nsteps - 1 && continue) 
+            push!(mon, ts[j], z)
+        end
     end
+
 
     return z
 end
