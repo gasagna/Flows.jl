@@ -41,7 +41,7 @@ end
     scheme = CB3R2R3e(Float64[0.0], :NORMAL)
 
     # monitors
-    m = StoreOneButLast(zeros(1), identity)
+    m = StoreOneButLast(zeros(1))
 
     # forward map
     ϕ = flow(g, A, scheme, TimeStepConstant(0.1))

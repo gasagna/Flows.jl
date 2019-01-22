@@ -7,7 +7,7 @@ mutable struct StoreOneButLast{X, F} <: AbstractMonitor{Float64, X}
     x::X
     f::F
     t::Float64
-    function StoreOneButLast(z, f::F) where {F}
+    function StoreOneButLast(z, f::F = Base.identity) where {F}
         x = f(z)
         new{typeof(x), F}(x, f, 0.0)
     end
