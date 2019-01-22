@@ -13,5 +13,10 @@
         @test c.ts  == []
         @test c.Δts == []
         @test c.xs  == []
+
+        d = similar(c)
+        @test d.ts  == []
+        @test d.Δts == []
+        @test d.xs  == []
     end
 end
