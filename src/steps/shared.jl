@@ -6,6 +6,7 @@
 # - ISADJ   : boolean for whether this is an adjoint integration
 abstract type AbstractMethod{X, NS, TYPETAG, ISADJ} end
 
+typetag(::AbstractMethod{X, NS, TYPETAG}) where {X, NS, TYPETAG} = TYPETAG
 
 function _tag_map(tag::Symbol)
     tag == :NORMAL && return (:NORMAL,  false)

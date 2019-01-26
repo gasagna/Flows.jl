@@ -16,6 +16,14 @@ end
 $name(x::X, tag::Symbol) where {X} =
     $name{X, $(nstages(tab)), _tag_map(tag)...}(ntuple(i->similar(x), 3))
 
+# required to cope with nuggy julia deepcopy implementation
+function Base.deepcopy_internal(x::$name, dict::IdDict)
+    if !( haskey(dict, x) )
+        dict[x] = $name(x.store[1], typetag(x))
+    end
+    return dict[x]
+end
+
 # ---------------------------------------------------------------------------- #
 # Nonlinear problem with stage caching
 function step!(method::$name{X, NS, :NORMAL},
