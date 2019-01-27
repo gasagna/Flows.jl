@@ -1,20 +1,24 @@
 import LinearAlgebra: mul!, Diagonal
 
-export ImcA!
+export ImcA!, ImcA_mul!
 
 """
     ImcA!(A, c, y, z)
 
-Helper function for solving linear systems associated to 3R2R/4R3R
-schemes. Returns `z` such that `(I-cA)z = y`. For custom types, users
-should define a custom method for this function.
+Returns `z` such that `(I-cA)z = y`.
 """
 ImcA!(A, c::Real, y, z) = error("missing implementation")
 
-# Provide interface for systems where the stiff operator is
-# defined as a `Diagonal` matrix object from Julia Base. Custom
-# types are supposed to have defined broadcasting operations
-# for the dot notation
-ImcA!( A::Diagonal, c::Real, y, z) = z .= y./(1 .- c.*A.diag)
+"""
+    ImcA_mul!(A, c, y, z)
 
+Calculate the matrix vector product 'z = (I - c*A)y', where 'c' is a 
+scalar, 'A' and operator, and 'I' the identity operator.
+"""
+ImcA_mul!(A, c::Real, y, z) = (mul!(z, A, y); @all z .= y .- c.*z; z) 
+
+
+# Provide interface for systems where the stiff operator is
+# defined as a `Diagonal` matrix object from Julia Base.
+ImcA!( A::Diagonal, c::Real, y, z) = z .= y./(1 .- c.*A.diag)
 mul!( out, A::Diagonal, in) = out .= A.diag.*in
