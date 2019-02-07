@@ -35,3 +35,6 @@ reset!(ss::RAMStageCache) =
 # one should be able to construct a similar object
 Base.similar(ss::RAMStageCache{NS, X}) where {X, NS} = 
     RAMStageCache(NS, X)
+
+Base.copy(ss::RAMStageCache) = 
+    RAMStageCache(copy(ss.ts), copy(ss.Δts), copy(ss.xs))
