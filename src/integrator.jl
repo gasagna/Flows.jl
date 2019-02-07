@@ -90,7 +90,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
         step!(method, system, ts[j-1], ts[j]-ts[j-1], z, cache)
         if _ismonitor(M) 
             # skip all pushes except the last but one
-            M <: StoreOneButLast && (j != Nsteps - 1 && continue) 
+            M <: StoreOneButLast && (j != Nsteps - 2 && continue) 
             push!(mon, ts[j], z)
         end
     end
