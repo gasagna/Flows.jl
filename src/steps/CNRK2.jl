@@ -31,12 +31,12 @@ function step!(method::CNRK2{X, :NORMAL},
 
     # predictor step
     ImcA_mul!(sys, -0.5*Δt, x, k1)
-    sys(t, x, k2); _iscache(C) && (s1 = copy(k2))
+    sys(t, x, k2); _iscache(C) && (s1 = copy(x))
     @all k3 .= k1 .+ Δt.*k2
     ImcA!(sys, 0.5*Δt, k3, k4)
 
     # corrector
-    sys(t, k4, k5); _iscache(C) && (s1 = copy(k4))
+    sys(t, k4, k5); _iscache(C) && (s2 = copy(k4))
     @all k3 .= k1 .+ 0.5.*Δt.*(k2 .+ k5)
     ImcA!(sys, 0.5*Δt, k3, x)
 
