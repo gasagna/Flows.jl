@@ -1,6 +1,7 @@
 name = "Flows"
 authors = ["Davide Lasagna <davide.lasagna@soton.ac.uk>"]
 version = "0.0.0"
+uuid = "d910d432-2c57-11e9-263c-df934de6853d"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
