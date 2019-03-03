@@ -36,7 +36,7 @@ function step!(method::CNRK2{X, :NORMAL},
     ImcA!(sys, 0.5*Δt, k3, k4)
 
     # corrector
-    sys(t, k4, k5); _iscache(C) && (s2 = copy(k4))
+    sys(t+Δt, k4, k5); _iscache(C) && (s2 = copy(k4))
     @all k3 .= k1 .+ 0.5.*Δt.*(k2 .+ k5)
     ImcA!(sys, 0.5*Δt, k3, x)
 
@@ -61,7 +61,7 @@ function step!(method::CNRK2{X, :LIN, false},
     @all k3 .= k1 .+ Δt.*k2
     ImcA!(sys, 0.5*Δt, k3, k4)
     sys(t+Δt, stages[2], k4, k5)
-    @all k3 .= k1 .+ Δt./2.0.*(k2 .+ k5)
+    @all k3 .= k1 .+ 0.5.*Δt.*(k2 .+ k5)
     ImcA!(sys, 0.5*Δt, k3, x)
     return nothing
 end
