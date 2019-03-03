@@ -45,3 +45,45 @@ function step!(method::CNRK2{X, :NORMAL},
 
     return nothing
 end
+
+# ---------------------------------------------------------------------------- #
+# Linearised time stepping
+function step!(method::CNRK2{X, :LIN, false},
+                  sys::System,
+                    t::Real,
+                   Δt::Real,
+                    x::X,
+               stages::NTuple{2, X}) where {X}
+    # aliases
+    k1, k2, k3, k4, k5 = method.store
+    ImcA_mul!(sys, -0.5*Δt, x, k1)
+    sys(t, stages[1], x, k2)
+    @all k3 .= k1 .+ Δt.*k2
+    ImcA!(sys, 0.5*Δt, k3, k4)
+    sys(t+Δt, stages[2], k4, k5)
+    @all k3 .= k1 .+ Δt./2.0.*(k2 .+ k5)
+    ImcA!(sys, 0.5*Δt, k3, x)
+    return nothing
+end
+
+# ---------------------------------------------------------------------------- #
+# Adjoint time stepping
+function step!(method::CNRK2{X, :LIN, true},
+                  sys::System,
+                    t::Real,
+                   Δt::Real,
+                    x::X,
+               stages::NTuple{2, X}) where {X}
+    # aliases
+    k1, k2, k3, k4, k5 = method.store
+    ImcA!(sys, 0.5*Δt, x, k1)
+    sys(t + Δt, stages[2], k1, k2)
+    @all k2 .= k2.*Δt./2
+    ImcA!(sys, 0.5*Δt, k2, k3)
+    @all k4 .= Δt./2.0.*k1 .+ Δt.*k3
+    sys(t, stages[1], k4, k5)
+    @all k2 .= k1 .+ k3
+    ImcA_mul!(sys, -0.5*Δt, k2, k3)
+    @all x .= k3 .+ k5
+    return nothing
+end

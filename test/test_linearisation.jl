@@ -157,6 +157,50 @@ end
     end
 end
 
+@testset "CNRK2                                  " begin 
+
+    # initial conditions
+    x0 = Float64[1, 1, 2]
+
+    # methods
+    nl    = CNRK2(x0, :NORMAL)
+    l_t   = CNRK2(x0, :TAN)
+    l_adj = CNRK2(x0, :ADJ)
+
+    # stage cache
+    scache = RAMStageCache(2, x0)
+
+    # system (without diagonal)
+    sys_nl    = Flows.System(Lorenz(1),    A)
+    sys_l_tan = Flows.System(LorenzTan(1), A)
+    sys_l_adj = Flows.System(LorenzAdj(1), A)
+
+    # execute step
+    N = 5
+    for i = 1:N
+        Flows.step!(nl, sys_nl,    0, 1e-2, x0, scache)
+    end
+
+    y0 = Float64[1, 2, 3]
+    for i = 1:N
+        Flows.step!(l_t, sys_l_tan, 0, 1e-2, y0, scache.xs[i])
+    end
+
+    q1 = Float64[4, 5, 7]
+    for i = N:-1:1
+        Flows.step!(l_adj, sys_l_adj, 0, 1e-2, q1, scache.xs[i])
+    end
+
+    a = dot(y0, [4, 5, 7])
+    b = dot(q1, [1, 2, 3])
+    @test abs(a-b)/abs(a) < 1e-14
+
+    # these take the same time
+    # ta = @belapsed Flows.step!($l_adj, $sys_l_adj, 0, 1e-2, $q1, $(scache.xs[1]))
+    # tb = @belapsed Flows.step!($l_t, $sys_l_tan, 0, 1e-2, $q1, $(scache.xs[1]))
+    # println(ta/tb)
+end
+
 # ---------------------------------------------------------------------------- #
 # TEST LINEARISED STEP IS REALLY THE LINEARISATION OF THE NONLINEAR STEP
 @testset "Complex step derivative                " begin
@@ -167,8 +211,9 @@ end
     # complex step
     ϵ = 1e-100
 
-    for (nl, l_t, NS, _g_nl, _g_t, _A) in [(RK4(x0,      :NORMAL),      RK4(real.(x0), :TAN), 4, Lorenz(0), LorenzTan(0), nothing),
-                                           (CB3R2R2(x0,  :NORMAL),  CB3R2R2(real.(x0), :TAN), 3, Lorenz(1), LorenzTan(1), A),
+    for (nl, l_t, NS, _g_nl, _g_t, _A) in [(     RK4(x0, :NORMAL),      RK4(real.(x0), :TAN), 4, Lorenz(0), LorenzTan(0), nothing),
+                                           (   CNRK2(x0, :NORMAL),    CNRK2(real.(x0), :TAN), 2, Lorenz(1), LorenzTan(1), A),
+                                           ( CB3R2R2(x0, :NORMAL),  CB3R2R2(real.(x0), :TAN), 3, Lorenz(1), LorenzTan(1), A),
                                            (CB3R2R3e(x0, :NORMAL), CB3R2R3e(real.(x0), :TAN), 4, Lorenz(1), LorenzTan(1), A),
                                            (CB3R2R3c(x0, :NORMAL), CB3R2R3c(real.(x0), :TAN), 4, Lorenz(1), LorenzTan(1), A)]
 
@@ -217,8 +262,9 @@ end
     # initial conditions
     x0 = Float64[9.1419853, 1.648665, 35.21793]
 
-    for (nl, l_t, l_a, NS, _g_nl, _g_t, _g_a, _A) in [(RK4(x0,      :NORMAL),      RK4(x0, :TAN), RK4(x0,      :ADJ), 4, Lorenz(0), LorenzTan(0), LorenzAdj(0), nothing),
-                                                      (CB3R2R2(x0,  :NORMAL),  CB3R2R2(x0, :TAN), CB3R2R2(x0,  :ADJ), 3, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
+    for (nl, l_t, l_a, NS, _g_nl, _g_t, _g_a, _A) in [(     RK4(x0,  :NORMAL),     RK4(x0, :TAN),     RK4(x0,  :ADJ), 4, Lorenz(0), LorenzTan(0), LorenzAdj(0), nothing),
+                                                      (   CNRK2(x0, :NORMAL),    CNRK2(x0, :TAN),    CNRK2(x0, :ADJ), 2, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
+                                                      ( CB3R2R2(x0, :NORMAL),  CB3R2R2(x0, :TAN),  CB3R2R2(x0, :ADJ), 3, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
                                                       (CB3R2R3e(x0, :NORMAL), CB3R2R3e(x0, :TAN), CB3R2R3e(x0, :ADJ), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
                                                       (CB3R2R3c(x0, :NORMAL), CB3R2R3c(x0, :TAN), CB3R2R3c(x0, :ADJ), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A)]
 
