@@ -9,14 +9,14 @@ import LinearAlgebra: Diagonal, norm
     y = Flows.couple(copy(x).+1, copy(q).+1)
 
     # define some operation
-    fun!(z, y) = (@all z .= 2.0.*z .+ 1.0.*y .- 1; z)
+    fun!(z, y) = (@all z .= 2.0.*z .+ 1.0.*y; z)
 
     # apply 
     fun!(z, y)
 
     # value
-    @test z[1] == [3, 6, 9]
-    @test z[2] == [9.0, 12.0, 15.0]
+    @test z[1] == [4, 7, 10]
+    @test z[2] == [10, 13, 16]
 
     # allocation
     @test (@allocated fun!(z, y)) == 0
