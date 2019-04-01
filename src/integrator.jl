@@ -18,11 +18,20 @@ flow(g, A, m::AbstractMethod, ts::AbstractTimeStepping) =
 
  # coupled systems
 flow(g::Coupled{N}, m::AbstractMethod, ts::AbstractTimeStepping) where {N} =
-     flow(g, couple(ntuple(i->nothing, N)...), m, ts)
+     flow(g, default_dep(N), m, ts)
 
- flow(g::Coupled{N}, A::Coupled{N}, m::AbstractMethod,
-                                           ts::AbstractTimeStepping) where {N} =
-     Flow(ts, m, System(g, A))
+flow(g::Coupled{N}, spec::CallDependency{N}, m::AbstractMethod, 
+                                            ts::AbstractTimeStepping) where {N} =
+     flow(g, couple(ntuple(i->nothing, N)...), spec, m, ts)
+
+flow(g::Coupled{N}, A::Coupled{N}, m::AbstractMethod,
+                                  ts::AbstractTimeStepping) where {N} =
+    flow(g, A, default_dep(N), m, ts)
+
+flow(g::Coupled{N}, A::Coupled{N}, spec::CallDependency{N},
+                                  m::AbstractMethod,
+                                  ts::AbstractTimeStepping) where {N} =
+     Flow(ts, m, System(g, A, spec))
 
 # ---------------------------------------------------------------------------- #
 # FLOWS ARE CALLABLE OBJECTS: THIS IS THE MAIN INTERFACE
