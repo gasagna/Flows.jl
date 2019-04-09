@@ -78,12 +78,12 @@ function step!(method::CNRK2{X, :LIN, true},
     k1, k2, k3, k4, k5 = method.store
     ImcA!(sys, 0.5*Δt, x, k1)
     sys(t + Δt, stages[2], k1, k2)
-    @all k2 .= k2.*Δt./2
+    k2 .= k2.*Δt./2
     ImcA!(sys, 0.5*Δt, k2, k3)
-    @all k4 .= Δt./2.0.*k1 .+ Δt.*k3
+    k4 .= Δt./2.0.*k1 .+ Δt.*k3
     sys(t, stages[1], k4, k5)
-    @all k2 .= k1 .+ k3
+    k2 .= k1 .+ k3
     ImcA_mul!(sys, -0.5*Δt, k2, k3)
-    @all x .= k3 .+ k5
+    x .= k3 .+ k5
     return nothing
 end
