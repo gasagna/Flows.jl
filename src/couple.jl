@@ -4,7 +4,11 @@ export Coupled, couple, @all
 
 # This is basically an N-tuple. We could use Base.Tuple{Any, Any}, obtaining 
 # most of the functionality except `similar` and `copy`, which we would need to
-# overload. That would be type piracy, so we create our implementation.
+# overload. That would be type piracy, so we create our implementation. The 
+# only hacky bit is how to define the broadcast behaviour for the Coupled object.
+# This used to be straightforward in julia v0.6, but we now need to use a macro 
+# (@all, see below) to obtain the same behaviour. Since Coupled objects should only
+# be used within this library code, this is not such a big issue.
 struct Coupled{N, ARGS<:NTuple{N, Any}} <: AbstractVector{Float64}
     args::ARGS
     function Coupled(args::ARGS) where {N, ARGS<:NTuple{N, Any}}
@@ -13,18 +17,18 @@ struct Coupled{N, ARGS<:NTuple{N, Any}} <: AbstractVector{Float64}
     end
 end
 
-# constructor
+# Constructor
 couple(args...) = Coupled(args)
 
-# extract parts (up to three)
+# Extract parts using indexing (this is read-only)
 Base.getindex(x::Coupled, i::Int) = x.args[i]
 Base.length(x::Coupled) = length(x.args)
 
-# array interface
+# Array interface
 Base.similar(x::Coupled{N}) where {N} = couple(ntuple(i->similar(x[i]), N)...)
 Base.copy(x::Coupled{N})    where {N} = couple(ntuple(i->copy(x[i]), N)...)
 
-# stuff for the macro
+# Stuff for the @all macro
 _isoperator(s::Symbol) = s ∈ (:+, :-, :*, :/, :.+, :.-, :.*, :./)
 _isoperand(::Union{Expr, Number, QuoteNode}) = false
 _isoperand(s::Symbol) = !_isoperator(s)
@@ -34,7 +38,7 @@ _getarg(x,          i::Int) = x
 
 # Broadcast any operations on all arguments of the Coupled object
 macro all(expr)
-    exprs = [postwalk(s->_isoperand(s) ? :(Flows._getarg($s, $i)) : s, expr) for i = 1:100]
+    exprs = [postwalk(s->_isoperand(s) ? :(Flows._getarg($s, $i)) : s, expr) for i = 1:99]
     quote
         if typeof($(esc(expr.args[1]))) <: Coupled
             N = length($(esc(expr.args[1])))
