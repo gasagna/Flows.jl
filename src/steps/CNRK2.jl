@@ -47,7 +47,30 @@ function step!(method::CNRK2{X, :NORMAL},
 end
 
 # ---------------------------------------------------------------------------- #
-# Linearised time stepping
+# Continuous linearised time stepping with interpolation from store
+function step!(method::CNRK2{X, :LIN, ISADJ},
+                  sys::System,
+                    t::Real,
+                   Δt::Real,
+                    x::X,
+                store::AbstractStorage) where {X, ISADJ}
+    # flip sign of dt for adjoint
+    dt = ISADJ == true ? -Δt : Δt
+
+    # aliases
+    k1, k2, k3, k4, k5 = method.store
+    ImcA_mul!(sys, -0.5*dt, x, k1)
+    sys(t, store(k5, t), x, k2)
+    k3 .= k1 .+ dt.*k2
+    ImcA!(sys, 0.5*dt, k3, k4)
+    sys(t+Δt, store(k3, t+Δt), k4, k5)
+    k3 .= k1 .+ 0.5.*dt.*(k2 .+ k5)
+    ImcA!(sys, 0.5*dt, k3, x)
+    return nothing
+end
+
+# ---------------------------------------------------------------------------- #
+# Discrete linearised time stepping
 function step!(method::CNRK2{X, :LIN, false},
                   sys::System,
                     t::Real,
@@ -67,7 +90,7 @@ function step!(method::CNRK2{X, :LIN, false},
 end
 
 # ---------------------------------------------------------------------------- #
-# Adjoint time stepping
+# Discrete adjoint time stepping
 function step!(method::CNRK2{X, :LIN, true},
                   sys::System,
                     t::Real,

@@ -1,7 +1,8 @@
 export AbstractTimeStepping,
        AbstractTimeStepFromHook,
        TimeStepConstant,
-       TimeStepFromCache
+       TimeStepFromCache,
+       TimeStepFromStorage
 
 # ---------------------------------------------------------------------------- #
 # The mother of all time stepping schemes
@@ -24,3 +25,7 @@ end
 # ---------------------------------------------------------------------------- #
 # Provide time stepping based on a stage cache from a nonlinear solution
 struct TimeStepFromCache <: AbstractTimeStepping end
+
+# ---------------------------------------------------------------------------- #
+# Provide time stepping based on a storage from a nonlinear solution
+struct TimeStepFromStorage <: AbstractTimeStepping end

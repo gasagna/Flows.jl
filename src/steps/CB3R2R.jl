@@ -9,12 +9,12 @@ for (name, tab) in zip((:CB3R2R2, :CB3R2R3e, :CB3R2R3c), (CB2, CB3e, CB3c))
 
 # type
 struct $name{X, NS, TAG, ISADJ} <: AbstractMethod{X, NS, TAG, ISADJ}
-    store::NTuple{5, X}
+    store::NTuple{6, X}
 end
 
 # outer constructor
 $name(x::X, tag::Symbol) where {X} =
-    $name{X, $(nstages(tab)), _tag_map(tag)...}(ntuple(i->similar(x), 5))
+    $name{X, $(nstages(tab)), _tag_map(tag)...}(ntuple(i->similar(x), 6))
 
 # required to cope with buggy julia deepcopy implementation
 function Base.deepcopy_internal(x::$name, dict::IdDict)
@@ -34,7 +34,7 @@ function step!(method::$name{X, NS, :NORMAL},
                     c::C) where {X, NS, C<:Union{Nothing, AbstractStageCache{NS, X}}}
 
     # hoist temporaries out
-    y, z, w, s, v  = method.store
+    y, z, w, s, v, u  = method.store
     tab = $tab
 
     # temporary vector for storing stages
@@ -61,6 +61,50 @@ function step!(method::$name{X, NS, :NORMAL},
     return nothing
 end
 
+# ---------------------------------------------------------------------------- #
+# Linearisation: takes x_{n} and overwrites it with x_{n+1}
+# A good reason to keep this is to check the discrete consistency of the adjoint
+# version of this method.
+function step!(method::$name{X, NS, :LIN, ISADJ},
+                  sys::System,
+                    t::Real,
+                   Δt::Real,
+                    x::X,
+               store::AbstractStorage) where {X, NS, ISADJ}
+    # hoist temporaries out
+    y, z, w, v, s, u  = method.store
+    tab = $tab
+
+    # flip sign of dt for adjoint
+    dt = ISADJ == true ? -Δt : Δt
+
+    # loop over stages
+    @inbounds for k = 1:NS
+        # F
+        if k == 1
+            @all y .= x
+        else
+            @all y .= x .+ (tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*dt.*z .+
+                           (tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*dt.*y
+        end
+        # E
+        mul!(z, sys, y)                 # compute z = A*y then
+        # D
+        ImcA!(sys, tab[:aᴵ, k, k]*dt, z, z) # get z = (I-cA)⁻¹*(A*y) in place
+        # C
+        @all w .= y .+ tab[:aᴵ, k, k].*dt.*z     # w is the temp input, output is y
+        # B
+        # We will probably have to think to another way to define the forcings 
+        # for linearised system that require the time derivative of the main state.
+        sys(t + tab[:cᴱ, k]*Δt, store(u, t + tab[:cᴱ, k]*Δt), w, y)
+        # A
+        @all x .= x .+ tab[:bᴵ, k].*dt.*z .+ tab[:bᴱ, k].*dt.*y
+    end
+
+    return nothing
+end
+
+
 
 # ---------------------------------------------------------------------------- #
 # Linearisation: takes x_{n} and overwrites it with x_{n+1}
@@ -73,7 +117,7 @@ function step!(method::$name{X, NS, :LIN, false},
                     x::X,
                stages::NTuple{NS, X}) where {X, NS}
     # hoist temporaries out
-    y, z, w, v, s  = method.store
+    y, z, w, v, s, u  = method.store
     tab = $tab
 
     # loop over stages
@@ -114,8 +158,8 @@ function step!(method::$name{X, NS, :LIN, true},
                stages::NTuple{NS, X}) where {X, NS}
 
     # hoist temporaries out
-    y, z, w, v, s  = method.store
-    y .= 0; z .= 0; w .= 0; v .= 0; s .= 0;
+    y, z, w, v, s, u  = method.store
+    y .= 0; z .= 0; w .= 0; v .= 0; s .= 0; u .= 0;
     tab = $tab
     
     @inbounds for k = reverse(1:NS)

@@ -53,7 +53,7 @@ end
 # no coupling means no deps
 (sys::System{1})(t::Real, z, dzdt) = sys.g(t, z, dzdt)
 
-# this is for the adjoint schemes
+# this is for the continuous schemes
 (sys::System{1})(t::Real, u, z, dzdt) = sys.g(t, u, z, dzdt)
 
 # ~ Implicit part I ~

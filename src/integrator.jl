@@ -38,22 +38,33 @@ flow(g::Coupled{N}, A::Coupled{N}, spec::CallDependency{N},
 
 # normal stepping
 (I::Flow)(x, span::NTuple{2, Real}) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, nothing)
+    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, nothing, nothing)
 
 # fill a monitor
 (I::Flow)(x, span::NTuple{2, Real}, m::AbstractMonitor) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, m)
+    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, nothing, m)
 
 # fill a cache and optionally a monitor
 (I::Flow)(x, span::NTuple{2, Real}, 
           c::AbstractStageCache, m::Union{Nothing, <:AbstractMonitor}=nothing) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, c, m)
+    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, c, nothing, m)
 
-# stepping based on cache only 
+# fill a store and optionally a monitor
+(I::Flow)(x, span::NTuple{2, Real}, 
+          s::AbstractStorage, m::Union{Nothing, <:AbstractMonitor}=nothing) =
+    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, s, m)
+
+# stepping based on cache only, with optional monitor
 (I::Flow{TimeStepFromCache})(x, 
                              c::AbstractStageCache, 
                              m::Union{Nothing, <:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.sys, x, c, m)
+
+# stepping based on store only, with optional monitor
+(I::Flow{TimeStepFromStorage})(x,
+                               s::AbstractStorage, 
+                               m::Union{Nothing, <:AbstractMonitor}=nothing) =
+    _propagate!(I.meth, I.sys, x, s, m)
 
 # ---------------------------------------------------------------------------- #
 # PROPAGATION FUNCTIONS & UTILS
@@ -81,7 +92,9 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
                        span::NTuple{2, Real},
                           z::Z,
                       cache::C,
+                      store::S,
                         mon::M) where {Z, NS,
+                                       S<:Union{Nothing, AbstractStorage},
                                        M<:Union{Nothing, AbstractMonitor},
                                        C<:Union{Nothing, AbstractStageCache}}
     # check span is sane
@@ -91,8 +104,9 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
     ts = LossLessRange(span[1], span[2], stepping.Δt)
     Nsteps = length(ts)
 
-    # push initial state monitor
-    _ismonitor(M) && push!(mon, ts[1], z)
+    # push initial state to monitor and storage
+    _ismonitor(M) && push!(mon,   ts[1], z)
+    _isstorage(S) && push!(store, ts[1], deepcopy(z))
 
     # start integration
     for j = 2:Nsteps
@@ -102,8 +116,10 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
             M <: StoreOneButLast && (j != Nsteps - 2 && continue) 
             push!(mon, ts[j], z)
         end
+        if _isstorage(S) 
+            push!(store, ts[j], deepcopy(z))
+        end
     end
-
 
     return z
 end
@@ -116,7 +132,9 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
                        span::NTuple{2, Real},
                           z::Z,
                       cache::C,
+                      store::S,
                         mon::M) where {Z, NS,
+                                       S<:Union{Nothing, AbstractStorage},
                                        M<:Union{Nothing, AbstractMonitor},
                                        C<:Union{Nothing, AbstractStageCache}}
     # check span is sane
@@ -126,7 +144,8 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
     t, T = span
 
     # store initial state in monitors
-    _ismonitor(M) && push!(mon, t, z)
+    _ismonitor(M) && push!(mon,   t, z)
+    _ismonitor(S) && push!(store, t, deepcopy(z))
 
     # run until condition
     while t != T
@@ -141,6 +160,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
 
         # store solution into monitor
         _ismonitor(M) && push!(mon, t, z)
+        _ismonitor(S) && push!(store, t, deepcopy(z))
     end
 
     return z
@@ -185,6 +205,51 @@ function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
         for i in reverse(1:length(ts))
             step!(method, system, ts[i], Δts[i], z, xs[i])
             _ismonitor(M) && push!(mon, ts[i], z)
+        end
+    end
+
+    return z
+end
+
+# ---------------------------------------------------------------------------- #
+# TIME STEPPING BASED ON STORE FOR CONTINUOS ADJOINT
+function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
+                     system::System,
+                          z::Z,
+                      store::AbstractStorage,
+                        mon::M) where {Z, NS, ISADJ,
+                                       M<:Union{Nothing, AbstractMonitor}}
+
+    # get times
+    ts = times(store)
+
+    if ISADJ == false
+        # store initial state in monitors
+        _ismonitor(M) && push!(mon, ts[1], z)
+
+        for i in 1:(length(ts)-1)
+            # find Δt
+            Δt = ts[i+1] - ts[i]
+
+            # exec step
+            step!(method, system, ts[i], Δt, z, store)
+
+            # then save state after the step
+            _ismonitor(M) && push!(mon, ts[i+1], z)
+        end
+    else 
+        # store final state in monitors
+        _ismonitor(M) && push!(mon, ts[end], z)
+
+        for i in length(ts):-1:2
+            # find Δt, but use negative since we are going backwards
+            Δt = ts[i] - ts[i-1] 
+
+            # exec step
+            step!(method, system, ts[i], -Δt, z, store)
+
+            # then save state after the step
+            _ismonitor(M) && push!(mon, ts[i-1], z)
         end
     end
 
