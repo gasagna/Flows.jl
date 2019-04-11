@@ -6,12 +6,12 @@ using Statistics
 # implicit components, for testing purposes. To do so, we integrate the 
 # diagonal part implicitly, which does also not depend on the state. 
 # If you set flag to zero, you do not need the linear part.
-struct Lorenz
+struct Lorenz2
     flag::Int
     force::Real
 end
 
-@inline function (eq::Lorenz)(t::Real, u::V, dudt::V) where {V <: AbstractVector}
+@inline function (eq::Lorenz2)(t::Real, u::V, dudt::V) where {V <: AbstractVector}
     x, y, z = u
     dudt[1] =   10 * (y - x)      - eq.flag*( - 10*x ) + eq.force
     dudt[2] =   28 *  x - y - x*z - eq.flag*( - y )
@@ -78,8 +78,8 @@ const A = Diagonal([-10, -1, -8/3])
         # finite difference
         method = RK4(x0, :NORMAL)
         alpha = 1e-4
-        ϕp = flow(Lorenz(flag, +alpha), method, TimeStepConstant(dt))
-        ϕm = flow(Lorenz(flag, -alpha), method, TimeStepConstant(dt))
+        ϕp = flow(Lorenz2(flag, +alpha), method, TimeStepConstant(dt))
+        ϕm = flow(Lorenz2(flag, -alpha), method, TimeStepConstant(dt))
 
         mon = Monitor(x0, x->x[3])
         ϕp(copy(x0), (0, T), reset!(mon))
@@ -90,21 +90,21 @@ const A = Diagonal([-10, -1, -8/3])
 
         # tangent
         # fill storage first
-        ϕ = flow(Lorenz(flag, +alpha), method, TimeStepConstant(dt))
+        ϕ = flow(Lorenz2(flag, +alpha), method, TimeStepConstant(dt))
         storage = RAMStorage{Float64, typeof(x0)}()
         ϕ(copy(x0), (0, T), storage)
 
         # define linear propagator and monitor
-        ψ = flow(LorenzTan(flag), RK4(y0, :TAN), TimeStepFromStorage())
+        ψ = flow(LorenzTan(flag), RK4(y0, :TAN), TimeStepFromStorage(dt))
         mon = Monitor(y0, x->x[3])
-        ψ(copy(y0), storage, reset!(mon))
+        ψ(copy(y0), storage, (0, T), reset!(mon))
         Jp_TAN = simps(times(mon), samples(mon))
         # println(times(mon))
 
         # adjoint
-        ψ_A = flow(LorenzAdj(flag), RK4(w0, :ADJ), TimeStepFromStorage())
+        ψ_A = flow(LorenzAdj(flag), RK4(w0, :ADJ), TimeStepFromStorage(dt))
         mon = Monitor(w0, x->x[1])
-        ψ_A(copy(w0), storage, reset!(mon))
+        ψ_A(copy(w0), storage, (T, 0), reset!(mon))
         Jp_ADJ = simps(reverse(times(mon)), reverse(samples(mon)))
 
         # we check that the difference between the gradient obtained
@@ -140,8 +140,8 @@ end
             # finite difference
             method = METHOD(x0, :NORMAL)
             alpha = 1e-4
-            ϕp = flow(Lorenz(flag, +alpha), IMPL, method, TimeStepConstant(dt))
-            ϕm = flow(Lorenz(flag, -alpha), IMPL, method, TimeStepConstant(dt))
+            ϕp = flow(Lorenz2(flag, +alpha), IMPL, method, TimeStepConstant(dt))
+            ϕm = flow(Lorenz2(flag, -alpha), IMPL, method, TimeStepConstant(dt))
 
             mon = Monitor(x0, x->x[3])
             ϕp(copy(x0), (0, T), reset!(mon))
@@ -152,20 +152,20 @@ end
 
             # tangent
             # fill storage first
-            ϕ = flow(Lorenz(flag, +alpha), IMPL, method, TimeStepConstant(dt))
+            ϕ = flow(Lorenz2(flag, +alpha), IMPL, method, TimeStepConstant(dt))
             storage = RAMStorage{Float64, typeof(x0)}()
             ϕ(copy(x0), (0, T), storage)
 
             # define linear propagator and monitor
-            ψ = flow(LorenzTan(flag), IMPL, METHOD(y0, :TAN), TimeStepFromStorage())
+            ψ = flow(LorenzTan(flag), IMPL, METHOD(y0, :TAN), TimeStepFromStorage(dt))
             mon = Monitor(y0, x->x[3])
-            ψ(copy(y0), storage, reset!(mon))
+            ψ(copy(y0), storage, (0, T), reset!(mon))
             Jp_TAN = simps(times(mon), samples(mon))
 
             # adjoint
-            ψ_A = flow(LorenzAdj(flag), IMPL, METHOD(w0, :ADJ), TimeStepFromStorage())
+            ψ_A = flow(LorenzAdj(flag), IMPL, METHOD(w0, :ADJ), TimeStepFromStorage(dt))
             mon = Monitor(w0, x->x[1])
-            ψ_A(copy(w0), storage, reset!(mon))
+            ψ_A(copy(w0), storage, (T, 0), reset!(mon))
             Jp_ADJ = simps(reverse(times(mon)), reverse(samples(mon)))
 
             # we check that the difference between the gradient obtained
@@ -201,8 +201,8 @@ end
 #         # finite difference
 #         method = METHOD(x0, :NORMAL)
 #         alpha = 1e-6
-#         ϕp = flow(Lorenz(flag, +alpha), IMPL, method, TimeStepConstant(dt))
-#         ϕm = flow(Lorenz(flag, -alpha), IMPL, method, TimeStepConstant(dt))
+#         ϕp = flow(Lorenz2(flag, +alpha), IMPL, method, TimeStepConstant(dt))
+#         ϕm = flow(Lorenz2(flag, -alpha), IMPL, method, TimeStepConstant(dt))
 
 #         mon = Monitor(x0, x->x[3])
 #         ϕp(copy(x0), (0, T), reset!(mon))
@@ -213,7 +213,7 @@ end
 
 #         # tangent
 #         method = METHOD(couple(x0, y0), :NORMAL)
-#         ψ = flow(couple(Lorenz(flag, 0), LorenzTan(flag)), couple(IMPL, IMPL), method, TimeStepConstant(dt))
+#         ψ = flow(couple(Lorenz2(flag, 0), LorenzTan(flag)), couple(IMPL, IMPL), method, TimeStepConstant(dt))
 #         mon = Monitor(couple(x0, y0), x->x[2][3])
 #         ψ(couple(copy(x0), y0), (0, T), reset!(mon))
 #         Jp_TAN = simps(times(mon), samples(mon))
@@ -221,7 +221,7 @@ end
 
 #         # adjoint
 #         method = METHOD(x0, :NORMAL)
-#         ϕ = flow(Lorenz(flag, 0), IMPL, method, TimeStepConstant(dt))
+#         ϕ = flow(Lorenz2(flag, 0), IMPL, method, TimeStepConstant(dt))
 #         cache = RAMStageCache(2, similar(x0))
 #         ϕ(copy(x0), (0, T), cache)
         
