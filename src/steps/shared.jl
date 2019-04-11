@@ -8,7 +8,7 @@ abstract type AbstractMethod{X, NS, TYPETAG, ISADJ} end
 
 function typetag(::AbstractMethod{X, NS, TYPETAG, ISADJ}) where {X, NS, TYPETAG, ISADJ}
     TYPETAG == :NORMAL && return :NORMAL
-    TYPETAG == :LIN    && ISADJ == false && return :LIN
+    TYPETAG == :LIN    && ISADJ == false && return :TAN
     TYPETAG == :LIN    && ISADJ == true  && return :ADJ
 end
 
