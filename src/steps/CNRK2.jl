@@ -54,18 +54,19 @@ function step!(method::CNRK2{X, :LIN, ISADJ},
                    Δt::Real,
                     x::X,
                 store::AbstractStorage) where {X, ISADJ}
-    # flip sign of dt for adjoint
-    dt = ISADJ == true ? -Δt : Δt
+
+    # modifier for the location of the interpolation
+    _m_ = ISADJ == true ? -1 : 1
 
     # aliases
     k1, k2, k3, k4, k5 = method.store
-    ImcA_mul!(sys, -0.5*dt, x, k1)
+    ImcA_mul!(sys, -0.5*Δt, x, k1)
     sys(t, store(k5, t), x, k2)
-    k3 .= k1 .+ dt.*k2
-    ImcA!(sys, 0.5*dt, k3, k4)
-    sys(t+Δt, store(k3, t+Δt), k4, k5)
-    k3 .= k1 .+ 0.5.*dt.*(k2 .+ k5)
-    ImcA!(sys, 0.5*dt, k3, x)
+    k3 .= k1 .+ Δt.*k2
+    ImcA!(sys, 0.5*Δt, k3, k4)
+    sys(t + _m_*Δt, store(k3, t + _m_*Δt), k4, k5)
+    k3 .= k1 .+ 0.5.*Δt.*(k2 .+ k5)
+    ImcA!(sys, 0.5*Δt, k3, x)
     return nothing
 end
 

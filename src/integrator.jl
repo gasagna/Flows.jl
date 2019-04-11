@@ -232,7 +232,7 @@ function _propagate!(method::AbstractMethod{Z},
     # march in time
     for j = 2:length(ts)
         # exec step
-        step!(method, system, ts[j-1], ts[j]-ts[j-1], z, store)
+        step!(method, system, ts[j-1], stepping.Δt, z, store)
 
         # store
         _ismonitor(M) && push!(mon, ts[j], z)

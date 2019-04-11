@@ -47,17 +47,17 @@ function step!(method::RK4{X, :LIN, ISADJ}, # tag for linear equations
     # aliases
     k1, k2, k3, k4, k5, y = method.store
 
-    # flip sign of dt for adjoint
-    dt = ISADJ == true ? -Δt : Δt
+    # modifier for the location of the interpolation
+    _m_ = ISADJ == true ? -1 : 1
 
     # stages
-    @all y .= x               ; sys(t,        store(k5, t       ), y, k1)
-    @all y .= x .+ 0.5.*dt.*k1; sys(t + Δt/2, store(k5, t + Δt/2), y, k2)
-    @all y .= x .+ 0.5.*dt.*k2; sys(t + Δt/2, store(k5, t + Δt/2), y, k3)
-    @all y .= x .+      dt.*k3; sys(t + Δt,   store(k5, t + Δt  ), y, k4)
+    @all y .= x               ; sys(t,            store(k5, t           ), y, k1)
+    @all y .= x .+ 0.5.*Δt.*k1; sys(t + _m_*Δt/2, store(k5, t + _m_*Δt/2), y, k2)
+    @all y .= x .+ 0.5.*Δt.*k2; sys(t + _m_*Δt/2, store(k5, t + _m_*Δt/2), y, k3)
+    @all y .= x .+      Δt.*k3; sys(t + _m_*Δt,   store(k5, t + _m_*Δt  ), y, k4)
 
     # wrap up
-    @all x .= x .+ dt./6 .* (k1 .+ 2.0.*k2 .+ 2.0.*k3 .+ k4)
+    @all x .= x .+ Δt./6 .* (k1 .+ 2.0.*k2 .+ 2.0.*k3 .+ k4)
 
     return nothing
 end
