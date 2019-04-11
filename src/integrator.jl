@@ -60,11 +60,12 @@ flow(g::Coupled{N}, A::Coupled{N}, spec::CallDependency{N},
                              m::Union{Nothing, <:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.sys, x, c, m)
 
-# stepping based on store only, with optional monitor
+# stepping based on store over a given span with optional monitor
 (I::Flow{TimeStepFromStorage})(x,
-                               s::AbstractStorage, 
+                               s::AbstractStorage,
+                               span::NTuple{2, Real},
                                m::Union{Nothing, <:AbstractMonitor}=nothing) =
-    _propagate!(I.meth, I.sys, x, s, m)
+    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, s, m)
 
 # ---------------------------------------------------------------------------- #
 # PROPAGATION FUNCTIONS & UTILS
@@ -212,45 +213,29 @@ function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
 end
 
 # ---------------------------------------------------------------------------- #
-# TIME STEPPING BASED ON STORE FOR CONTINUOS ADJOINT
-function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
+# TIME STEPPING BASED ON STORAGE FOR CONTINUOS ADJOINT/TANGENT EQUATIONS
+function _propagate!(method::AbstractMethod{Z},
+                   stepping::TimeStepFromStorage,
                      system::System,
+                       span::NTuple{2, Any},
                           z::Z,
                       store::AbstractStorage,
-                        mon::M) where {Z, NS, ISADJ,
-                                       M<:Union{Nothing, AbstractMonitor}}
+                        mon::M) where {Z, M<:Union{Nothing, AbstractMonitor}}
 
-    # get times
-    ts = times(store)
+    # Define integration times. Note that the adjoint case, where 
+    # span[1] > span[2], is handled automatically here by this "ts" object
+    ts = LossLessRange(span[1], span[2], stepping.Δt)
+    
+    # store initial state in monitors (this could be the final adjoint state)
+    _ismonitor(M) && push!(mon, ts[1], z)
+    
+    # march in time
+    for j = 2:length(ts)
+        # exec step
+        step!(method, system, ts[j-1], ts[j]-ts[j-1], z, store)
 
-    if ISADJ == false
-        # store initial state in monitors
-        _ismonitor(M) && push!(mon, ts[1], z)
-
-        for i in 1:(length(ts)-1)
-            # find Δt
-            Δt = ts[i+1] - ts[i]
-
-            # exec step
-            step!(method, system, ts[i], Δt, z, store)
-
-            # then save state after the step
-            _ismonitor(M) && push!(mon, ts[i+1], z)
-        end
-    else 
-        # store final state in monitors
-        _ismonitor(M) && push!(mon, ts[end], z)
-
-        for i in length(ts):-1:2
-            # find Δt, but use negative since we are going backwards
-            Δt = ts[i] - ts[i-1] 
-
-            # exec step
-            step!(method, system, ts[i], -Δt, z, store)
-
-            # then save state after the step
-            _ismonitor(M) && push!(mon, ts[i-1], z)
-        end
+        # store
+        _ismonitor(M) && push!(mon, ts[j], z)
     end
 
     return z
