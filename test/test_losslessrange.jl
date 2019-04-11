@@ -13,6 +13,12 @@
         @test rng[4] === 1.0
         @test_throws BoundsError rng[0]
         @test_throws BoundsError rng[5]
+
+        # test interface used in the integration routines
+        expected = [0.4, 0.4, 0.2]
+        for i = 2:length(rng)
+            @test abs(rng[i]-rng[i-1] - expected[i-1]) < 1e-16
+        end
     end
     @testset "lossless                           " begin
         rng = Flows.LossLessRange(0, 0.8, 0.4)
@@ -27,6 +33,12 @@
         @test rng[3] === 0.8
         @test_throws BoundsError rng[0]
         @test_throws BoundsError rng[4]
+
+        # test interface used in the integration routines
+        expected = [0.4, 0.4]
+        for i = 2:length(rng)
+            @test abs(rng[i]-rng[i-1] - expected[i-1]) < 1e-16
+        end
     end
     @testset "backwards lossy                    " begin
         rng = Flows.LossLessRange(1, 0, -0.4)
@@ -42,6 +54,12 @@
         @test rng[4] === 0.0
         @test_throws BoundsError rng[0]
         @test_throws BoundsError rng[5]
+
+        # test interface used in the integration routines
+        expected = [-0.4, -0.4, -0.2]
+        for i = 2:length(rng)
+            @test abs(rng[i]-rng[i-1] - expected[i-1]) < 1e-16
+        end
     end
     @testset "backwards lossless                    " begin
         rng = Flows.LossLessRange(0.8, 0, -0.4)
@@ -56,5 +74,11 @@
         @test rng[3] === 0.0
         @test_throws BoundsError rng[0]
         @test_throws BoundsError rng[4]
+        
+        # test interface used in the integration routines
+        expected = [-0.4, -0.4]
+        for i = 2:length(rng)
+            @test abs(rng[i]-rng[i-1] - expected[i-1]) < 1e-16
+        end
     end
 end
