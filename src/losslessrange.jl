@@ -8,6 +8,10 @@ struct LossLessRange{T, R<:AbstractRange{T}} <: AbstractRange{T}
 end
 
 function LossLessRange(start, stop, step)
+    # make sure we accept a positive step and that internally we 
+    # change its sign depending on the order of start and stop
+    step > 0 || throw(ArgumentError("Step must be positive. Got $step."))
+    step = start > stop ? -step : step
     rng = start:step:stop
     last(rng) != stop ? LossLessRange(rng, oftype(first(rng), stop), true) :
                         LossLessRange(rng, oftype(first(rng), stop), false)
