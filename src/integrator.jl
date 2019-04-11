@@ -106,7 +106,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
 
     # push initial state to monitor and storage
     _ismonitor(M) && push!(mon,   ts[1], z)
-    _isstorage(S) && push!(store, ts[1], deepcopy(z))
+    _isstorage(S) && push!(store, ts[1], copy(z))
 
     # start integration
     for j = 2:Nsteps
@@ -117,7 +117,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
             push!(mon, ts[j], z)
         end
         if _isstorage(S) 
-            push!(store, ts[j], deepcopy(z))
+            push!(store, ts[j], copy(z))
         end
     end
 
@@ -145,7 +145,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
 
     # store initial state in monitors
     _ismonitor(M) && push!(mon,   t, z)
-    _ismonitor(S) && push!(store, t, deepcopy(z))
+    _ismonitor(S) && push!(store, t, copy(z))
 
     # run until condition
     while t != T
@@ -160,7 +160,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
 
         # store solution into monitor
         _ismonitor(M) && push!(mon, t, z)
-        _ismonitor(S) && push!(store, t, deepcopy(z))
+        _ismonitor(S) && push!(store, t, copy(z))
     end
 
     return z
