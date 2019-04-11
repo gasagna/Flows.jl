@@ -28,4 +28,10 @@ struct TimeStepFromCache <: AbstractTimeStepping end
 
 # ---------------------------------------------------------------------------- #
 # Provide time stepping based on a storage from a nonlinear solution
-struct TimeStepFromStorage <: AbstractTimeStepping end
+struct TimeStepFromStorage <: AbstractTimeStepping 
+    Δt::Float64
+    function TimeStepFromStorage(Δt::Real)
+        Δt > 0 || throw(ArgumentError("time step must be positive"))
+        new(Float64(Δt))
+    end
+end
