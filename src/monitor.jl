@@ -14,28 +14,27 @@ _ismonitor(::Any) = false
 
 
 # /// Monitor to save all time steps ///
-mutable struct Monitor{T, X, O, S<:AbstractStorage{T, X}, F} <: AbstractMonitor{T, X}
+mutable struct Monitor{T, X, S<:AbstractStorage{T, X}, F} <: AbstractMonitor{T, X}
           store::S                       # (time, samples) tuples
               f::F                       # action on what is begin pushed
        oneevery::Int                     # save every ... time steps
     savebetween::Tuple{Float64, Float64} # save only between these two times 
           count::Int                     # how many items we have in the store
-    Monitor{O}(store::S,
-               f::F,
-               oneevery::Int, 
-               savebetween::Tuple{Real, Real}) where {T, X, O, S<:AbstractStorage{T, X}, F} =
-        new{T, X, O, S, F}(store, f, oneevery, savebetween, 0)
+    Monitor(store::S,
+                f::F,
+                oneevery::Int, 
+                savebetween::Tuple{Real, Real}) where {T, X, S<:AbstractStorage{T, X}, F} =
+        new{T, X, S, F}(store, f, oneevery, savebetween, 0)
 end
 
 # Provide a sample of what will be pushed
 Monitor(x,
         f::Base.Callable=identity,
-        store::S=RAMStorage{Float64, typeof(f(x))}();
+        store::S=RAMStorage(f(x));
         oneevery::Int=1,
         savebetween::Tuple{Real, Real}=(-Inf, Inf),
-        order::Int=3,
         sizehint::Int=0) where {S<:AbstractStorage} =
-    Monitor{order}(reset!(store, sizehint), f, oneevery, savebetween)
+    Monitor(reset!(store, sizehint), f, oneevery, savebetween)
 
 # Add sample and time to the storage
 @inline function Base.push!(mon::Monitor, t::Real, x)
