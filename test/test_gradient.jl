@@ -91,7 +91,7 @@ const A = Diagonal([-10, -1, -8/3])
         # tangent
         # fill storage first
         ϕ = flow(Lorenz2(flag, +alpha), method, TimeStepConstant(dt))
-        storage = RAMStorage{Float64, typeof(x0)}()
+        storage = RAMStorage(x0)
         ϕ(copy(x0), (0, T), storage)
 
         # define linear propagator and monitor
@@ -153,7 +153,7 @@ end
             # tangent
             # fill storage first
             ϕ = flow(Lorenz2(flag, +alpha), IMPL, method, TimeStepConstant(dt))
-            storage = RAMStorage{Float64, typeof(x0)}()
+            storage = RAMStorage(x0)
             ϕ(copy(x0), (0, T), storage)
 
             # define linear propagator and monitor
