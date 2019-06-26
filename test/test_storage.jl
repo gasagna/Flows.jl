@@ -129,9 +129,16 @@ end
         end
     end
 
+    #
+    fun(sol, out) = @allocated sol(out, 0.5, Val(0))
+
     # check interpolation on another grid
     out = [0.0]
     for i in 1:length(degrees)
+        # test allocations
+        @test fun(sols[i], out) == 0
+
+        # test time out of bounds 
         @test_throws ArgumentError sols[i](out, -0.1, Val(0))
         @test_throws ArgumentError sols[i](out,  2.1, Val(0))
         for ti in range(0.0, stop=2.0, length=17)
@@ -140,6 +147,4 @@ end
             # check derivative (why do I want this???? )
         end
     end
-
-
 end

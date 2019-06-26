@@ -131,6 +131,39 @@ function _wrap_around_point(idxs::NTuple{N, Int}) where {N}
 end
 
 """
+    _make_tuple_of_times(t::Real, 
+                        ts::AbstractVector{<:Real},
+                      idxs::NTuple{N, Int},
+                    period::Real) where {N}
+
+Construct a tuple of times `_ts` that is in principle equivalent to 
+`_ts = ts[idxs]`, but takes cares of situations where the interpolation 
+stencil wraps around, e.g. when interpolating periodic data near `t=0.0` 
+or near `t=period`. This returns a tuple of strictly increasing times, 
+and an adjusted time `_t` that sits in between the extrema of `_ts`.
+"""
+@generated function _make_tuple_of_times(t::Real, 
+                                        ts::AbstractVector{<:Real},
+                                      idxs::NTuple{N, Int},
+                                    period::Real) where {N}
+    # julia struggles with inference here, so we make this a generated function
+    quote 
+        # determine the wrapping point
+        p = _wrap_around_point(idxs)
+
+        # construct a tuple of increasing times adding `period` if needed
+        _ts = Base.Cartesian.@ntuple $N j -> begin
+            j > p ? ts[idxs[j]] + period : ts[idxs[j]]
+        end
+
+        # also adjust time if needed
+        _t = isbetween(t, extrema(_ts)...) ? t : t + period
+
+        return _ts, _t
+    end
+end
+
+"""
     _interp_indices(t::Real, ts::AbstractVector{<:Real},
                     ::Val{N}, isperiodic::Bool) where {N}
 
@@ -144,8 +177,7 @@ length of `ts` is larger than `N`.
                                      ::Val{N},
                            isperiodic::Bool) where {N}
     # julia struggles with inference here, so we make this a generated function
-    quote 
-
+    quote
         # search last index `idx` in `ts` for which `t ≥ ts[idx]`
         idx = searchsortedlast(ts, t)
 
@@ -195,16 +227,8 @@ function (store::RAMStorage{T, X, DEG})(out::X,
     # Obtain the indices of the elements that participate in the interpolation
     idxs = _interp_indices(t, ts, Val(DEG+1), isperiodic)
 
-    # if the indices wrap around, e.g. (100, 1, 2, 3) for the periodic case
-    # we have to make a tuple of times `_ts` that is smooth, and does not
-    # have any discontinuity, i.e. a tuple of increasing times 
-    p = _wrap_around_point(idxs)
-    _ts = ntuple(DEG+1) do j
-            j > p ? ts[idxs[j]] + store.period : ts[idxs[j]]
-        end
+    # define the abscissa of the interpolation data
+    _ts, _t = _make_tuple_of_times(t, ts, idxs, store.period)
     
-    # also adjust time if needed
-    t = isbetween(t, extrema(_ts)...) ? t : t + store.period
-
-    return _lagr_interp(out, t, _ts, xs, idxs, order)
+    return _lagr_interp(out, _t, _ts, xs, idxs, order)
 end
