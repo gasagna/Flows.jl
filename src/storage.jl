@@ -109,61 +109,57 @@ function _lagr_interp(out::X,
     return out
 end
 
-# accept being out of bounds by this much!
-const TTOL = 1e-10
-
 """
-    _normalise(t::Real, T::Real, isperiodic::Bool)
+    _wrap_around_point(idxs::NTuple{N, Int}) where {N}
 
-If `isperiodic` is `true` normalise `t` to be between `0` and `T`, else just return `t`.
+Helper function to determine if the stencil for the interpolation 
+wraps around. This happens for periodic data. This function is 
+defined by the following test cases:
+
+    _wrap_around_point((  1,   2,   3, 4)) -> 5 # no wrap around
+    _wrap_around_point((100,   1,   2, 3)) -> 1
+    _wrap_around_point(( 99, 100,   1, 2)) -> 2
+    _wrap_around_point(( 98,  99, 100, 1)) -> 3
 """
-_normalise(t::Real, T::Real, isperiodic::Bool) =
-    isperiodic ? (t + (1 + abs(t ÷ T))*T) % T : t
-
-"""
-    _interp_range(t::Real, ts::AbstractVector{<:Real}, ::Val{N}, period::Real) where {N}
-
-Return an `N`-tuple of integer indices for the elements of `ts` that
-participate in the interpolation at some point `t`. If the underlying
-data is periodic, provide the `period`, with `Inf` to signal non-periodicity.
-"""
-function _interp_range(t::Real,
-                      ts::AbstractVector{<:Real},
-                        ::Val{N},
-                  period::Real) where {N}
-    #  we must have enough data
-    length(ts) ≥ N ||
-        throw(ArgumentError("input array length must be greater than N"))
-
-    # determine if data is periodic
-    isperiodic = iszero(period) ? false : true
-
-    # If the data is periodic, we reset time `t` to be between `0` and `period`
-    t = _normalise(t, period, isperiodic)
-
-    # If the data is not periodic, check if `t` is in bounds. Note that although
-    # time should never goes out of bounds in normal integration, it might be
-    # possible in the runge kutta steps that we do so by a very small amount,
-    # but generally only for values larger than the end of `ts`.
-    if isperiodic == false
-        isbetween(t, ts[1], ts[end]+TTOL) ||
-            throw(ArgumentError("selected time $t is out of range [$(ts[1]), $(ts[end])]"))
+function _wrap_around_point(idxs::NTuple{N, Int}) where {N}
+    for i in 1:N-1
+        if idxs[i] > idxs[i+1]
+            return i
+        end
     end
+    return N+1
+end
 
-    # search index
-    idx = searchsortedlast(ts, t)
+"""
+    _interp_indices(t::Real, ts::AbstractVector{<:Real},
+                    ::Val{N}, isperiodic::Bool) where {N}
 
-    # boundary conditions in the non-periodic case need shifting of the stencil
-    if isperiodic == false
-        Δ = idx == 0              ?  N>>1     : # this can only happen if the above check fails
-            idx == 1              ?  N>>1 - 1 :
-            idx == length(ts)     ? -N>>1     :
-            idx == length(ts) - 1 ? -N>>1 + 1 : 0
-        idx += Δ
-    end
+Return an `N`-tuple of integer indices for the elements of `ts`
+that participate in the interpolation at some point `t`. It is
+assumed that `ts` is sorted, that `t ≥ ts[1]` and that the 
+length of `ts` is larger than `N`.
+"""
+@generated function _interp_indices(t::Real,
+                                   ts::AbstractVector{<:Real},
+                                     ::Val{N},
+                           isperiodic::Bool) where {N}
+    # julia struggles with inference here, so we make this a generated function
+    quote 
 
-    return ntuple(N) do j
-        mod(idx - N>>1 + j - 1 + length(ts), length(ts)) + 1
+        # search last index `idx` in `ts` for which `t ≥ ts[idx]`
+        idx = searchsortedlast(ts, t)
+
+        # we 'll use this quite a bit
+        M = length(ts)
+
+        # boundary conditions in the non-periodic case might need shifting of the stencil
+        if isperiodic  == false
+            Δ = idx == 1     ?  $(N>>1) - 1 :
+                idx == M     ? -$(N>>1)     :
+                idx == M - 1 ? -$(N>>1) + 1 : 0
+                idx += Δ
+        end
+        return Base.Cartesian.@ntuple $N j -> mod(idx - $(N>>1) + j - 1 + M, M) + 1
     end
 end
 
@@ -182,14 +178,33 @@ function (store::RAMStorage{T, X, DEG})(out::X,
     # Aliases. These should be lazy objects
     ts, xs = times(store), samples(store)
 
+    #  we must have enough data
+    length(ts) ≥ DEG+1 ||
+            throw(ArgumentError("input array length must be greater than DEG+1"))
+
+    # if period is zero we take it as non-periodic
+    isperiodic = iszero(store.period) ? false : true
+
+    # check if `t` is in bounds and disallow extrapolation. Code that calls
+    # this interpolator must make sure that no extrapolation is requested
+    t_bounds = isperiodic ? (zero(T), store.period) : (ts[1], ts[end])
+    
+    isbetween(t, t_bounds...) ||
+        throw(ArgumentError("time $t is out of range $t_bounds"))
+
     # Obtain the indices of the elements that participate in the interpolation
-    idxs = _interp_range(t, ts, Val(DEG+1), store.period)
+    idxs = _interp_indices(t, ts, Val(DEG+1), isperiodic)
 
-    # construct a tuple of increasing times
+    # if the indices wrap around, e.g. (100, 1, 2, 3) for the periodic case
+    # we have to make a tuple of times `_ts` that is smooth, and does not
+    # have any discontinuity, i.e. a tuple of increasing times 
+    p = _wrap_around_point(idxs)
     _ts = ntuple(DEG+1) do j
-        ts[idxs[j]] + store.period
-    end
+            j > p ? ts[idxs[j]] + store.period : ts[idxs[j]]
+        end
+    
+    # also adjust time if needed
+    t = isbetween(t, extrema(_ts)...) ? t : t + store.period
 
-    # call interp function
     return _lagr_interp(out, t, _ts, xs, idxs, order)
 end
