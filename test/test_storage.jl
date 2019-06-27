@@ -1,7 +1,3 @@
-using Test
-using Flows
-using LinearAlgebra
-
 @testset "test RAMStorage constructor            " begin
     el = (0.0, 0)
     store = RAMStorage(el)
