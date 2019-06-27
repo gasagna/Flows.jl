@@ -296,7 +296,7 @@ end
         # test 
         a = dot(y0, [4, 5, 6])
         b = dot(qT, [1, 2, 3])
-        @test abs(a - b)/a < 1e-14
+        @test abs(a - b)/a < 2e-14
 
         # test monitors
         @test times(mon_tan)[1]   == 0

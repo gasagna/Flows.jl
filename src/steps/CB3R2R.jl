@@ -84,21 +84,21 @@ function step!(method::$name{X, NS, :LIN, ISADJ},
         if k == 1
             @all y .= x
         else
-            @all y .= x .+ (tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*z .+
-                           (tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*Δt.*y
+            @all y .= x .+ _m_.*(tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*z .+
+                           _m_.*(tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*Δt.*y
         end
         # E
         mul!(z, sys, y)                 # compute z = A*y then
         # D
-        ImcA!(sys, tab[:aᴵ, k, k]*Δt, z, z) # get z = (I-cA)⁻¹*(A*y) in place
+        ImcA!(sys, _m_*tab[:aᴵ, k, k]*Δt, z, z) # get z = (I-cA)⁻¹*(A*y) in place
         # C
-        @all w .= y .+ tab[:aᴵ, k, k].*Δt.*z     # w is the temp input, output is y
+        @all w .= y .+ _m_.*tab[:aᴵ, k, k].*Δt.*z     # w is the temp input, output is y
         # B
         # We will probably have to think to another way to define the forcings 
         # for linearised system that require the time derivative of the main state.
-        sys(t + _m_*tab[:cᴱ, k]*Δt, store(u, t + _m_*tab[:cᴱ, k]*Δt), w, y)
+        sys(t + tab[:cᴱ, k]*Δt, store(u, t + tab[:cᴱ, k]*Δt), w, y)
         # A
-        @all x .= x .+ tab[:bᴵ, k].*Δt.*z .+ tab[:bᴱ, k].*Δt.*y
+        @all x .= x .+ _m_.*tab[:bᴵ, k].*Δt.*z .+ _m_.*tab[:bᴱ, k].*Δt.*y
     end
 
     return nothing

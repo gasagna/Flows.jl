@@ -81,18 +81,18 @@ function step!(method::CB4R3R4{X, NS, :LIN, ISADJ},
             @all zᴵ .= x
             @all zᴱ .= x
         else
-            @all zᴱ .= y .+ tab[:aᴱ, k, k-1].*Δt.*zᴱ
+            @all zᴱ .= y .+ tab[:aᴱ, k, k-1].*_m_.*Δt.*zᴱ
             if k < nstages(tab)
-                @all y .= x .+ (tab[:aᴵ, k+1, k-1] .- tab[:bᴵ, k-1]).*Δt.*zᴵ .+
+                @all y .= x .+ (tab[:aᴵ, k+1, k-1] .- tab[:bᴵ, k-1]).*_m_.*Δt.*zᴵ .+
                                (tab[:aᴱ, k+1, k-1] .- tab[:bᴱ, k-1])./tab[:aᴱ, k, k-1].*(zᴱ .- y)
             end
-            @all zᴱ .= zᴱ .+ tab[:aᴵ, k, k-1]*Δt.*zᴵ
+            @all zᴱ .= zᴱ .+ tab[:aᴵ, k, k-1].*_m_.*Δt.*zᴵ
         end
         mul!(w, sys, zᴱ)                 # compute w = A*zᴱ then
-        ImcA!(sys, tab[:aᴵ, k, k]*Δt, w, zᴵ) # compute z = (I-cA)⁻¹*w in place
-        @all w .= zᴱ .+ tab[:aᴵ, k, k]*Δt.*zᴵ     # w is the temp input, output is zᴱ
-        sys(t + _m_*tab[:cᴱ, k]*Δt, store(u, t + _m_*tab[:cᴱ, k]*Δt), w, zᴱ)
-        @all x .= x .+ tab[:bᴵ, k].*Δt.*zᴵ .+ tab[:bᴱ, k].*Δt.*zᴱ
+        ImcA!(sys, _m_*tab[:aᴵ, k, k]*Δt, w, zᴵ) # compute z = (I-cA)⁻¹*w in place
+        @all w .= zᴱ .+ tab[:aᴵ, k, k].*_m_.*Δt.*zᴵ     # w is the temp input, output is zᴱ
+        sys(t + tab[:cᴱ, k]*Δt, store(u, t + tab[:cᴱ, k]*Δt), w, zᴱ)
+        @all x .= x .+ tab[:bᴵ, k].*_m_.*Δt.*zᴵ .+ tab[:bᴱ, k].*_m_.*Δt.*zᴱ
     end
 
     return nothing
