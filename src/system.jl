@@ -1,5 +1,7 @@
 import LinearAlgebra: mul!
 
+export CallDependency
+
 # structure to provide dependency specification for composite dynamical systems
 struct CallDependency{N, INFO} end
 
