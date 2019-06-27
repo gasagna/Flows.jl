@@ -52,8 +52,8 @@ end
     # test end point is calculated correctly
     ϕ(x₀, (0, 1), m)
 
-    @test m.t == 0.8
-    @test m.x == [0.5*(0.8)^2]
+    @test m.t == 0.9
+    @test m.x ≈ [0.5*(0.9)^2]
 end
 
 @testset "allocation                             " begin
