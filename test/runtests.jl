@@ -4,6 +4,7 @@ using Flows
 include("test_timestepping.jl")
 include("test_tableaux.jl")
 include("test_stepper.jl")
+include("test_couple.jl")
 include("test_imca.jl")
 include("test_steps.jl")
 include("test_integrator.jl")

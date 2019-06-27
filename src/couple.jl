@@ -1,6 +1,6 @@
 using MacroTools: postwalk
 
-export Coupled, couple, @all
+export Coupled, couple, @all, couplecopy
 
 # This is basically an N-tuple. We could use Base.Tuple{Any, Any}, obtaining 
 # most of the functionality except `similar` and `copy`, which we would need to
@@ -19,6 +19,9 @@ end
 
 # Constructor
 couple(args...) = Coupled(args)
+
+# couple `N` copies of `x`
+couplecopy(N::Int, x) = couple(ntuple(i->deepcopy(x), N)...)
 
 # Extract parts using indexing (this is read-only)
 Base.getindex(x::Coupled, i::Int) = x.args[i]
