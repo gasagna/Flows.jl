@@ -102,23 +102,25 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
     @_checkspan(span, z)
 
     # define integration times
-    ts = LossLessRange(span[1], span[2], stepping.Δt)
-    Nsteps = length(ts)
+    tdts = Steps(span[1], span[2], stepping.Δt)
+    
+    # the number of steps is used for the `StoreOneButLast` monitor
+    nsteps = length(tdts)
 
     # push initial state to monitor and storage
-    _ismonitor(M) && push!(mon,   ts[1], z)
-    _isstorage(S) && push!(store, ts[1], copy(z))
+    _ismonitor(M) && push!(mon,   span[1], z)
+    _isstorage(S) && push!(store, span[1], copy(z))
 
     # start integration
-    for j = 2:Nsteps
-        step!(method, system, ts[j-1], ts[j]-ts[j-1], z, cache)
-        if _ismonitor(M) 
+    for (j, (t, dt)) in enumerate(tdts)
+        step!(method, system, t, dt, z, cache)
+        if _ismonitor(M)
             # skip all pushes except the last but one
-            M <: StoreOneButLast && (j != Nsteps - 2 && continue) 
-            push!(mon, ts[j], z)
+            M <: StoreOneButLast && (j != nsteps - 1 && continue)
+            push!(mon, t + dt, z)
         end
-        if _isstorage(S) 
-            push!(store, ts[j], copy(z))
+        if _isstorage(S)
+            push!(store, t + dt, copy(z))
         end
     end
 
@@ -222,20 +224,22 @@ function _propagate!(method::AbstractMethod{Z},
                       store::AbstractStorage,
                         mon::M) where {Z, M<:Union{Nothing, AbstractMonitor}}
 
-    # Define integration times. Note that the adjoint case, where 
-    # span[1] > span[2], is handled automatically here by this "ts" object
-    ts = LossLessRange(span[1], span[2], stepping.Δt)
+    # Define integration times and time steps. The adjoint case, 
+    # where span[1] > span[2], is handled automatically here by 
+    # `tdts`, where the `dt` is negative
+    tdts = Steps(span[1], span[2], stepping.Δt)
     
     # store initial state in monitors (this could be the final adjoint state)
-    _ismonitor(M) && push!(mon, ts[1], z)
+    _ismonitor(M) && push!(mon, span[1], z)
     
-    # march in time
-    for j = 2:length(ts)
+    # March in time. Note final value of`t` and `dt` is 
+    # such that `t + dt = span[2]`
+    for (t, dt) in tdts
         # exec step
-        step!(method, system, ts[j-1], abs(ts[j]-ts[j-1]), z, store)
+        step!(method, system, t, dt, z, store)
 
         # store
-        _ismonitor(M) && push!(mon, ts[j], z)
+        _ismonitor(M) && push!(mon, t + dt, z)
     end
 
     return z
