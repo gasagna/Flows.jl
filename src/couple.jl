@@ -20,6 +20,8 @@ end
 # Constructor
 couple(args...) = Coupled(args)
 
+Base.size(::Coupled{N}) where {N} = N
+
 # couple `N` copies of `x`
 couplecopy(N::Int, x) = couple(ntuple(i->deepcopy(x), N)...)
 
