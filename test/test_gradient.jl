@@ -1,5 +1,7 @@
 import LinearAlgebra: Diagonal, norm, dot
 using Statistics
+using Test
+using Flows
 
 # ---------------------------------------------------------------------------- #
 # NONLINEAR EQUATIONS. We arbitrarily split the equations into explicit and
@@ -64,7 +66,7 @@ function (eq::LorenzAdj)(t::Real, u::V, v::V, dvdt::V) where {V<:AbstractVector}
 end
 
 # The diagonal term is integrated implicitly
-const A = Diagonal([-10, -1, -8/3])
+const B = Diagonal([-10, -1, -8/3])
 
 @testset "tests continuous RK4                   " begin
     T = 1
@@ -125,7 +127,7 @@ end
 @testset "test continuous imex                   " begin
     T = 1
     flag = 1
-    IMPL = flag*A
+    IMPL = flag*B
 
     for (METHOD, bnd, (bnd_low, bnd_upp), order) in [(CB3R2R3c, 1170, (0.34,  8.00), 3),
                                                      (CB3R2R3e,  275, (0.34,  0.55), 3),
@@ -189,7 +191,7 @@ end
 # @testset "test discrete CNRK2                    " begin
 #     T = 1
 #     flag = 0
-#     IMPL = flag*A
+#     IMPL = flag*B
     
 #     for dt = [1e-2, 1e-3, 1e-4]
 #         x0 = Float64[9.1419853, 1.648665, 35.21793]
