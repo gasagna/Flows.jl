@@ -111,6 +111,12 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
     _ismonitor(M) && push!(mon,   span[1], z)
     _isstorage(S) && push!(store, span[1], copy(z))
 
+    # if we have a storage, we might need to skip pushing the last element, based
+    # on the value of the boolean `storelast(store)`. If we need to skip it
+    # we set the variable `j_skip` so that when `j == j_skip`, we do not push.
+    # otherwise we set `j_skip` to zero, so we always push since `j = 1, 2, 3, ...`
+    j_skip = _isstorage(S) && storelast(store) == true ? 0 : length(tdts)
+
     # start integration
     for (j, (t, dt)) in enumerate(tdts)
         step!(method, system, t, dt, z, cache)
@@ -120,7 +126,9 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
             push!(mon, t + dt, z)
         end
         if _isstorage(S)
-            push!(store, t + dt, copy(z))
+            if j != j_skip
+                push!(store, t + dt, copy(z))
+            end
         end
     end
 

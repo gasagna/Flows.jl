@@ -1,4 +1,4 @@
-export RAMStorage, times, samples, degree
+export RAMStorage, times, samples, degree, storelast
 
 # ////// SOLUTION STORAGE //////
 """
@@ -32,21 +32,26 @@ struct RAMStorage{T,
                   DEG,
                   Vt<:AbstractVector{T},
                   Vx<:AbstractVector{X}} <: AbstractStorage{T, X, DEG}
-        ts::Vt # Vector of times
-        xs::Vx # Vector of snapshots
-    period::T  # The period in case data is periodic. Defaults to `0.0`, so non periodic.
-               # If the period is finite, it is assumed that the data is uniformly spaced
-               # and that the last/first element is not repeated in the sequence
+           ts::Vt   # Vector of times
+           xs::Vx   # Vector of snapshots
+    storelast::Bool # this flag is used to avoid storing the last step of a simulation. it
+                    # has no effect on the behaviour of this object alone but interacts
+                    # when used in a call to a `Flow` object. This is useful for periodic
+                    # problems, when we want to repeat storing the first/last element twice
+       period::T    # The period in case data is periodic. Defaults to `0.0`, so non periodic.
+                    # If the period is finite, it is assumed that the data is uniformly spaced
+                    # and that the last/first element is not repeated in the sequence
 
     # constructor from type
     function RAMStorage(::Type{X};
                    ttype::Type{T}=Float64,
                   degree::Int=3,
-                  period::Real=0.0) where {T, X}
+                  period::Real=0.0,
+               storelast::Bool=true) where {T, X}
         degree ≥ 3 || throw(ArgumentError("polynomial degree must be ≥ 3, got $degree."))
         degree % 2 == 1 || throw(ArgumentError("polynomial degree must be odd, got $degree"))
         period ≥ 0 || throw(ArgumentError("period must be non-negative, got $period"))
-        return new{T, X, degree, Vector{T}, Vector{X}}(T[], X[], period)
+        return new{T, X, degree, Vector{T}, Vector{X}}(T[], X[], storelast, period)
     end
 
     # constructor from object
@@ -59,8 +64,9 @@ end
 @inline Base.push!(rs::RAMStorage{T, X}, t::Real, x::X) where {T, X} =
     (push!(rs.ts, t); push!(rs.xs, x); nothing)
 
-times(  rs::RAMStorage) = rs.ts
-samples(rs::RAMStorage) = rs.xs
+times(    rs::RAMStorage) = rs.ts
+samples(  rs::RAMStorage) = rs.xs
+storelast(rs::RAMStorage) = rs.storelast
 
 # /// LAGRANGIAN INTERPOLATION ///
 

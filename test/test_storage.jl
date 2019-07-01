@@ -144,3 +144,25 @@ end
         end
     end
 end
+
+@testset "storelast                              " begin
+    # initial condition
+    x0 = Float64[9.1419853, 1.648665, 35.21793]
+
+    # integrator 
+    ϕ = flow(Lorenz(0), RK4(x0, :NORMAL), TimeStepConstant(1e-2))
+
+    # storage
+    store_true  = RAMStorage(x0; storelast=true)
+    store_false = RAMStorage(x0; storelast=false)
+
+    @test storelast(store_true) == true
+    @test storelast(store_false) == false
+
+    # this saves a snapshot a t = 1
+    ϕ(x0, (0, 1), store_true)
+    ϕ(x0, (0, 1), store_false)
+
+    @test last(times(store_true))  == 1
+    @test last(times(store_false)) == 0.99
+end
