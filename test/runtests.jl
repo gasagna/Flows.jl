@@ -1,5 +1,9 @@
-using Test
+import LinearAlgebra: Diagonal, norm, dot
+using Statistics
 using Flows
+using Test
+
+include("lorenz.jl")
 
 include("test_timestepping.jl")
 include("test_tableaux.jl")

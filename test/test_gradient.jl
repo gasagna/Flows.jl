@@ -1,73 +1,3 @@
-import LinearAlgebra: Diagonal, norm, dot
-using Statistics
-using Test
-using Flows
-
-# ---------------------------------------------------------------------------- #
-# NONLINEAR EQUATIONS. We arbitrarily split the equations into explicit and
-# implicit components, for testing purposes. To do so, we integrate the 
-# diagonal part implicitly, which does also not depend on the state. 
-# If you set flag to zero, you do not need the linear part.
-struct Lorenz2
-    flag::Int
-    force::Real
-end
-
-@inline function (eq::Lorenz2)(t::Real, u::V, dudt::V) where {V <: AbstractVector}
-    x, y, z = u
-    dudt[1] =   10 * (y - x)      - eq.flag*( - 10*x ) + eq.force
-    dudt[2] =   28 *  x - y - x*z - eq.flag*( - y )
-    dudt[3] = -8/3 * z + x*y      - eq.flag*( - 8/3*z )
-    return dudt
-end
-
-# ---------------------------------------------------------------------------- #
-# TANGENT EQUATIONS
-
-struct LorenzTan
-    flag::Int
-end
-
-(eq::LorenzTan)(t::Real, u::V, dudt::V,
-    v::V, dvdt::V) where {V<:AbstractVector} = eq(t, u, v, dvdt)
-
-function (eq::LorenzTan)(t::Real, u::V,
-                                  v::V, dvdt::V) where {V<:AbstractVector}
-    # extract components
-    x′, y′, z′ = v
-    x,  y,  z  = u
-
-    dvdt[1] =  10 * (y′ - x′)        - eq.flag*( - 10*x′ ) + 1
-    dvdt[2] =  (28-z)*x′ - y′ - x*z′ - eq.flag*( - y′    )
-    dvdt[3] = -8/3*z′ + x*y′ + x′*y  - eq.flag*( - 8/3*z′)
-
-    return dvdt
-end
-
-
-# ---------------------------------------------------------------------------- #
-# ADJOINT EQUATIONS
-
-struct LorenzAdj
-    flag::Int
-end
-
-function (eq::LorenzAdj)(t::Real, u::V, v::V, dvdt::V) where {V<:AbstractVector}
-    # extract components
-    x⁺, y⁺, z⁺ = v
-    x,  y,  z  = u
-
-    dvdt[1] =  -10*x⁺ + (28 - z)*y⁺ +    y*z⁺ - eq.flag*( - 10*x⁺ )
-    dvdt[2] =   10*x⁺ -          y⁺ +    x*z⁺ - eq.flag*( - y⁺    )
-    dvdt[3] =         -        x*y⁺ -  8/3*z⁺ - eq.flag*( - 8/3*z⁺) 
-    
-    dvdt[3] += 1
-    return 
-end
-
-# The diagonal term is integrated implicitly
-const B = Diagonal([-10, -1, -8/3])
-
 @testset "tests continuous RK4                   " begin
     T = 1
     flag = 0
@@ -80,8 +10,8 @@ const B = Diagonal([-10, -1, -8/3])
         # finite difference
         method = RK4(x0, :NORMAL)
         alpha = 1e-4
-        ϕp = flow(Lorenz2(flag, +alpha), method, TimeStepConstant(dt))
-        ϕm = flow(Lorenz2(flag, -alpha), method, TimeStepConstant(dt))
+        ϕp = flow(Lorenz(flag, +alpha), method, TimeStepConstant(dt))
+        ϕm = flow(Lorenz(flag, -alpha), method, TimeStepConstant(dt))
 
         mon = Monitor(x0, x->x[3])
         ϕp(copy(x0), (0, T), reset!(mon))
@@ -92,19 +22,19 @@ const B = Diagonal([-10, -1, -8/3])
 
         # tangent
         # fill storage first
-        ϕ = flow(Lorenz2(flag, +alpha), method, TimeStepConstant(dt))
+        ϕ = flow(Lorenz(flag, +alpha), method, TimeStepConstant(dt))
         storage = RAMStorage(x0)
         ϕ(copy(x0), (0, T), storage)
 
         # define linear propagator and monitor
-        ψ = flow(LorenzTan(flag), RK4(y0, :TAN), TimeStepFromStorage(dt))
+        ψ = flow(LorenzTan(flag, 1), RK4(y0, :TAN), TimeStepFromStorage(dt))
         mon = Monitor(y0, x->x[3])
         ψ(copy(y0), storage, (0, T), reset!(mon))
         Jp_TAN = simps(times(mon), samples(mon))
         # println(times(mon))
 
         # adjoint
-        ψ_A = flow(LorenzAdj(flag), RK4(w0, :ADJ), TimeStepFromStorage(dt))
+        ψ_A = flow(LorenzAdj(flag, 1), RK4(w0, :ADJ), TimeStepFromStorage(dt))
         mon = Monitor(w0, x->x[1])
         ψ_A(copy(w0), storage, (T, 0), reset!(mon))
         Jp_ADJ = simps(reverse(times(mon)), reverse(samples(mon)))
@@ -127,7 +57,7 @@ end
 @testset "test continuous imex                   " begin
     T = 1
     flag = 1
-    IMPL = flag*B
+    IMPL = flag*A
 
     for (METHOD, bnd, (bnd_low, bnd_upp), order) in [(CB3R2R3c, 1170, (0.34,  8.00), 3),
                                                      (CB3R2R3e,  275, (0.34,  0.55), 3),
@@ -142,8 +72,8 @@ end
             # finite difference
             method = METHOD(x0, :NORMAL)
             alpha = 1e-4
-            ϕp = flow(Lorenz2(flag, +alpha), IMPL, method, TimeStepConstant(dt))
-            ϕm = flow(Lorenz2(flag, -alpha), IMPL, method, TimeStepConstant(dt))
+            ϕp = flow(Lorenz(flag, +alpha), IMPL, method, TimeStepConstant(dt))
+            ϕm = flow(Lorenz(flag, -alpha), IMPL, method, TimeStepConstant(dt))
 
             mon = Monitor(x0, x->x[3])
             ϕp(copy(x0), (0, T), reset!(mon))
@@ -154,18 +84,18 @@ end
 
             # tangent
             # fill storage first
-            ϕ = flow(Lorenz2(flag, +alpha), IMPL, method, TimeStepConstant(dt))
+            ϕ = flow(Lorenz(flag, +alpha), IMPL, method, TimeStepConstant(dt))
             storage = RAMStorage(x0)
             ϕ(copy(x0), (0, T), storage)
 
             # define linear propagator and monitor
-            ψ = flow(LorenzTan(flag), IMPL, METHOD(y0, :TAN), TimeStepFromStorage(dt))
+            ψ = flow(LorenzTan(flag, 1), IMPL, METHOD(y0, :TAN), TimeStepFromStorage(dt))
             mon = Monitor(y0, x->x[3])
             ψ(copy(y0), storage, (0, T), reset!(mon))
             Jp_TAN = simps(times(mon), samples(mon))
 
             # adjoint
-            ψ_A = flow(LorenzAdj(flag), IMPL, METHOD(w0, :ADJ), TimeStepFromStorage(dt))
+            ψ_A = flow(LorenzAdj(flag, 1), IMPL, METHOD(w0, :ADJ), TimeStepFromStorage(dt))
             mon = Monitor(w0, x->x[1])
             ψ_A(copy(w0), storage, (T, 0), reset!(mon))
             Jp_ADJ = simps(reverse(times(mon)), reverse(samples(mon)))
@@ -203,8 +133,8 @@ end
 #         # finite difference
 #         method = METHOD(x0, :NORMAL)
 #         alpha = 1e-6
-#         ϕp = flow(Lorenz2(flag, +alpha), IMPL, method, TimeStepConstant(dt))
-#         ϕm = flow(Lorenz2(flag, -alpha), IMPL, method, TimeStepConstant(dt))
+#         ϕp = flow(Lorenz(flag, +alpha), IMPL, method, TimeStepConstant(dt))
+#         ϕm = flow(Lorenz(flag, -alpha), IMPL, method, TimeStepConstant(dt))
 
 #         mon = Monitor(x0, x->x[3])
 #         ϕp(copy(x0), (0, T), reset!(mon))
@@ -215,7 +145,7 @@ end
 
 #         # tangent
 #         method = METHOD(couple(x0, y0), :NORMAL)
-#         ψ = flow(couple(Lorenz2(flag, 0), LorenzTan(flag)), couple(IMPL, IMPL), method, TimeStepConstant(dt))
+#         ψ = flow(couple(Lorenz(flag, 0), LorenzTan(flag)), couple(IMPL, IMPL), method, TimeStepConstant(dt))
 #         mon = Monitor(couple(x0, y0), x->x[2][3])
 #         ψ(couple(copy(x0), y0), (0, T), reset!(mon))
 #         Jp_TAN = simps(times(mon), samples(mon))
@@ -223,7 +153,7 @@ end
 
 #         # adjoint
 #         method = METHOD(x0, :NORMAL)
-#         ϕ = flow(Lorenz2(flag, 0), IMPL, method, TimeStepConstant(dt))
+#         ϕ = flow(Lorenz(flag, 0), IMPL, method, TimeStepConstant(dt))
 #         cache = RAMStageCache(2, similar(x0))
 #         ϕ(copy(x0), (0, T), cache)
         
