@@ -1,4 +1,4 @@
-export RAMStorage, times, samples, degree, storelast, timespan, period, isperiodic
+export AbstractStorage, RAMStorage, times, samples, degree, storelast, timespan, period, isperiodic
 
 # ////// SOLUTION STORAGE //////
 """
