@@ -238,3 +238,10 @@ function (store::RAMStorage{T, X, DEG})(out::X,
     
     return _lagr_interp(out, _t, _ts, xs, idxs, order)
 end
+
+@generated function (store::RAMStorage)(out::Coupled, t::Real, order::Val=Val(0)) 
+    return quote
+        store(out[1], t, order)
+        return out[1]
+    end
+end

@@ -58,6 +58,18 @@ end
 # this is for the continuous schemes
 (sys::System{1})(t::Real, u, z, dzdt) = sys.g(t, u, z, dzdt)
 
+# this is useful for integrating a set of variational equations
+@generated function (sys::System{N})(t::Real,
+                                     u,
+                                     z::Coupled{N},
+                                     dzdt::Coupled{N}) where {N}
+    expr = quote return dzdt end
+    for i = 1:N
+        pushfirst!(expr.args, :(sys.g[$i](t, u, z[$i], dzdt[$i])))
+    end
+    return expr
+end
+
 # ~ Implicit part I ~
 mul!(out, sys::System{1, DEPS, GT, AT}, z) where {GT, AT, DEPS} =
     ((AT isa Nothing ? (out .= 0) : mul!(out, sys.A, z)); out)
