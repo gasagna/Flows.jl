@@ -1,4 +1,8 @@
 import LinearAlgebra: Diagonal, norm
+import LinearAlgebra: Diagonal, norm, dot
+using Statistics
+using Flows
+using Test
 
 @testset "test monitor type                      " begin
     m = Monitor(0, string)
@@ -6,6 +10,49 @@ import LinearAlgebra: Diagonal, norm
     @test times(m)   == [0.0]
     @test samples(m) == ["0"]
     @test eltype(samples(m)) == String
+end
+
+@testset "test oneevery                          " begin
+    @testset "TimeStepConstant" begin
+        # make system
+        g(t, x, ẋ) = (ẋ .= .-0.5.*x; ẋ)
+      
+        # try on standard vector
+        x = Float64[1.0]
+        
+        # forward map
+        ϕ = flow(g, RK4(x, :NORMAL), TimeStepConstant(0.1))
+
+        # define monitor
+        mon = Monitor(x, x->x[1]; oneevery=3)
+
+        # make sure we save the last step too
+        ϕ(x, (0, 1), mon)
+        @test last(times(mon)) == 1.0
+    end
+    @testset "TimeStepFromStorage" begin
+        # make system
+        g(t, u, x, ẋ) = (ẋ .= .-0.5.*x; ẋ)
+      
+        # try on standard vector
+        x = Float64[1.0]
+
+        # forward map
+        ϕ = flow(g, RK4(x, :TAN), TimeStepFromStorage(0.1))
+
+        # define a dummy store
+        store = RAMStorage(x)
+        for t in 0:0.1:1
+            push!(store, t, [1.0])
+        end
+
+        # define monitor
+        mon = Monitor(x, x->x[1]; oneevery=3)
+
+        # make sure we save the last step too
+        ϕ(x, store, (0, 1), mon)
+        @test last(times(mon)) == 1.0
+    end
 end
 
 @testset "test monitor content                   " begin

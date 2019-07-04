@@ -107,15 +107,15 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
     # the number of steps is used for the `StoreOneButLast` monitor
     nsteps = length(tdts)
 
-    # push initial state to monitor and storage
-    _ismonitor(M) && push!(mon,   span[1], z)
+    # always push initial state to monitor and storage
+    _ismonitor(M) && push!(mon,   span[1], z, true)
     _isstorage(S) && push!(store, span[1], copy(z))
 
     # if we have a storage, we might need to skip pushing the last element, based
     # on the value of the boolean `storelast(store)`. If we need to skip it
     # we set the variable `j_skip` so that when `j == j_skip`, we do not push.
     # otherwise we set `j_skip` to zero, so we always push since `j = 1, 2, 3, ...`
-    j_skip = _isstorage(S) && storelast(store) == true ? 0 : length(tdts)
+    j_skip = _isstorage(S) && storelast(store) == true ? 0 : nsteps
 
     # start integration
     for (j, (t, dt)) in enumerate(tdts)
@@ -123,7 +123,11 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
         if _ismonitor(M)
             # skip all pushes except the last but one
             M <: StoreOneButLast && (j != nsteps - 1 && continue)
-            push!(mon, t + dt, z)
+
+            # we might need to force pushing the last element to the monitor
+            force = j == nsteps ? true : false
+
+            push!(mon, t + dt, z, force)
         end
         if _isstorage(S)
             if j != j_skip
@@ -236,18 +240,26 @@ function _propagate!(method::AbstractMethod{Z},
     # where span[1] > span[2], is handled automatically here by 
     # `tdts`, where the `dt` is negative
     tdts = Steps(span[1], span[2], stepping.Δt)
+
+    # count number of steps, because we might need to force pushing the 
+    # last element to the monitor, even if it has a `oneevery` parameter
+    # that is not a integer divisor of `nsteps`
+    nsteps = length(tdts)
     
     # store initial state in monitors (this could be the final adjoint state)
-    _ismonitor(M) && push!(mon, span[1], z)
+    _ismonitor(M) && push!(mon, span[1], z, true)
     
     # March in time. Note final value of`t` and `dt` is 
     # such that `t + dt = span[2]`
-    for (t, dt) in tdts
+    for (j, (t, dt)) in enumerate(tdts)
         # exec step
         step!(method, system, t, dt, z, store)
 
+        # we might need to force pushing the last element to the monitor
+        force = j == nsteps ? true : false
+
         # store
-        _ismonitor(M) && push!(mon, t + dt, z)
+        _ismonitor(M) && push!(mon, t + dt, z, force)
     end
 
     return z

@@ -13,5 +13,5 @@ mutable struct StoreOneButLast{X, F} <: AbstractMonitor{Float64, X}
     end
 end
 
-Base.push!(mon::StoreOneButLast, t::Real, z) =
+Base.push!(mon::StoreOneButLast, t::Real, z, ::Bool) =
     (mon.x .= mon.f(z); mon.t = t; nothing)

@@ -37,8 +37,8 @@ Monitor(x,
     Monitor(reset!(store, sizehint), f, oneevery, savebetween)
 
 # Add sample and time to the storage
-@inline function Base.push!(mon::Monitor, t::Real, x)
-    if mon.count % mon.oneevery == 0
+@inline function Base.push!(mon::Monitor, t::Real, x, force::Bool=false)
+    if force == true || (mon.count % mon.oneevery == 0)
         if isbetween(t, mon.savebetween...)
             push!(mon.store, t, mon.f(x))
         end
