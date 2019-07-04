@@ -1,4 +1,4 @@
-export RAMStorage, times, samples, degree, storelast
+export RAMStorage, times, samples, degree, storelast, timespan, period, isperiodic
 
 # ////// SOLUTION STORAGE //////
 """
@@ -24,6 +24,7 @@ Base.push!(store::AbstractStorage{T, X}, t::T, x::X) where {T, X} =
 
 times(  store::AbstractStorage) = error("not implemented")
 samples(store::AbstractStorage) = error("not implemented")
+timespan(store::AbstractStorage) = error("not implemented")
 
 
 # /// RAM storage ///
@@ -64,9 +65,31 @@ end
 @inline Base.push!(rs::RAMStorage{T, X}, t::Real, x::X) where {T, X} =
     (push!(rs.ts, t); push!(rs.xs, x); nothing)
 
-times(    rs::RAMStorage) = rs.ts
-samples(  rs::RAMStorage) = rs.xs
-storelast(rs::RAMStorage) = rs.storelast
+times(     rs::RAMStorage) = rs.ts
+samples(   rs::RAMStorage) = rs.xs
+storelast( rs::RAMStorage) = rs.storelast
+
+"""
+    period(rs::RAMStorage)
+
+Return the period of the data, or `0` if the data in non periodic.
+"""
+period(rs::RAMStorage) = rs.period
+
+"""
+    isperiodic(rs::RAMStorage)
+
+Return true if the data stored in `rs` represent a periodic signal.
+"""
+isperiodic(rs::RAMStorage) = period(rs) != 0
+
+"""
+    timespan(rs::RAMStorage)
+
+Return a 2-tuple with the first and last times stored.
+"""
+timespan(rs::RAMStorage) = 
+    isperiodic(rs) ? (first(times(rs)), period(rs)) : (first(times(rs)), last(times(rs))) 
 
 # /// LAGRANGIAN INTERPOLATION ///
 
@@ -220,21 +243,16 @@ function (store::RAMStorage{T, X, DEG})(out::X,
     length(ts) ≥ DEG+1 ||
             throw(ArgumentError("input array length must be greater than DEG+1"))
 
-    # if period is zero we take it as non-periodic
-    isperiodic = iszero(store.period) ? false : true
-
     # check if `t` is in bounds and disallow extrapolation. Code that calls
     # this interpolator must make sure that no extrapolation is requested
-    t_bounds = isperiodic ? (zero(T), store.period) : (ts[1], ts[end])
-    
-    isbetween(t, t_bounds...) ||
-        throw(ArgumentError("time $t is out of range $t_bounds"))
+    isbetween(t, timespan(store)...) ||
+        throw(ArgumentError("time $t is out of range $timespan(store)"))
 
     # Obtain the indices of the elements that participate in the interpolation
-    idxs = _interp_indices(t, ts, Val(DEG+1), isperiodic)
+    idxs = _interp_indices(t, ts, Val(DEG+1), isperiodic(store))
 
     # define the abscissa of the interpolation data
-    _ts, _t = _make_tuple_of_times(t, ts, idxs, store.period)
+    _ts, _t = _make_tuple_of_times(t, ts, idxs, period(store))
     
     return _lagr_interp(out, _t, _ts, xs, idxs, order)
 end

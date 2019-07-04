@@ -9,6 +9,9 @@
 
     @test times(store)   == [0.0, 1.0, 2.0]
     @test samples(store) == [(0.0, 0), (1.0, 1), (2.0, 2)]
+    @test timespan(store) == (0.0, 2.0)
+    @test isperiodic(store) == false
+
 
     reset!(store, 0)
     @test length(times(store))   == 0
@@ -83,6 +86,12 @@ end
         end
     end
 
+    for sol in sols
+        @test timespan(sol) == (0.0, 1.0)
+        @test period(sol) == 0.0
+        @test isperiodic(sol) == false
+    end
+
     # check interpolation on finer grid
     out = [0.0]
     for (i, sol) in enumerate(sols)
@@ -123,6 +132,12 @@ end
         for (i, sol) in enumerate(sols)
             push!(sol, t, Float64[cos(π*t)])
         end
+    end
+
+    for sol in sols
+        @test timespan(sol) == (0.0, 2.0)
+        @test period(sol) == 2.0
+        @test isperiodic(sol) == true
     end
 
     #
