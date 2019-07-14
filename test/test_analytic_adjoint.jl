@@ -38,7 +38,8 @@ end
     # get solution and fill the cache used later for the adjoint calculations
     mon = Monitor(x0, x->x[1])
     cache = RAMStageCache(4, x0)
-    ψ(x0, (0, T), cache, mon)
+    ψ(copy(x0), (0, T), cache)
+    ψ(copy(x0), (0, T), mon)
 
     # should be an exponential
     for (t, s) in zip(times(mon), samples(mon))

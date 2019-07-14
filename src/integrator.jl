@@ -9,58 +9,169 @@ mutable struct Flow{TS<:AbstractTimeStepping, M<:AbstractMethod, S<:System}
     Flow(ts::TS, m::M, sys::S) where {TS, M, S} = new{TS, M, S}(ts, m, sys)
 end
 
-# single system
+"""
+    flow(g, m::AbstractMethod, ts::AbstractTimeStepping)
+
+Construct an object of type `Flow`, representing the numerical dicretisation
+of the time-forward flow operator associated to the vector field `g`, using the
+integration method `m`, with time stepping provided by `ts`. This method
+should be used with an explicit integrator.
+
+See [Flows.jl Dynamical Systems](@ref) for details on what interface the argument
+`g` should provide. See [`AbstractMethod`](@ref) for details on constructing
+integration method objects and for a list of available methods. See
+[`AbstractTimeStepping`](@ref) for details on how to customize time stepping.
+
+Object of type `Flow` obey a callable interface, see [Flow.jl Flow Operators](@ref)
+for more details.
+
+Example
+-------
+julia> f(t, x, dxdt) = (dxdt[1] = x[1]; dxdt)
+       F = flow(f, RK4(zeros(1), :NORMAL), TimeStepConstant(1e-3))
+"""
 flow(g, m::AbstractMethod, ts::AbstractTimeStepping) =
     flow(g, nothing, m, ts)
 
+"""
+    flow(g, A, m::AbstractMethod, ts::AbstractTimeStepping)
+
+Construct a flow operator associated to the vector field defined by a linear
+component `A` and a nonlinear part `g`. See [Flows.jl Dynamical Systems](@ref)
+for details on what interface the object `A` should provide. This
+method should be called with an implicit-explicit integration method `m`. See
+[`AbstractMethod`](@ref) for a list of available implicit-explicit methods.
+"""
 flow(g, A, m::AbstractMethod, ts::AbstractTimeStepping) =
      Flow(ts, m, System(g, A))
 
- # coupled systems
+"""
+    flow(g::Coupled{N}, m::AbstractMethod, ts::AbstractTimeStepping) where {N}
+
+Construct a flow operator associated to the composite vector field `g`, using
+a default call dependency structure, i.e. where the elements of `g` satisfy
+the calling interface:
+
+    g[1](t, u[1], dudt[1])
+    g[2](t, u[1], dudt[1], u[2], dudt[2]) ...
+    g[N](t, u[1], dudt[1], u[N], dudt[N])
+
+See [Flows.jl Call Dependencies](@ref) for more details on how to specify
+custom call dependencies. This method should be used with an explicit integrator.
+See  [Flows.jl Dynamical Systems](@ref) for details on what interface the
+objects coupled in `g` should provide.
+"""
 flow(g::Coupled{N}, m::AbstractMethod, ts::AbstractTimeStepping) where {N} =
      flow(g, default_dep(N), m, ts)
 
-flow(g::Coupled{N}, spec::CallDependency{N}, m::AbstractMethod, 
+"""
+    flow(g::Coupled{N}, spec::CallDependency{N}, m::AbstractMethod,
+                                                ts::AbstractTimeStepping) where {N}
+
+Similar to the method without `spec`, but specify a custom call dependency structure.
+"""
+flow(g::Coupled{N}, spec::CallDependency{N}, m::AbstractMethod,
                                             ts::AbstractTimeStepping) where {N} =
      flow(g, couple(ntuple(i->nothing, N)...), spec, m, ts)
 
+"""
+    flow(g::Coupled{N}, A::Coupled{N}, m::AbstractMethod,
+                                      ts::AbstractTimeStepping) where {N}
+
+Similar to previous methods, but also provide the linear part of the dynamical
+system. This method should be used with an implicit-explicit integrator.
+"""
 flow(g::Coupled{N}, A::Coupled{N}, m::AbstractMethod,
                                   ts::AbstractTimeStepping) where {N} =
     flow(g, A, default_dep(N), m, ts)
 
+"""
+    flow(g::Coupled{N}, A::Coupled{N}, spec::CallDependency{N},
+                                          m::AbstractMethod,
+                                         ts::AbstractTimeStepping) where {N}
+
+Similar to previous methods, but provide a custom call dependency structure.
+This method should be used with an implicit-explicit integrator.
+"""
 flow(g::Coupled{N}, A::Coupled{N}, spec::CallDependency{N},
-                                  m::AbstractMethod,
-                                  ts::AbstractTimeStepping) where {N} =
-     Flow(ts, m, System(g, A, spec))
+                                      m::AbstractMethod,
+                                     ts::AbstractTimeStepping) where {N} =
+    Flow(ts, m, System(g, A, spec))
 
 # ---------------------------------------------------------------------------- #
 # FLOWS ARE CALLABLE OBJECTS: THIS IS THE MAIN INTERFACE
 
-# normal stepping
+"""
+    (I::Flow)(x, span::NTuple{2, Real})
+
+Map `x` at time `span[1]` to the later time `span[2]`. 
+
+The object `x` is modified in place. The argument `x` shoule be of a type 
+compatible to that used to create the integration method object for the `Flow`
+object `I`, since the integration method contains preallocated elements used 
+to perform the integration step.
+"""
 (I::Flow)(x, span::NTuple{2, Real}) =
     _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, nothing, nothing)
 
-# fill a monitor
+"""
+    (I::Flow)(x, span::NTuple{2, Real}, m::AbstractMonitor)
+
+Map `x` at time `span[1]` to the later time `span[2]`, filling the monitor
+obejct `m` along the way. See [`Flow.jl Monitor objects`](@ref) for more details
+on how to define and use `Monitor` objects.
+"""
 (I::Flow)(x, span::NTuple{2, Real}, m::AbstractMonitor) =
     _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, nothing, m)
 
-# fill a cache and optionally a monitor
-(I::Flow)(x, span::NTuple{2, Real}, 
-          c::AbstractStageCache, m::Union{Nothing, <:AbstractMonitor}=nothing) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, c, nothing, m)
+"""
+    (I::Flow)(x, span::NTuple{2, Real}, c::AbstractStageCache)
 
-# fill a store and optionally a monitor
-(I::Flow)(x, span::NTuple{2, Real}, 
-          s::AbstractStorage, m::Union{Nothing, <:AbstractMonitor}=nothing) =
-    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, s, m)
+Map `x` at time `span[1]` to the later time `span[2]`, filling the stage cache
+obejct `c` along the way. See [`Flow.jl Stage Caches`](@ref) for more details
+on how to define and use `AbstractStageCache` objects.
+"""
+(I::Flow)(x, span::NTuple{2, Real}, c::AbstractStageCache) =
+    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, c, nothing, nothing)
 
-# stepping based on cache only, with optional monitor
-(I::Flow{TimeStepFromCache})(x, 
-                             c::AbstractStageCache, 
+"""
+    (I::Flow)(x, span::NTuple{2, Real}, s::AbstractStorage)
+
+Map `x` at time `span[1]` to the later time `span[2]`, filling the storage 
+object `s` along the way. This method is used primarily to fill a storage 
+object with the results of a nonlinear simulation, where the storage `s` can
+be subsequently used for the linearised systems. See [`Flow.jl Storages`](@ref) 
+for more details on how to define and use `AbstractStorage` objects.
+"""
+(I::Flow)(x, span::NTuple{2, Real}, s::AbstractStorage) =
+    _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, s, nothing)
+
+"""
+    (I::Flow{TimeStepFromCache})(x, c::AbstractStageCache,
+                                 m::Union{Nothing, <:AbstractMonitor}=nothing)
+
+Map `x` forward/backward over a time span defined by the stage cache object `c`, 
+filling the monitor object `m` along the way. This method is primarily used to 
+integrate linearised equations forward/backward, so that the nonlinear and 
+linearised methods are discretely consistent. See [`Flow.jl Stage Caches`](@ref) 
+for more details on how to define and use `AbstractStorage` objects.
+"""
+(I::Flow{TimeStepFromCache})(x, c::AbstractStageCache,
                              m::Union{Nothing, <:AbstractMonitor}=nothing) =
     _propagate!(I.meth, I.sys, x, c, m)
 
-# stepping based on store over a given span with optional monitor
+"""
+    (I::Flow{TimeStepFromStorage})(x,
+                                   s::AbstractStorage,
+                                   span::NTuple{2, Real},
+                                   m::Union{Nothing, <:AbstractMonitor}=nothing)
+
+Map `x` forward/backward over a time span `(span[1], span[2])` using the nonlinear
+trajectory stored in `s` to drive linearised equations. An additional `Monitor` object
+`m` can be filled along the way. The monitor object is fed with elements that are 
+similar to `x`. This method can be used to integrate forward or 
+adjoint equations in a way that is not discretely consistent.
+"""
 (I::Flow{TimeStepFromStorage})(x,
                                s::AbstractStorage,
                                span::NTuple{2, Real},
@@ -70,7 +181,7 @@ flow(g::Coupled{N}, A::Coupled{N}, spec::CallDependency{N},
 # ---------------------------------------------------------------------------- #
 # PROPAGATION FUNCTIONS & UTILS
 
-struct InvalidSpanError{S} <: Exception 
+struct InvalidSpanError{S} <: Exception
     span::S
 end
 
@@ -103,7 +214,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
 
     # define integration times
     tdts = Steps(span[1], span[2], stepping.Δt)
-    
+
     # the number of steps is used for the `StoreOneButLast` monitor
     nsteps = length(tdts)
 
@@ -213,7 +324,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
             # then save current state
             _ismonitor(M) && push!(mon, ts[i]+Δts[i], z)
         end
-    else 
+    else
         # store final state in monitors. Note cache does not contain final T.
         _ismonitor(M) && push!(mon, ts[end] + Δts[end], z)
 
@@ -236,20 +347,20 @@ function _propagate!(method::AbstractMethod{Z},
                       store::AbstractStorage,
                         mon::M) where {Z, M<:Union{Nothing, AbstractMonitor}}
 
-    # Define integration times and time steps. The adjoint case, 
-    # where span[1] > span[2], is handled automatically here by 
+    # Define integration times and time steps. The adjoint case,
+    # where span[1] > span[2], is handled automatically here by
     # `tdts`, where the `dt` is negative
     tdts = Steps(span[1], span[2], stepping.Δt)
 
-    # count number of steps, because we might need to force pushing the 
+    # count number of steps, because we might need to force pushing the
     # last element to the monitor, even if it has a `oneevery` parameter
     # that is not a integer divisor of `nsteps`
     nsteps = length(tdts)
-    
+
     # store initial state in monitors (this could be the final adjoint state)
     _ismonitor(M) && push!(mon, span[1], z, true)
-    
-    # March in time. Note final value of`t` and `dt` is 
+
+    # March in time. Note final value of`t` and `dt` is
     # such that `t + dt = span[2]`
     for (j, (t, dt)) in enumerate(tdts)
         # exec step

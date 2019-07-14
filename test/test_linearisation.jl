@@ -326,8 +326,11 @@ end
     monψ = Monitor(x0, x->x[2])
     ψ  = flow(LorenzTan(0), RK4(x0, :TAN), TimeStepFromCache())
 
-    # propagate nonlinear operator
-    ϕ(copy(x0), (0, 1), reset!(scache), reset!(monϕ))
+    # propagate nonlinear operator and fill cache
+    ϕ(copy(x0), (0, 1), reset!(scache))
+
+    # then fill monitor
+    ϕ(copy(x0), (0, 1), reset!(monϕ))
 
     # propagate linear operators forward/backward
     y0 = Float64[1.0, 0.0, 0.0]
