@@ -15,7 +15,7 @@ ImcA!(A, c::Real, y, z) = error("missing implementation")
 Calculate the matrix vector product 'z = (I - c*A)y', where 'c' is a 
 scalar, 'A' and operator, and 'I' the identity operator.
 """
-ImcA_mul!(A, c::Real, y, z) = (mul!(z, A, y); @all z .= y .- c.*z; z) 
+ImcA_mul!(A, c::Real, y, z) = (mul!(z, A, y); z .= y .- c.*z; z) 
 
 
 # Provide interface for systems where the stiff operator is

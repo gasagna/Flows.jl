@@ -1,5 +1,3 @@
-import LinearAlgebra: Diagonal, norm
-
 @testset "coupled state broadcast                " begin
     x = [1,   2,   3]
     q = [3.0, 4.0, 5.0]
@@ -9,7 +7,7 @@ import LinearAlgebra: Diagonal, norm
     y = Flows.couple(copy(x).+1, copy(q).+1)
 
     # define some operation
-    fun!(z, y) = (@all z .= 2.0.*z .+ 1.0.*y; z)
+    fun!(z, y) = (z .= 2 .*z .+ 1 .*y; z)
 
     # apply 
     fun!(z, y)

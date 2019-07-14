@@ -43,16 +43,16 @@ function step!(method::$name{X, NS, :NORMAL},
     # loop over stages
     @inbounds for k = 1:NS
         if k == 1
-            @all y .= x
+            y .= x
         else
-            @all y .= x .+ (tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*z .+
+            y .= x .+ (tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*z .+
                            (tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*Δt.*y
         end
         mul!(z, sys, y)                 # compute z = A*y then
         ImcA!(sys, tab[:aᴵ, k, k]*Δt, z, z) # get z = (I-cA)⁻¹*(A*y) in place
-        @all w .= y .+ tab[:aᴵ, k, k].*Δt.*z     # w is the temp input, output is y
+        w .= y .+ tab[:aᴵ, k, k].*Δt.*z     # w is the temp input, output is y
         sys(t + tab[:cᴱ, k]*Δt, w, y); _iscache(C) && (push!(stages, copy(w)))
-        @all x .= x .+ tab[:bᴵ, k].*Δt.*z .+ tab[:bᴱ, k].*Δt.*y
+        x .= x .+ tab[:bᴵ, k].*Δt.*z .+ tab[:bᴱ, k].*Δt.*y
     end
 
     # cache stages if requested
@@ -82,9 +82,9 @@ function step!(method::$name{X, NS, :LIN, ISADJ},
     @inbounds for k = 1:NS
         # F
         if k == 1
-            @all y .= x
+            y .= x
         else
-            @all y .= x .+ _m_.*(tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*z .+
+            y .= x .+ _m_.*(tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*z .+
                            _m_.*(tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*Δt.*y
         end
         # E
@@ -92,13 +92,13 @@ function step!(method::$name{X, NS, :LIN, ISADJ},
         # D
         ImcA!(sys, _m_*tab[:aᴵ, k, k]*Δt, z, z) # get z = (I-cA)⁻¹*(A*y) in place
         # C
-        @all w .= y .+ _m_.*tab[:aᴵ, k, k].*Δt.*z     # w is the temp input, output is y
+        w .= y .+ _m_.*tab[:aᴵ, k, k].*Δt.*z     # w is the temp input, output is y
         # B
         # We will probably have to think to another way to define the forcings 
         # for linearised system that require the time derivative of the main state.
         sys(t + tab[:cᴱ, k]*Δt, store(u, t + tab[:cᴱ, k]*Δt), w, y)
         # A
-        @all x .= x .+ _m_.*tab[:bᴵ, k].*Δt.*z .+ _m_.*tab[:bᴱ, k].*Δt.*y
+        x .= x .+ _m_.*tab[:bᴵ, k].*Δt.*z .+ _m_.*tab[:bᴱ, k].*Δt.*y
     end
 
     return nothing
@@ -124,9 +124,9 @@ function step!(method::$name{X, NS, :LIN, false},
     @inbounds for k = 1:NS
         # F
         if k == 1
-            @all y .= x
+            y .= x
         else
-            @all y .= x .+ (tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*z .+
+            y .= x .+ (tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*z .+
                            (tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*Δt.*y
         end
         # E
@@ -134,13 +134,13 @@ function step!(method::$name{X, NS, :LIN, false},
         # D
         ImcA!(sys, tab[:aᴵ, k, k]*Δt, z, z) # get z = (I-cA)⁻¹*(A*y) in place
         # C
-        @all w .= y .+ tab[:aᴵ, k, k].*Δt.*z     # w is the temp input, output is y
+        w .= y .+ tab[:aᴵ, k, k].*Δt.*z     # w is the temp input, output is y
         # B
         # We will probably have to think to another way to define the forcings 
         # for linearised system that require the time derivative of the main state.
         sys(t + tab[:cᴱ, k]*Δt, stages[k], w, y)
         # A
-        @all x .= x .+ tab[:bᴵ, k].*Δt.*z .+ tab[:bᴱ, k].*Δt.*y
+        x .= x .+ tab[:bᴵ, k].*Δt.*z .+ tab[:bᴱ, k].*Δt.*y
     end
 
     return nothing
@@ -198,31 +198,31 @@ function step!(method::$name{X, NS, :LIN, true},
     # this was not correct
     # # hoist temporaries out
     # y, z, w  = method.store
-    # @all y .= 0; @all z .= 0; @all w .= 0;
+    # y .= 0; z .= 0; w .= 0;
     # tab = $tab
 
     # # loop over stages backwards
     # @inbounds for k = reverse(1:NS)
     #     # A
-    #     @all z .= z .+ tab[:bᴵ, k].*Δt.*x
-    #     @all y .= y .+ tab[:bᴱ, k].*Δt.*x
+    #     z .= z .+ tab[:bᴵ, k].*Δt.*x
+    #     y .= y .+ tab[:bᴱ, k].*Δt.*x
     #     # B
     #     # We will probably have to think to another way to define the forcings 
     #     # for linearised system that require the time derivative of the main state.
     #     sys(t + tab[:cᴱ, k]*Δt, stages[k], y, w)
     #     # C
-    #     @all z .= z .+ tab[:aᴵ, k, k].*Δt.*w
-    #     @all y .= w
+    #     z .= z .+ tab[:aᴵ, k, k].*Δt.*w
+    #     y .= w
     #     # D
     #     ImcA!(sys, tab[:aᴵ, k, k]*Δt, z, w)
     #     # E
     #     mul!(z, sys, w)
-    #     @all y .= z .+ y
+    #     y .= z .+ y
     #     # F
-    #     @all x .= x .+ y
+    #     x .= x .+ y
     #     if k > 1
-    #         @all z .= (tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*y
-    #         @all y .= (tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*Δt.*y
+    #         z .= (tab[:aᴵ, k, k-1] .- tab[:bᴵ, k-1]).*Δt.*y
+    #         y .= (tab[:aᴱ, k, k-1] .- tab[:bᴱ, k-1]).*Δt.*y
     #     end
     # end
 

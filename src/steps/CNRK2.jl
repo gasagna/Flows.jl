@@ -32,12 +32,12 @@ function step!(method::CNRK2{X, :NORMAL},
     # predictor step
     ImcA_mul!(sys, -0.5*Δt, x, k1)
     sys(t, x, k2); _iscache(C) && (s1 = copy(x))
-    @all k3 .= k1 .+ Δt.*k2
+    k3 .= k1 .+ Δt.*k2
     ImcA!(sys, 0.5*Δt, k3, k4)
 
     # corrector
     sys(t+Δt, k4, k5); _iscache(C) && (s2 = copy(k4))
-    @all k3 .= k1 .+ 0.5.*Δt.*(k2 .+ k5)
+    k3 .= k1 .+ 0.5.*Δt.*(k2 .+ k5)
     ImcA!(sys, 0.5*Δt, k3, x)
 
     # store stages if requested
@@ -82,10 +82,10 @@ function step!(method::CNRK2{X, :LIN, false},
     k1, k2, k3, k4, k5 = method.store
     ImcA_mul!(sys, -0.5*Δt, x, k1)
     sys(t, stages[1], x, k2)
-    @all k3 .= k1 .+ Δt.*k2
+    k3 .= k1 .+ Δt.*k2
     ImcA!(sys, 0.5*Δt, k3, k4)
     sys(t+Δt, stages[2], k4, k5)
-    @all k3 .= k1 .+ 0.5.*Δt.*(k2 .+ k5)
+    k3 .= k1 .+ 0.5.*Δt.*(k2 .+ k5)
     ImcA!(sys, 0.5*Δt, k3, x)
     return nothing
 end
