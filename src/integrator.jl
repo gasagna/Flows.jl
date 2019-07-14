@@ -188,7 +188,12 @@ end
 Base.showerror(io::IO, e::InvalidSpanError) =
     print(io, "Invalid time span ", e.span, ". Time must be increasing.\n")
 
-# check span and/or return
+"""
+    @_checkspan(span, z)
+
+Check `span[1] < span[2]`, throw an error `span[1] > span[2]` and return `z`
+directly if `span[1] == span[2]`. 
+"""
 macro _checkspan(span, z)
     quote
        $(esc(span))[1] ==$(esc(span))[2] && return $(esc(z))
@@ -197,7 +202,7 @@ macro _checkspan(span, z)
 end
 
 # ---------------------------------------------------------------------------- #
-# CONSTANT FORWARD TIME STEPPING, ONLY FOR STATE EQUATIONS
+# CONSTANT TIME-STEP INTEGRATION FOR NONLINEAR EQUATIONS OR COUPLED SYSTEMS
 function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
                    stepping::TimeStepConstant,
                      system::System,
