@@ -1,6 +1,10 @@
+"""
+    Flows.jl
+
+A Julia package to define and manipulate flow operators of dynamical systems.
+"""
 module Flows
 
-# ---------------------------------------------------------------------------- #
 include("couple.jl")
 include("tableaux.jl")
 include("stagecache.jl")
