@@ -1,8 +1,15 @@
-import DataStructures: searchsortedlast
-
 export Monitor, reset!
 
 # ///  Abstract type for all solution monitors ///
+"""
+    AbstractMonitor{T, X}
+
+Abstract type for all monitor objects.
+
+# Notes
+Loosely speaking, an `AbstractMonitor` is an object that monitors the evolution of the 
+solution of an ODE and is  at each time step 
+"""
 abstract type AbstractMonitor{T, X} end
 
 # ///// UTILS //////
