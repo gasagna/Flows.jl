@@ -203,7 +203,7 @@ end
 
 # ---------------------------------------------------------------------------- #
 # CONSTANT TIME-STEP INTEGRATION FOR NONLINEAR EQUATIONS OR COUPLED SYSTEMS
-function _propagate!(method::AbstractMethod{Z},
+function _propagate!(method::AbstractMethod{Z, NormalMode},
                    stepping::TimeStepConstant,
                      system::System,
                        span::NTuple{2, Real},
@@ -263,7 +263,7 @@ end
 
 # ---------------------------------------------------------------------------- #
 # PROPAGATION BASED ON SYSTEMS HOOK: ONLY FOR STATE EQUATIONS
-function _propagate!(method::AbstractMethod{Z},
+function _propagate!(method::AbstractMethod{Z, NormalMode},
                        hook::AbstractTimeStepFromHook,
                      system::System,
                        span::NTuple{2, Real},
@@ -318,7 +318,7 @@ end
 
 # ---------------------------------------------------------------------------- #
 # TIME STEPPING BASED ON CACHED STAGES, ONLY FOR LINEARISED EQUATIONS
-function _propagate!(method::AbstractMethod{Z, ISADJOINT},
+function _propagate!(method::AbstractMethod{Z, DiscreteMode, ISADJOINT},
                      system::System,
                           z::Z,
                       cache::AbstractStageCache,
@@ -360,7 +360,7 @@ end
 
 # ---------------------------------------------------------------------------- #
 # TIME STEPPING BASED ON STORAGE FOR CONTINUOS ADJOINT/TANGENT EQUATIONS
-function _propagate!(method::AbstractMethod{Z},
+function _propagate!(method::AbstractMethod{Z, ContinuousMode},
                    stepping::TimeStepFromStorage,
                      system::System,
                        span::NTuple{2, Any},

@@ -2,24 +2,34 @@ export RK4
 
 # ---------------------------------------------------------------------------- #
 # Classical fourth order Runge-Kutta
-struct RK4{X, ISADJOINT} <: AbstractMethod{X, ISADJOINT, 4}
-    store::NTuple{6, X}
+struct RK4{X, MODE, ISADJOINT, NX} <: AbstractMethod{X, MODE, ISADJOINT, 4}
+    store::NX
+    RK4{X, MODE, ISADJOINT}(store::NX) where {X, MODE, ISADJOINT, N, NX<:NTuple{N, X}} = 
+        new{X, MODE, ISADJOINT, NX}(store)
 end
 
 # outer constructor
-RK4(x::X, isadjoint::Bool=false) where {X} =
-    RK4{X, isadjoint}(ntuple(i->similar(x), 6))
+RK4(x::X) where {X} = 
+    RK4{X, NormalMode, false}(ntuple(i->similar(x), 5))
+
+RK4(x::X, ::ContinuousMode, isadjoint::Bool=false) where {X} = 
+    RK4{X, ContinuousMode, isadjoint}(ntuple(i->similar(x), 6))
+
+RK4(x::X, ::DiscreteMode, isadjoint::Bool=false) where {X} = 
+    RK4{X, DiscreteMode, isadjoint}(ntuple(i->similar(x), 5))
+
 
 # ---------------------------------------------------------------------------- #
 # Perform time step and optionally push the four internal stages to a stage cache
-function step!(method::RK4{X},
+function step!(method::RK4{X, NormalMode},
                   sys::System,
                     t::Real,
                    Δt::Real,
                     x::X,
-                    c::C) where {X, C<:Union{Nothing, AbstractStageCache{4, X}}}
+                    c::C) where {X, 
+                                 C<:Union{Nothing, AbstractStageCache{4, X}}}
     # aliases
-    k1, k2, k3, k4, k5, y = method.store
+    k1, k2, k3, k4, y = method.store
 
     # stages
     y .= x;              sys(t,        y, k1); _iscache(C) && (s1 = copy(y))
@@ -39,7 +49,7 @@ end
 # ---------------------------------------------------------------------------- #
 # Continuous time stepping for linearised/adjoint equations with interpolation
 # from an `AbstractStorage` object for the evaluation of the linear operator.
-function step!(method::RK4{X, ISADJOINT},
+function step!(method::RK4{X, ContinuousMode, ISADJOINT},
                sys::System,
                t::Real,
                Δt::Real,
@@ -66,14 +76,14 @@ end
 # ---------------------------------------------------------------------------- #
 # Forward linearised method takes x_{n} and overwrites it with x_{n+1}
 # Adjoint linearised method takes x_{n+1} and overwrites it with x_{n}
-function step!(method::RK4{X, ISADJOINT},
+function step!(method::RK4{X, DiscreteMode, ISADJOINT},
                sys::System,
                t::Real, # the time corresponding to x_{n}
                Δt::Real,
                x::X,
                stages::NTuple{4, X}) where {X, ISADJOINT}
     # aliases
-    k1, k2, k3, k4, k5, y = method.store
+    k1, k2, k3, k4, y = method.store
 
     # stages
     if ISADJOINT

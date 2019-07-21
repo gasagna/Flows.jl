@@ -10,25 +10,33 @@ for (name, tab, NS) in zip((:CB3R2R2, :CB3R2R3e, :CB3R2R3c),
     @eval begin
 
         # type
-        struct $name{X, ISADJOINT} <: AbstractMethod{X, ISADJOINT, $NS}
-            store::NTuple{6, X}
+        struct $name{X, MODE, ISADJOINT, NX} <: AbstractMethod{X, MODE, ISADJOINT, $NS}
+            store::NX
+            $name{X, MODE, ISADJOINT}(store::NX) where {X, MODE, ISADJOINT, N, NX<:NTuple{N, X}} = 
+                new{X, MODE, ISADJOINT, NX}(store)
         end
 
         # outer constructor
-        $name(x::X, isadjoint::Bool=false) where {X} =
-            $name{X, isadjoint}(ntuple(i->similar(x), 6))
+        $name(x::X) where {X} = 
+            $name{X, NormalMode, false}(ntuple(i->similar(x), 3))
+
+        $name(x::X, ::ContinuousMode, isadjoint::Bool=false) where {X} = 
+            $name{X, ContinuousMode, isadjoint}(ntuple(i->similar(x), 4))
+
+        $name(x::X, ::DiscreteMode, isadjoint::Bool=false) where {X} = 
+            $name{X, DiscreteMode, isadjoint}(ntuple(i->similar(x), 6))
 
         # required to cope with buggy julia deepcopy implementation
         function Base.deepcopy_internal(x::$name, dict::IdDict)
             if !( haskey(dict, x) )
-                dict[x] = $name(x.store[1], isadjoint(x))
+                dict[x] = $name(x.store[1], mode(x), isadjoint(x))
             end
             return dict[x]
         end
 
         # ---------------------------------------------------------------------------- #
         # Normal time stepping with optional stage caching
-        function step!(method::$name{X},
+        function step!(method::$name{X, NormalMode},
                           sys::System,
                             t::Real,
                            Δt::Real,
@@ -36,7 +44,7 @@ for (name, tab, NS) in zip((:CB3R2R2, :CB3R2R3e, :CB3R2R3c),
                             c::C) where {X, C<:Union{Nothing, AbstractStageCache{$NS, X}}}
 
             # hoist temporaries out
-            y, z, w, s, v, u  = method.store
+            y, z, w  = method.store
             tab = $tab
 
             # temporary vector for storing stages
@@ -66,14 +74,14 @@ for (name, tab, NS) in zip((:CB3R2R2, :CB3R2R3e, :CB3R2R3c),
         # ---------------------------------------------------------------------------- #
         # Continuous time stepping for linearised/adjoint equations with interpolation
         # from an `AbstractStorage` object for the evaluation of the linear operator.
-        function step!(method::$name{X, ISADJOINT},
+        function step!(method::$name{X, ContinuousMode, ISADJOINT},
                           sys::System,
                             t::Real,
                            Δt::Real,
                             x::X,
                        store::AbstractStorage) where {X, ISADJOINT}
             # hoist temporaries out
-            y, z, w, v, s, u  = method.store
+            y, z, w, u  = method.store
             tab = $tab
 
             # modifier for the location of the interpolation
@@ -103,7 +111,7 @@ for (name, tab, NS) in zip((:CB3R2R2, :CB3R2R3e, :CB3R2R3c),
 
         # ---------------------------------------------------------------------------- #
         # Forward linearised method takes x_{n} and overwrites it with x_{n+1}
-        function step!(method::$name{X, false},
+        function step!(method::$name{X, DiscreteMode, false},
                           sys::System,
                             t::Real,
                            Δt::Real,
@@ -134,7 +142,7 @@ for (name, tab, NS) in zip((:CB3R2R2, :CB3R2R3e, :CB3R2R3c),
 
         # ---------------------------------------------------------------------------- #
         # Adjoint linearised method takes x_{n+1} and overwrites it with x_{n}
-        function step!(method::$name{X, true},
+        function step!(method::$name{X, DiscreteMode, true},
                           sys::System,
                             t::Real,
                            Δt::Real,

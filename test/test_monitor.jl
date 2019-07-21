@@ -38,7 +38,7 @@ end
         x = Float64[1.0]
 
         # forward map
-        ϕ = flow(g, RK4(x), TimeStepFromStorage(0.1))
+        ϕ = flow(g, RK4(x, ContinuousMode()), TimeStepFromStorage(0.1))
 
         # define a dummy store
         store = RAMStorage(x)

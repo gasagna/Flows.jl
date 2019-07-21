@@ -2,26 +2,34 @@ export CNRK2
 
 # ---------------------------------------------------------------------------- #
 # Crank-Nicolson/Heun used in Chandler and Kerswell 2013
-struct CNRK2{X, ISADJOINT} <: AbstractMethod{X, ISADJOINT, 2}
-    store::NTuple{5, X}
+struct CNRK2{X, MODE, ISADJOINT, NX} <: AbstractMethod{X, MODE, ISADJOINT, 2}
+    store::NX
+    CNRK2{X, MODE, ISADJOINT}(store::NX) where {X, MODE, ISADJOINT, N, NX<:NTuple{N, X}} = 
+        new{X, MODE, ISADJOINT, NX}(store)
 end
 
 # outer constructor
-CNRK2(x::X, isadjoint::Bool=false) where {X} =
-    CNRK2{X, isadjoint}(ntuple(i->similar(x), 5))
+CNRK2(x::X) where {X} = 
+    CNRK2{X, NormalMode, false}(ntuple(i->similar(x), 5))
+
+CNRK2(x::X, ::ContinuousMode, isadjoint::Bool=false) where {X} = 
+    CNRK2{X, ContinuousMode, isadjoint}(ntuple(i->similar(x), 5))
+
+CNRK2(x::X, ::DiscreteMode, isadjoint::Bool=false) where {X} = 
+    CNRK2{X, DiscreteMode, isadjoint}(ntuple(i->similar(x), 5))
 
 # required to cope with nuggy julia deepcopy implementation
 function Base.deepcopy_internal(x::CNRK2,
                              dict::IdDict)
     if !( haskey(dict, x) )
-        dict[x] = CNRK2(x.store[1],  isadjoint(x))
+        dict[x] = CNRK2(x.store[1], mode(x), isadjoint(x))
     end
     return dict[x]
 end
 
 # ---------------------------------------------------------------------------- #
 # Normal time stepping with optional stage caching
-function step!(method::CNRK2{X},
+function step!(method::CNRK2{X, NormalMode},
                   sys::System,
                     t::Real,
                    Δt::Real,
@@ -50,7 +58,7 @@ end
 # ---------------------------------------------------------------------------- #
 # Continuous time stepping for linearised/adjoint equations with interpolation
 # from an `AbstractStorage` object for the evaluation of the linear operator.
-function step!(method::CNRK2{X, ISADJOINT},
+function step!(method::CNRK2{X, ContinuousMode, ISADJOINT},
                   sys::System,
                     t::Real,
                    Δt::Real,
@@ -75,7 +83,7 @@ end
 # ---------------------------------------------------------------------------- #
 # Forward linearised method takes x_{n} and overwrites it with x_{n+1}
 # Adjoint linearised method takes x_{n+1} and overwrites it with x_{n}
-function step!(method::CNRK2{X, ISADJOINT},
+function step!(method::CNRK2{X, DiscreteMode, ISADJOINT},
                   sys::System,
                     t::Real,
                    Δt::Real,

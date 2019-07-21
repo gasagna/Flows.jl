@@ -27,14 +27,14 @@
         ϕ(copy(x0), (0, T), storage)
 
         # define linear propagator and monitor
-        ψ = flow(LorenzTan(flag, 1), RK4(y0), TimeStepFromStorage(dt))
+        ψ = flow(LorenzTan(flag, 1), RK4(y0, ContinuousMode(), false), TimeStepFromStorage(dt))
         mon = Monitor(y0, x->x[3])
         ψ(copy(y0), storage, (0, T), reset!(mon))
         Jp_TAN = simps(times(mon), samples(mon))
         # println(times(mon))
 
         # adjoint
-        ψ_A = flow(LorenzAdj(flag, 1), RK4(w0, true), TimeStepFromStorage(dt))
+        ψ_A = flow(LorenzAdj(flag, 1), RK4(w0, ContinuousMode(), true), TimeStepFromStorage(dt))
         mon = Monitor(w0, x->x[1])
         ψ_A(copy(w0), storage, (T, 0), reset!(mon))
         Jp_ADJ = simps(reverse(times(mon)), reverse(samples(mon)))
@@ -89,13 +89,13 @@ end
             ϕ(copy(x0), (0, T), storage)
 
             # define linear propagator and monitor
-            ψ = flow(LorenzTan(flag, 1), IMPL, METHOD(y0), TimeStepFromStorage(dt))
+            ψ = flow(LorenzTan(flag, 1), IMPL, METHOD(y0, ContinuousMode()), TimeStepFromStorage(dt))
             mon = Monitor(y0, x->x[3])
             ψ(copy(y0), storage, (0, T), reset!(mon))
             Jp_TAN = simps(times(mon), samples(mon))
 
             # adjoint
-            ψ_A = flow(LorenzAdj(flag, 1), IMPL, METHOD(w0, true), TimeStepFromStorage(dt))
+            ψ_A = flow(LorenzAdj(flag, 1), IMPL, METHOD(w0, ContinuousMode(), true), TimeStepFromStorage(dt))
             mon = Monitor(w0, x->x[1])
             ψ_A(copy(w0), storage, (T, 0), reset!(mon))
             Jp_ADJ = simps(reverse(times(mon)), reverse(samples(mon)))
