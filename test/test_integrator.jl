@@ -12,12 +12,12 @@ import LinearAlgebra: Diagonal
     for x in [Float64[1.0]]
 
     # integration scheme
-        for (method, err, _g, _A) in [(RK4(     x, :NORMAL), 1e-9, gfull, nothing),
-                                      (CNRK2(   x, :NORMAL), 2e-5, g,     A),
-                                      (CB3R2R2( x, :NORMAL), 2e-5, g,     A),
-                                      (CB3R2R3e(x, :NORMAL), 5e-8, g,     A),
-                                      (CB3R2R3c(x, :NORMAL), 6e-8, g,     A),
-                                      (CB4R3R4( x, :NORMAL), 3e-12,g,     A)]
+        for (method, err, _g, _A) in [(RK4(     x), 1e-9, gfull, nothing),
+                                      (CNRK2(   x), 2e-5, g,     A),
+                                      (CB3R2R2( x), 2e-5, g,     A),
+                                      (CB3R2R3e(x), 5e-8, g,     A),
+                                      (CB3R2R3c(x), 6e-8, g,     A),
+                                      (CB4R3R4( x), 3e-12,g,     A)]
 
             # forward map
             ϕ = flow(_g, _A, method, TimeStepConstant(0.01123))

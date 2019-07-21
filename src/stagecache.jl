@@ -6,6 +6,9 @@ export AbstractStageCache, RAMStageCache
 # some subtype of an AbstractArray.
 abstract type AbstractStageCache{NS, X} end
 
+# number of internal stages saved
+nstages(::AbstractStageCache{NS}) where {NS} = NS
+
 _iscache(::Type{<:AbstractStageCache}) = true
 _iscache(::Any) = false
 

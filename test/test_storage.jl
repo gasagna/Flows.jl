@@ -165,7 +165,7 @@ end
     x0 = Float64[9.1419853, 1.648665, 35.21793]
 
     # integrator 
-    ϕ = flow(Lorenz(0), RK4(x0, :NORMAL), TimeStepConstant(1e-2))
+    ϕ = flow(Lorenz(0), RK4(x0), TimeStepConstant(1e-2))
 
     # storage
     store_true  = RAMStorage(x0; storelast=true)

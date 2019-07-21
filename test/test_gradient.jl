@@ -8,7 +8,7 @@
         w0 = zeros(3)
 
         # finite difference
-        method = RK4(x0, :NORMAL)
+        method = RK4(x0)
         alpha = 1e-4
         ϕp = flow(Lorenz(flag, +alpha), method, TimeStepConstant(dt))
         ϕm = flow(Lorenz(flag, -alpha), method, TimeStepConstant(dt))
@@ -27,14 +27,14 @@
         ϕ(copy(x0), (0, T), storage)
 
         # define linear propagator and monitor
-        ψ = flow(LorenzTan(flag, 1), RK4(y0, :TAN), TimeStepFromStorage(dt))
+        ψ = flow(LorenzTan(flag, 1), RK4(y0), TimeStepFromStorage(dt))
         mon = Monitor(y0, x->x[3])
         ψ(copy(y0), storage, (0, T), reset!(mon))
         Jp_TAN = simps(times(mon), samples(mon))
         # println(times(mon))
 
         # adjoint
-        ψ_A = flow(LorenzAdj(flag, 1), RK4(w0, :ADJ), TimeStepFromStorage(dt))
+        ψ_A = flow(LorenzAdj(flag, 1), RK4(w0, true), TimeStepFromStorage(dt))
         mon = Monitor(w0, x->x[1])
         ψ_A(copy(w0), storage, (T, 0), reset!(mon))
         Jp_ADJ = simps(reverse(times(mon)), reverse(samples(mon)))
@@ -70,7 +70,7 @@ end
             w0 = zeros(3)
 
             # finite difference
-            method = METHOD(x0, :NORMAL)
+            method = METHOD(x0)
             alpha = 1e-4
             ϕp = flow(Lorenz(flag, +alpha), IMPL, method, TimeStepConstant(dt))
             ϕm = flow(Lorenz(flag, -alpha), IMPL, method, TimeStepConstant(dt))
@@ -89,13 +89,13 @@ end
             ϕ(copy(x0), (0, T), storage)
 
             # define linear propagator and monitor
-            ψ = flow(LorenzTan(flag, 1), IMPL, METHOD(y0, :TAN), TimeStepFromStorage(dt))
+            ψ = flow(LorenzTan(flag, 1), IMPL, METHOD(y0), TimeStepFromStorage(dt))
             mon = Monitor(y0, x->x[3])
             ψ(copy(y0), storage, (0, T), reset!(mon))
             Jp_TAN = simps(times(mon), samples(mon))
 
             # adjoint
-            ψ_A = flow(LorenzAdj(flag, 1), IMPL, METHOD(w0, :ADJ), TimeStepFromStorage(dt))
+            ψ_A = flow(LorenzAdj(flag, 1), IMPL, METHOD(w0, true), TimeStepFromStorage(dt))
             mon = Monitor(w0, x->x[1])
             ψ_A(copy(w0), storage, (T, 0), reset!(mon))
             Jp_ADJ = simps(reverse(times(mon)), reverse(samples(mon)))
@@ -131,7 +131,7 @@ end
 #         METHOD = CNRK2
 
 #         # finite difference
-#         method = METHOD(x0, :NORMAL)
+#         method = METHOD(x0)
 #         alpha = 1e-6
 #         ϕp = flow(Lorenz(flag, +alpha), IMPL, method, TimeStepConstant(dt))
 #         ϕm = flow(Lorenz(flag, -alpha), IMPL, method, TimeStepConstant(dt))
@@ -144,7 +144,7 @@ end
 #         Jp_FD = (vp-vm)/2/alpha
 
 #         # tangent
-#         method = METHOD(couple(x0, y0), :NORMAL)
+#         method = METHOD(couple(x0, y0))
 #         ψ = flow(couple(Lorenz(flag, 0), LorenzTan(flag)), couple(IMPL, IMPL), method, TimeStepConstant(dt))
 #         mon = Monitor(couple(x0, y0), x->x[2][3])
 #         ψ(couple(copy(x0), y0), (0, T), reset!(mon))
@@ -152,12 +152,12 @@ end
 #         # println(times(mon))
 
 #         # adjoint
-#         method = METHOD(x0, :NORMAL)
+#         method = METHOD(x0)
 #         ϕ = flow(Lorenz(flag, 0), IMPL, method, TimeStepConstant(dt))
 #         cache = RAMStageCache(2, similar(x0))
 #         ϕ(copy(x0), (0, T), cache)
         
-#         method = METHOD(w0, :ADJ)
+#         method = METHOD(w0, true)
 #         ψ_A = flow(LorenzAdj(flag), IMPL, method, TimeStepFromCache())
 #         mon = Monitor(w0, x->x[1])
 #         ψ_A(w0, cache, reset!(mon))

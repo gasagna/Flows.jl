@@ -9,7 +9,7 @@ g(t, x, ẋ) = (ẋ .= -1; ẋ)
 
 @testset "from hook                              " begin
     # integration scheme
-    scheme = RK4(zeros(1), :NORMAL)
+    scheme = RK4(zeros(1))
 
     # forward map
     ϕ = flow(g, scheme, TestFromHook())
@@ -34,7 +34,7 @@ end
 
 @testset "constant time step                     " begin
     # integration scheme
-    scheme = RK4(zeros(1), :NORMAL)
+    scheme = RK4(zeros(1))
 
     # forward map
     ϕ = flow(g, scheme, TimeStepConstant(0.5))

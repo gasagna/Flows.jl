@@ -2,17 +2,17 @@ export RK4
 
 # ---------------------------------------------------------------------------- #
 # Classical fourth order Runge-Kutta
-struct RK4{X, TAG, ISADJ} <: AbstractMethod{X, 4, TAG, ISADJ}
+struct RK4{X, ISADJOINT} <: AbstractMethod{X, ISADJOINT, 4}
     store::NTuple{6, X}
 end
 
 # outer constructor
-RK4(x::X, tag::Symbol) where {X} =
-    RK4{X, _tag_map(tag)...}(ntuple(i->similar(x), 6))
+RK4(x::X, isadjoint::Bool=false) where {X} =
+    RK4{X, isadjoint}(ntuple(i->similar(x), 6))
 
 # ---------------------------------------------------------------------------- #
-# Normal time stepping with optional stage caching
-function step!(method::RK4{X, :NORMAL},
+# Perform time step and optionally push the four internal stages to a stage cache
+function step!(method::RK4{X},
                   sys::System,
                     t::Real,
                    Δt::Real,
@@ -37,23 +37,24 @@ function step!(method::RK4{X, :NORMAL},
 end
 
 # ---------------------------------------------------------------------------- #
-# Continuous linearised time stepping with interpolation from store
-function step!(method::RK4{X, :LIN, ISADJ}, # tag for linear equations
-               sys::System,          #
-               t::Real,              # the time corresponding to x_{n}
-               Δt::Real,             # will be positive or negative
+# Continuous time stepping for linearised/adjoint equations with interpolation
+# from an `AbstractStorage` object for the evaluation of the linear operator.
+function step!(method::RK4{X, ISADJOINT},
+               sys::System,
+               t::Real,
+               Δt::Real,
                x::X,
-               store::AbstractStorage) where {X, ISADJ}
+               store::AbstractStorage) where {X, ISADJOINT}
     # aliases
     k1, k2, k3, k4, k5, y = method.store
 
     # modifier for the location of the interpolation
-    _m_ = ISADJ == true ? -1 : 1
+    _m_ = ISADJOINT == true ? -1 : 1
 
     # stages
     y .= x                    ; sys(t,        store(k5, t       ), y, k1)
     y .= x .+ 0.5.*_m_.*Δt.*k1; sys(t + Δt/2, store(k5, t + Δt/2), y, k2)
-    y .= x .+ 0.5.*_m_.*Δt.*k2; sys(t + Δt/2, store(k5, t + Δt/2), y, k3)
+    y .= x .+ 0.5.*_m_.*Δt.*k2; sys(t + Δt/2,       k5,            y, k3)
     y .= x .+      _m_.*Δt.*k3; sys(t + Δt,   store(k5, t + Δt  ), y, k4)
 
     # wrap up
@@ -63,49 +64,32 @@ function step!(method::RK4{X, :LIN, ISADJ}, # tag for linear equations
 end
 
 # ---------------------------------------------------------------------------- #
-# Linearisation of classical fourth order Runge-Kutta
-# takes x_{n} and overwrites it with x_{n+1}
-function step!(method::RK4{X, :LIN, false}, # tags for tangent equations
-               sys::System,                 #
-               t::Real,                     # the time corresponding to x_{n}
-               Δt::Real,                    # will be positive
+# Forward linearised method takes x_{n} and overwrites it with x_{n+1}
+# Adjoint linearised method takes x_{n+1} and overwrites it with x_{n}
+function step!(method::RK4{X, ISADJOINT},
+               sys::System,
+               t::Real, # the time corresponding to x_{n}
+               Δt::Real,
                x::X,
-               stages::NTuple{4, X}) where {X}
+               stages::NTuple{4, X}) where {X, ISADJOINT}
     # aliases
     k1, k2, k3, k4, k5, y = method.store
 
     # stages
-    y .= x               ; sys(t,        stages[1], y, k1)
-    y .= x .+ 0.5.*Δt.*k1; sys(t + Δt/2, stages[2], y, k2)
-    y .= x .+ 0.5.*Δt.*k2; sys(t + Δt/2, stages[3], y, k3)
-    y .= x .+      Δt.*k3; sys(t + Δt,   stages[4], y, k4)
+    if ISADJOINT
+        y .= x               ; sys(t + Δt  , stages[4], y, k4)
+        y .= x .+ 0.5.*Δt.*k4; sys(t + Δt/2, stages[3], y, k3)
+        y .= x .+ 0.5.*Δt.*k3; sys(t + Δt/2, stages[2], y, k2)
+        y .= x .+      Δt.*k2; sys(t       , stages[1], y, k1)
+    else
+        y .= x               ; sys(t,        stages[1], y, k1)
+        y .= x .+ 0.5.*Δt.*k1; sys(t + Δt/2, stages[2], y, k2)
+        y .= x .+ 0.5.*Δt.*k2; sys(t + Δt/2, stages[3], y, k3)
+        y .= x .+      Δt.*k3; sys(t + Δt,   stages[4], y, k4)
+    end
 
     # wrap up
     x .= x .+ Δt./6 .* (k1 .+ 2.0.*k2 .+ 2.0.*k3 .+ k4)
-
-    return nothing
-end
-
-# ---------------------------------------------------------------------------- #
-# Adjoint of linearisation of classical fourth order Runge-Kutta
-# takes x_{n+1} and overwrites it with x_{n}
-function step!(method::RK4{X, :LIN, true}, # tags for adjoint equations
-               sys::System,                #
-               t::Real,                    # the time corresponding to x_{n}
-               Δt::Real,                   # will be positive
-               x::X,
-               stages::NTuple{4, X}) where {X}
-    # aliases
-    j1, j2, j3, j4, j5, y = method.store
-
-    # stages
-    y .= x               ; sys(t + Δt  , stages[4], y, j4)
-    y .= x .+ 0.5.*Δt.*j4; sys(t + Δt/2, stages[3], y, j3)
-    y .= x .+ 0.5.*Δt.*j3; sys(t + Δt/2, stages[2], y, j2)
-    y .= x .+      Δt.*j2; sys(t       , stages[1], y, j1)
-
-    # wrap up§
-    x .= x .+ Δt./6 .* (j1 .+ 2.0.*j2 .+ 2.0.*j3 .+ j4)
 
     return nothing
 end

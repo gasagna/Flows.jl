@@ -28,7 +28,7 @@ for more details.
 Example
 -------
 julia> f(t, x, dxdt) = (dxdt[1] = x[1]; dxdt)
-       F = flow(f, RK4(zeros(1), :NORMAL), TimeStepConstant(1e-3))
+       F = flow(f, RK4(zeros(1)), TimeStepConstant(1e-3))
 """
 flow(g, m::AbstractMethod, ts::AbstractTimeStepping) =
     flow(g, nothing, m, ts)
@@ -203,17 +203,23 @@ end
 
 # ---------------------------------------------------------------------------- #
 # CONSTANT TIME-STEP INTEGRATION FOR NONLINEAR EQUATIONS OR COUPLED SYSTEMS
-function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
+function _propagate!(method::AbstractMethod{Z},
                    stepping::TimeStepConstant,
                      system::System,
                        span::NTuple{2, Real},
                           z::Z,
                       cache::C,
                       store::S,
-                        mon::M) where {Z, NS,
+                        mon::M) where {Z,
                                        S<:Union{Nothing, AbstractStorage},
                                        M<:Union{Nothing, AbstractMonitor},
                                        C<:Union{Nothing, AbstractStageCache}}
+    # checks
+    if cache isa AbstractStageCache 
+        nstages(method) == nstages(cache) ||
+            throw(ArgumentError("incompatible method and stage cache "))
+    end
+
     # check span is sane
     @_checkspan(span, z)
 
@@ -224,19 +230,19 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
     nsteps = length(tdts)
 
     # always push initial state to monitor and storage
-    _ismonitor(M) && push!(mon,   span[1], z, true)
-    _isstorage(S) && push!(store, span[1], copy(z))
+    M <: AbstractMonitor && push!(mon,   span[1], z, true)
+    S <: AbstractStorage && push!(store, span[1], copy(z))
 
     # if we have a storage, we might need to skip pushing the last element, based
     # on the value of the boolean `storelast(store)`. If we need to skip it
     # we set the variable `j_skip` so that when `j == j_skip`, we do not push.
     # otherwise we set `j_skip` to zero, so we always push since `j = 1, 2, 3, ...`
-    j_skip = _isstorage(S) && storelast(store) == true ? 0 : nsteps
+    j_skip = (S <: AbstractStorage) && storelast(store) == true ? 0 : nsteps
 
     # start integration
     for (j, (t, dt)) in enumerate(tdts)
         step!(method, system, t, dt, z, cache)
-        if _ismonitor(M)
+        if  M <: AbstractMonitor
             # skip all pushes except the last but one
             M <: StoreOneButLast && (j != nsteps - 1 && continue)
 
@@ -245,7 +251,7 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
 
             push!(mon, t + dt, z, force)
         end
-        if _isstorage(S)
+        if S <: AbstractStorage
             if j != j_skip
                 push!(store, t + dt, copy(z))
             end
@@ -257,17 +263,23 @@ end
 
 # ---------------------------------------------------------------------------- #
 # PROPAGATION BASED ON SYSTEMS HOOK: ONLY FOR STATE EQUATIONS
-function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
+function _propagate!(method::AbstractMethod{Z},
                        hook::AbstractTimeStepFromHook,
                      system::System,
                        span::NTuple{2, Real},
                           z::Z,
                       cache::C,
                       store::S,
-                        mon::M) where {Z, NS,
+                        mon::M) where {Z,
                                        S<:Union{Nothing, AbstractStorage},
                                        M<:Union{Nothing, AbstractMonitor},
                                        C<:Union{Nothing, AbstractStageCache}}
+    # checks
+    if cache isa AbstractStageCache 
+        nstages(method) == nstages(cache) ||
+            throw(ArgumentError("incompatible method and stage cache "))
+    end
+
     # check span is sane
     @_checkspan(span, z)
 
@@ -275,8 +287,8 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
     t, T = span
 
     # store initial state in monitors
-    _ismonitor(M) && push!(mon,   t, z)
-    _ismonitor(S) && push!(store, t, copy(z))
+    M <: AbstractMonitor && push!(mon,   t, z)
+    S <: AbstractStorage && push!(store, t, copy(z))
 
     # run until condition
     while t != T
@@ -290,8 +302,8 @@ function _propagate!(method::AbstractMethod{Z, NS, :NORMAL},
         t = t_next
 
         # store solution into monitor
-        _ismonitor(M) && push!(mon, t, z)
-        _ismonitor(S) && push!(store, t, copy(z))
+        M <: AbstractMonitor && push!(mon, t, z)
+        S <: AbstractStorage && push!(store, t, copy(z))
     end
 
     return z
@@ -306,36 +318,40 @@ end
 
 # ---------------------------------------------------------------------------- #
 # TIME STEPPING BASED ON CACHED STAGES, ONLY FOR LINEARISED EQUATIONS
-function _propagate!(method::AbstractMethod{Z, NS, :LIN, ISADJ},
+function _propagate!(method::AbstractMethod{Z, ISADJOINT},
                      system::System,
                           z::Z,
-                      cache::AbstractStageCache{NS},
-                        mon::M) where {Z, NS, ISADJ,
+                      cache::AbstractStageCache,
+                        mon::M) where {Z, ISADJOINT,
                                        M<:Union{Nothing, AbstractMonitor}}
+    # checks
+    nstages(method) == nstages(cache) ||
+        throw(ArgumentError("incompatible method and stage cache "))
+
     # TODO: fix this with proper iteration support for the stage cache
     ts  = cache.ts
     Δts = cache.Δts
     xs  = cache.xs
 
     # integrate forward or backward based on type of linear equation
-    if ISADJ == false
+    if ISADJOINT == false
         # store final state in monitors. Note cache does not contain final T.
-        _ismonitor(M) && push!(mon, ts[1], z)
+        M <: AbstractMonitor && push!(mon, ts[1], z)
 
         for i in 1:length(ts)
             # make step
             step!(method, system, ts[i], Δts[i], z, xs[i])
 
             # then save current state
-            _ismonitor(M) && push!(mon, ts[i]+Δts[i], z)
+            M <: AbstractMonitor && push!(mon, ts[i]+Δts[i], z)
         end
     else
         # store final state in monitors. Note cache does not contain final T.
-        _ismonitor(M) && push!(mon, ts[end] + Δts[end], z)
+        M <: AbstractMonitor && push!(mon, ts[end] + Δts[end], z)
 
         for i in reverse(1:length(ts))
             step!(method, system, ts[i], Δts[i], z, xs[i])
-            _ismonitor(M) && push!(mon, ts[i], z)
+            M <: AbstractMonitor && push!(mon, ts[i], z)
         end
     end
 
@@ -363,7 +379,7 @@ function _propagate!(method::AbstractMethod{Z},
     nsteps = length(tdts)
 
     # store initial state in monitors (this could be the final adjoint state)
-    _ismonitor(M) && push!(mon, span[1], z, true)
+    M <: AbstractMonitor && push!(mon, span[1], z, true)
 
     # March in time. Note final value of`t` and `dt` is
     # such that `t + dt = span[2]`
@@ -375,7 +391,7 @@ function _propagate!(method::AbstractMethod{Z},
         force = j == nsteps ? true : false
 
         # store
-        _ismonitor(M) && push!(mon, t + dt, z, force)
+        M <: AbstractMonitor && push!(mon, t + dt, z, force)
     end
 
     return z

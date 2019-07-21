@@ -30,7 +30,7 @@ end
     x0 = Float64[a]
 
     # explicit integrator
-    method = RK4(x0, :NORMAL)
+    method = RK4(x0)
 
     # flow map
     ψ = flow(ExampleSystem(b, 0), method, TimeStepConstant(1e-3))
@@ -52,7 +52,7 @@ end
     q0 = [0.0]
 
     # explicit integrator
-    method = RK4(q0, :ADJ)
+    method = RK4(q0, true)
 
     # flow map (the system is self adjoint)
     ψ = flow(ExampleSystem(b, -1), method, TimeStepFromCache())

@@ -21,7 +21,7 @@ end
         x = Float64[1.0]
         
         # forward map
-        ϕ = flow(g, RK4(x, :NORMAL), TimeStepConstant(0.1))
+        ϕ = flow(g, RK4(x), TimeStepConstant(0.1))
 
         # define monitor
         mon = Monitor(x, x->x[1]; oneevery=3)
@@ -38,7 +38,7 @@ end
         x = Float64[1.0]
 
         # forward map
-        ϕ = flow(g, RK4(x, :TAN), TimeStepFromStorage(0.1))
+        ϕ = flow(g, RK4(x), TimeStepFromStorage(0.1))
 
         # define a dummy store
         store = RAMStorage(x)
@@ -85,7 +85,7 @@ end
     A = Diagonal([0.0])
 
     # integration scheme
-    scheme = CB3R2R3e(Float64[0.0], :NORMAL)
+    scheme = CB3R2R3e(Float64[0.0])
 
     # monitors
     m = StoreOneButLast(zeros(1))
@@ -109,7 +109,7 @@ end
     A = Diagonal([0.0])
 
     # integration scheme
-    scheme = CB3R2R3e(Float64[0.0], :NORMAL)
+    scheme = CB3R2R3e(Float64[0.0])
 
     # monitors
     m = Monitor([1.0], x->x[1]^2; sizehint=10000)

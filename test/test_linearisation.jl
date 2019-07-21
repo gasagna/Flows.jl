@@ -5,9 +5,9 @@
     x0 = Float64[1, 1, 2]
 
     # methods
-    nl    = RK4(x0, :NORMAL)
-    l_t   = RK4(x0, :TAN)
-    l_adj = RK4(x0, :ADJ)
+    nl    = RK4(x0)
+    l_t   = RK4(x0)
+    l_adj = RK4(x0, true)
 
     # stage cache
     scache = RAMStageCache(4, x0)
@@ -47,9 +47,9 @@ end
     # initial conditions
     x0 = Float64[15, 16, 20]
 
-    for (nl, l_t, l_adj, NS) in [(CB3R2R2(x0,  :NORMAL),  CB3R2R2(x0, :TAN),  CB3R2R2(x0, :ADJ),  3),
-                                 (CB3R2R3e(x0, :NORMAL), CB3R2R3e(x0, :TAN), CB3R2R3e(x0, :ADJ), 4),
-                                 (CB3R2R3c(x0, :NORMAL), CB3R2R3c(x0, :TAN), CB3R2R3c(x0, :ADJ), 4)]
+    for (nl, l_t, l_adj, NS) in [(CB3R2R2( x0),  CB3R2R2(x0),  CB3R2R2(x0, true),  3),
+                                 (CB3R2R3e(x0), CB3R2R3e(x0), CB3R2R3e(x0, true), 4),
+                                 (CB3R2R3c(x0), CB3R2R3c(x0), CB3R2R3c(x0, true), 4)]
 
         # stage cache
         scache = RAMStageCache(NS, x0)
@@ -92,9 +92,9 @@ end
     x0 = Float64[1, 1, 2]
 
     # methods
-    nl    = CNRK2(x0, :NORMAL)
-    l_t   = CNRK2(x0, :TAN)
-    l_adj = CNRK2(x0, :ADJ)
+    nl    = CNRK2(x0)
+    l_t   = CNRK2(x0)
+    l_adj = CNRK2(x0, true)
 
     # stage cache
     scache = RAMStageCache(2, x0)
@@ -140,11 +140,11 @@ end
     # complex step
     ϵ = 1e-100
 
-    for (nl, l_t, NS, _g_nl, _g_t, _A) in [(     RK4(x0, :NORMAL),      RK4(real.(x0), :TAN), 4, Lorenz(0), LorenzTan(0), nothing),
-                                           (   CNRK2(x0, :NORMAL),    CNRK2(real.(x0), :TAN), 2, Lorenz(1), LorenzTan(1), A),
-                                           ( CB3R2R2(x0, :NORMAL),  CB3R2R2(real.(x0), :TAN), 3, Lorenz(1), LorenzTan(1), A),
-                                           (CB3R2R3e(x0, :NORMAL), CB3R2R3e(real.(x0), :TAN), 4, Lorenz(1), LorenzTan(1), A),
-                                           (CB3R2R3c(x0, :NORMAL), CB3R2R3c(real.(x0), :TAN), 4, Lorenz(1), LorenzTan(1), A)]
+    for (nl, l_t, NS, _g_nl, _g_t, _A) in [(     RK4(x0),      RK4(real.(x0)), 4, Lorenz(0), LorenzTan(0), nothing),
+                                           (   CNRK2(x0),    CNRK2(real.(x0)), 2, Lorenz(1), LorenzTan(1), A),
+                                           ( CB3R2R2(x0),  CB3R2R2(real.(x0)), 3, Lorenz(1), LorenzTan(1), A),
+                                           (CB3R2R3e(x0), CB3R2R3e(real.(x0)), 4, Lorenz(1), LorenzTan(1), A),
+                                           (CB3R2R3c(x0), CB3R2R3c(real.(x0)), 4, Lorenz(1), LorenzTan(1), A)]
 
         for i = 1:3
             x0 = [9.1419853, 1.648665, 35.21793] + im*[0.0, 0.0, 0.0]
@@ -191,11 +191,11 @@ end
     # initial conditions
     x0 = Float64[9.1419853, 1.648665, 35.21793]
 
-    for (nl, l_t, l_a, NS, _g_nl, _g_t, _g_a, _A) in [(     RK4(x0,  :NORMAL),     RK4(x0, :TAN),     RK4(x0,  :ADJ), 4, Lorenz(0), LorenzTan(0), LorenzAdj(0), nothing),
-                                                      (   CNRK2(x0, :NORMAL),    CNRK2(x0, :TAN),    CNRK2(x0, :ADJ), 2, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
-                                                      ( CB3R2R2(x0, :NORMAL),  CB3R2R2(x0, :TAN),  CB3R2R2(x0, :ADJ), 3, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
-                                                      (CB3R2R3e(x0, :NORMAL), CB3R2R3e(x0, :TAN), CB3R2R3e(x0, :ADJ), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
-                                                      (CB3R2R3c(x0, :NORMAL), CB3R2R3c(x0, :TAN), CB3R2R3c(x0, :ADJ), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A)]
+    for (nl, l_t, l_a, NS, _g_nl, _g_t, _g_a, _A) in [(     RK4(x0),      RK4(x0),      RK4(x0, true), 4, Lorenz(0), LorenzTan(0), LorenzAdj(0), nothing),
+                                                      (   CNRK2(x0),    CNRK2(x0),    CNRK2(x0, true), 2, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
+                                                      ( CB3R2R2(x0),  CB3R2R2(x0),  CB3R2R2(x0, true), 3, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
+                                                      (CB3R2R3e(x0), CB3R2R3e(x0), CB3R2R3e(x0, true), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
+                                                      (CB3R2R3c(x0), CB3R2R3c(x0), CB3R2R3c(x0, true), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A)]
 
 
         # stage cache
@@ -243,7 +243,7 @@ end
 
     # INTEGRATE USING COUPLED INTEGRATION
     # explicit integrator
-    method = RK4(couple(x0, x0), :NORMAL)
+    method = RK4(couple(x0, x0))
 
     # linear flow map note we first pass the nonlinear equations
     ψ = flow(couple(Lorenz(0), LorenzTan(0)), method, TimeStepConstant(1e-2))
@@ -262,10 +262,10 @@ end
     scache = RAMStageCache(4, x0)
 
     # non linear flow map
-    ϕ = flow(Lorenz(0), RK4(x0, :NORMAL), TimeStepConstant(1e-2))
+    ϕ = flow(Lorenz(0), RK4(x0), TimeStepConstant(1e-2))
 
     # linearised propagator and adjoint
-    ψ  = flow(LorenzTan(0), RK4(x0, :TAN), TimeStepFromCache())
+    ψ  = flow(LorenzTan(0), RK4(x0), TimeStepFromCache())
 
     # propagate nonlinear operator
     ϕ(copy(x0), (0, 10), reset!(scache))
@@ -302,7 +302,7 @@ end
     q0 = Float64[0.0]
 
     # explicit integrator
-    method = RK4(couple(x0, y0, q0), :NORMAL)
+    method = RK4(couple(x0, y0, q0))
 
     # linear flow map note we first pass the nonlinear equations
     ψ = flow(couple(Lorenz(0), LorenzTan(0), quadfun),
@@ -317,14 +317,14 @@ end
 
     # now compute the same by storing the entire solution
     monϕ = Monitor(x0, x->x[1])
-    ϕ = flow(Lorenz(0), RK4(x0, :NORMAL), TimeStepConstant(1e-3))
+    ϕ = flow(Lorenz(0), RK4(x0), TimeStepConstant(1e-3))
 
     # stage cache
     scache = RAMStageCache(4, x0)
 
     # linearised propagator and adjoint
     monψ = Monitor(x0, x->x[2])
-    ψ  = flow(LorenzTan(0), RK4(x0, :TAN), TimeStepFromCache())
+    ψ  = flow(LorenzTan(0), RK4(x0), TimeStepFromCache())
 
     # propagate nonlinear operator and fill cache
     ϕ(copy(x0), (0, 1), reset!(scache))

@@ -2,25 +2,26 @@ export CNRK2
 
 # ---------------------------------------------------------------------------- #
 # Crank-Nicolson/Heun used in Chandler and Kerswell 2013
-struct CNRK2{X, TAG, ISADJ} <: AbstractMethod{X, 2, TAG, ISADJ}
+struct CNRK2{X, ISADJOINT} <: AbstractMethod{X, ISADJOINT, 2}
     store::NTuple{5, X}
 end
 
 # outer constructor
-CNRK2(x::X, tag::Symbol) where {X} =
-    CNRK2{X, _tag_map(tag)...}(ntuple(i->similar(x), 5))
+CNRK2(x::X, isadjoint::Bool=false) where {X} =
+    CNRK2{X, isadjoint}(ntuple(i->similar(x), 5))
 
 # required to cope with nuggy julia deepcopy implementation
-function Base.deepcopy_internal(x::CNRK2, dict::IdDict)
+function Base.deepcopy_internal(x::CNRK2,
+                             dict::IdDict)
     if !( haskey(dict, x) )
-        dict[x] = CNRK2(x.store[1], typetag(x))
+        dict[x] = CNRK2(x.store[1],  isadjoint(x))
     end
     return dict[x]
 end
 
 # ---------------------------------------------------------------------------- #
 # Normal time stepping with optional stage caching
-function step!(method::CNRK2{X, :NORMAL},
+function step!(method::CNRK2{X},
                   sys::System,
                     t::Real,
                    Δt::Real,
@@ -47,16 +48,17 @@ function step!(method::CNRK2{X, :NORMAL},
 end
 
 # ---------------------------------------------------------------------------- #
-# Continuous linearised time stepping with interpolation from store
-function step!(method::CNRK2{X, :LIN, ISADJ},
+# Continuous time stepping for linearised/adjoint equations with interpolation
+# from an `AbstractStorage` object for the evaluation of the linear operator.
+function step!(method::CNRK2{X, ISADJOINT},
                   sys::System,
                     t::Real,
                    Δt::Real,
                     x::X,
-                store::AbstractStorage) where {X, ISADJ}
+                store::AbstractStorage) where {X, ISADJOINT}
 
     # modifier for the location of the interpolation
-    _m_ = ISADJ == true ? -1 : 1
+    _m_ = ISADJOINT == true ? -1 : 1
 
     # aliases
     k1, k2, k3, k4, k5 = method.store
@@ -71,43 +73,36 @@ function step!(method::CNRK2{X, :LIN, ISADJ},
 end
 
 # ---------------------------------------------------------------------------- #
-# Discrete linearised time stepping
-function step!(method::CNRK2{X, :LIN, false},
+# Forward linearised method takes x_{n} and overwrites it with x_{n+1}
+# Adjoint linearised method takes x_{n+1} and overwrites it with x_{n}
+function step!(method::CNRK2{X, ISADJOINT},
                   sys::System,
                     t::Real,
                    Δt::Real,
                     x::X,
-               stages::NTuple{2, X}) where {X}
+               stages::NTuple{2, X}) where {X, ISADJOINT}
     # aliases
     k1, k2, k3, k4, k5 = method.store
-    ImcA_mul!(sys, -0.5*Δt, x, k1)
-    sys(t, stages[1], x, k2)
-    k3 .= k1 .+ Δt.*k2
-    ImcA!(sys, 0.5*Δt, k3, k4)
-    sys(t+Δt, stages[2], k4, k5)
-    k3 .= k1 .+ 0.5.*Δt.*(k2 .+ k5)
-    ImcA!(sys, 0.5*Δt, k3, x)
-    return nothing
-end
 
-# ---------------------------------------------------------------------------- #
-# Discrete adjoint time stepping
-function step!(method::CNRK2{X, :LIN, true},
-                  sys::System,
-                    t::Real,
-                   Δt::Real,
-                    x::X,
-               stages::NTuple{2, X}) where {X}
-    # aliases
-    k1, k2, k3, k4, k5 = method.store
-    ImcA!(sys, 0.5*Δt, x, k1)
-    sys(t + Δt, stages[2], k1, k2)
-    k2 .= k2.*Δt./2
-    ImcA!(sys, 0.5*Δt, k2, k3)
-    k4 .= Δt./2.0.*k1 .+ Δt.*k3
-    sys(t, stages[1], k4, k5)
-    k2 .= k1 .+ k3
-    ImcA_mul!(sys, -0.5*Δt, k2, k3)
-    x .= k3 .+ k5
+    if ISADJOINT
+        ImcA!(sys, 0.5*Δt, x, k1)
+        sys(t + Δt, stages[2], k1, k2)
+        k2 .= k2.*Δt./2
+        ImcA!(sys, 0.5*Δt, k2, k3)
+        k4 .= Δt./2.0.*k1 .+ Δt.*k3
+        sys(t, stages[1], k4, k5)
+        k2 .= k1 .+ k3
+        ImcA_mul!(sys, -0.5*Δt, k2, k3)
+        x .= k3 .+ k5
+    else
+        ImcA_mul!(sys, -0.5*Δt, x, k1)
+        sys(t, stages[1], x, k2)
+        k3 .= k1 .+ Δt.*k2
+        ImcA!(sys, 0.5*Δt, k3, k4)
+        sys(t+Δt, stages[2], k4, k5)
+        k3 .= k1 .+ 0.5.*Δt.*(k2 .+ k5)
+        ImcA!(sys, 0.5*Δt, k3, x)
+    end
+
     return nothing
 end

@@ -42,7 +42,7 @@ q(t, x, dxdt, q, dqdt) = (dydt[1] .= sin(x[1]); dqdt)
 
 # define the coupled flow operator
 F = flow(couple(f, g),
-        RK4(couple(zeros(1), zeros(1)), :NORMAL), 
+        RK4(couple(zeros(1), zeros(1))), 
         TimeStepConstant(1e-3))
 
 # define an initial condition

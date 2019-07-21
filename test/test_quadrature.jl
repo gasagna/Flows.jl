@@ -44,11 +44,11 @@ end
     mon = Monitor(couple(x, q), copy)
 
     # integration method
-    for (method, order, value, _g, _A) in [(RK4(     couple(x, q), :NORMAL), 4, 6.2,  gfull, nothing),
-                                           (CB3R2R2( couple(x, q), :NORMAL), 2, 19 ,  g,     A),
-                                           (CB3R2R3e(couple(x, q), :NORMAL), 3, 5.5,  g,     A),
-                                           (CB3R2R3c(couple(x, q), :NORMAL), 3, 5.8,  g,     A),
-                                           (CB4R3R4( couple(x, q), :NORMAL), 4, 0.16, g,    A)]
+    for (method, order, value, _g, _A) in [(RK4(     couple(x, q)), 4, 6.2,  gfull, nothing),
+                                           (CB3R2R2( couple(x, q)), 2, 19 ,  g,     A),
+                                           (CB3R2R3e(couple(x, q)), 3, 5.5,  g,     A),
+                                           (CB3R2R3c(couple(x, q)), 3, 5.8,  g,     A),
+                                           (CB4R3R4( couple(x, q)), 4, 0.16, g,    A)]
 
         # exact values of integral
         exact = [5, exp(5) - exp(0), 5^2/2]

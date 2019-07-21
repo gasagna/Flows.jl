@@ -57,7 +57,7 @@ Performing a time step typically requires temporary objects for the intermediate
 
 ```julia
 x0 = MyState()
-F = flow(f, RK4(x0, :NORMAL), TimeStepConstant(0.1))
+F = flow(f, RK4(x0), TimeStepConstant(0.1))
 ```
 
 Here, the flow operator `F` is now a Julia function that propagates a point `x0` in state space forward in time by some amount of time. For instance
@@ -87,7 +87,7 @@ x0 = Float64[1.0, 3.0, 4.0]
 q0 = Float64[0.0, 0.0]
 
 # define the augmented flow operator, by coupling the right hand side of differential equation and the additional quadrature equation
-F = flow(couple(f, quadfun), RK4(couple(x0, q0), :NORMAL), TimeStepConstant(0.1))
+F = flow(couple(f, quadfun), RK4(couple(x0, q0)), TimeStepConstant(0.1))
 ```
 
 This flow operator can be now called like
