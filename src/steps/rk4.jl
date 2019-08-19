@@ -64,7 +64,7 @@ function step!(method::RK4{X, ContinuousMode, ISADJOINT},
     # stages
     y .= x                    ; sys(t,        store(k5, t       ), y, k1)
     y .= x .+ 0.5.*_m_.*Δt.*k1; sys(t + Δt/2, store(k5, t + Δt/2), y, k2)
-    y .= x .+ 0.5.*_m_.*Δt.*k2; sys(t + Δt/2,       k5,            y, k3)
+    y .= x .+ 0.5.*_m_.*Δt.*k2; sys(t + Δt/2, store(k5, t + Δt/2),  y, k3)
     y .= x .+      _m_.*Δt.*k3; sys(t + Δt,   store(k5, t + Δt  ), y, k4)
 
     # wrap up
