@@ -109,7 +109,7 @@ with a lagrange polynomial of degree `N-1`.
 Compute the product `(t - ts[1])*(t - ts[2])...(t - ts[N])` excluding the
 factor `(t - ts[SKIP])`.
 """
-@generated _prod(t::T, ts::NTuple{N, T}, ::Val{SKIP}) where {N, T, SKIP} =
+@generated _prod(t::Real, ts::NTuple{N, Real}, ::Val{SKIP}) where {N, SKIP} =
     :(return *($([:(t - ts[$k]) for k in 1:N if k != SKIP]...)))
 
 """
