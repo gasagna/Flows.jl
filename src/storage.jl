@@ -124,10 +124,10 @@ function _lagr_interp(out::X,
                       ts::NTuple{N, Real},
                       xs::AbstractVector{X},
                      rng::NTuple{N, Int},
-                   order::Val{ORD}) where {X, N, ORD}
+                        ::Val{ORD}) where {X, N, ORD}
 
     # get weights
-    ws = _lagr_weights(t, ts, order)
+    ws = _lagr_weights(t, ts, Val(ORD))
 
     # compute linear combination and return output
     out .= ws[1].*xs[rng[1]]
@@ -232,7 +232,7 @@ Interpolate the storage data at time `t` and overwrite the first argument
 """
 function (store::RAMStorage{T, X, DEG})(out::X,
                                           t::Real,
-                                      order::Val{ORD}=Val(0)) where {T,
+                                           ::Val{ORD}=Val(0)) where {T,
                                                                      X,
                                                                      DEG,
                                                                      ORD}
@@ -254,12 +254,12 @@ function (store::RAMStorage{T, X, DEG})(out::X,
     # define the abscissa of the interpolation data
     _ts, _t = _make_tuple_of_times(t, ts, idxs, period(store))
     
-    return _lagr_interp(out, _t, _ts, xs, idxs, order)
+    return _lagr_interp(out, _t, _ts, xs, idxs, Val(ORD))
 end
 
-@generated function (store::RAMStorage)(out::Coupled, t::Real, order::Val=Val(0)) 
+@generated function (store::RAMStorage)(out::Coupled, t::Real, ::Val{ORD}=Val(0)) where {ORD}
     return quote
-        store(out[1], t, order)
+        store(out[1], t, Val(ORD))
         return out[1]
     end
 end
