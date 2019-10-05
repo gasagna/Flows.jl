@@ -29,7 +29,11 @@ for (name, tab, NS) in zip((:CB3R2R2, :CB3R2R3e, :CB3R2R3c),
         # required to cope with buggy julia deepcopy implementation
         function Base.deepcopy_internal(x::$name, dict::IdDict)
             if !( haskey(dict, x) )
-                dict[x] = $name(x.store[1], mode(x), isadjoint(x))
+                if mode(x) isa NormalMode
+                    dict[x] = $name(x.store[1])
+                else
+                    dict[x] = $name(x.store[1], mode(x), isadjoint(x))
+                end
             end
             return dict[x]
         end
