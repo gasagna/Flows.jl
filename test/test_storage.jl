@@ -97,9 +97,11 @@ end
     for (i, sol) in enumerate(sols)
         @test_throws ArgumentError sol(out, -0.1, Val(0))
         @test_throws ArgumentError sol(out,  1.1, Val(0))
-        for ti in 0.0:0.01:1.0
+        for ti in 0.0:0.1:1.0
             # check function value
-            @test norm(sol(out, ti, Val(0)) - [ti^degrees[i]]) < 1e-14
+            @test norm(sol(out, ti, Val(0)) - [             ti^degrees[i]])     < 1e-14
+            #FIXME: replace with exact derivative
+            @test norm(sol(out, ti, Val(1)) - [(degrees[i])*ti^(degrees[i]-1)]) < 1e-9
         end
         # check derivative (why do I want this???? when you need interpolation of )
     end

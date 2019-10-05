@@ -103,6 +103,17 @@ with a lagrange polynomial of degree `N-1`.
 @generated _lagr_weights(t::Real, ts::NTuple{N, Real}, ::Val{0}) where {N} =
     :(Base.Cartesian.@ntuple $N j->_prod(t, ts, Val(j))/_prod(ts[j], ts, Val(j)))
 
+# FIXME: implement proper rule for differentiation!!!
+@generated function _lagr_weights(t::Real, ts::NTuple{N, Real}, ::Val{1}) where {N}
+    quote
+        a = _lagr_weights(t-2e-6, ts, Val(0))
+        b = _lagr_weights(t-1e-6, ts, Val(0))
+        c = _lagr_weights(t+1e-6, ts, Val(0))
+        d = _lagr_weights(t+2e-6, ts, Val(0)) 
+        return  (a .- 8.0.*b .+ 8.0.*c .- d)./12e-6
+    end
+end
+
 """
     _prod(t::T, ts::NTuple{N, T}, ::Val{SKIP}) where {N, T, SKIP}
 
