@@ -28,6 +28,9 @@ timespan(store::AbstractStorage) = error("not implemented")
 
 
 # /// RAM storage ///
+"""
+    empty
+"""
 struct RAMStorage{T,
                   X,
                   DEG,
@@ -44,6 +47,9 @@ struct RAMStorage{T,
                     # and that the last/first element is not repeated in the sequence
 
     # constructor from type
+    """
+        some
+    """
     function RAMStorage(::Type{X};
                    ttype::Type{T}=Float64,
                   degree::Int=3,
@@ -56,6 +62,9 @@ struct RAMStorage{T,
     end
 
     # constructor from object
+    """
+        Function
+    """
     RAMStorage(::X; kwargs...) where {X} = RAMStorage(X; kwargs...)
 end
 
@@ -235,12 +244,11 @@ length of `ts` is larger than `N`.
     end
 end
 
-"""
-    (store::RAMStorage{T, X, DEG})(out::X, t::Real) where {T, X, DEG}
 
-Interpolate the storage data at time `t` and overwrite the first argument
-`out`, using lagrangian interpolation of order `DEG`.
-"""
+#    (store::RAMStorage{T, X, DEG})(out::X, t::Real) where {T, X, DEG}
+# 
+# Interpolate the storage data at time `t` and overwrite the first argument
+# `out`, using lagrangian interpolation of order `DEG`.
 function (store::RAMStorage{T, X, DEG})(out::X,
                                           t::Real,
                                            ::Val{ORD}=Val(0)) where {T,

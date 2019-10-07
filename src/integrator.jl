@@ -1,7 +1,9 @@
 export flow, InvalidSpanError
 
 # ---------------------------------------------------------------------------- #
-# The Flow type!
+"""
+
+"""
 mutable struct Flow{TS<:AbstractTimeStepping, M<:AbstractMethod, S<:System}
     tstep::TS # the method used for time stepping
      meth::M  # the method, with storage, implementation and time stepping
@@ -15,20 +17,14 @@ end
 Construct an object of type `Flow`, representing the numerical dicretisation
 of the time-forward flow operator associated to the vector field `g`, using the
 integration method `m`, with time stepping provided by `ts`. This method
-should be used with an explicit integrator.
-
-See [Flows.jl Dynamical Systems](@ref) for details on what interface the argument
-`g` should provide. See [`AbstractMethod`](@ref) for details on constructing
-integration method objects and for a list of available methods. See
-[`AbstractTimeStepping`](@ref) for details on how to customize time stepping.
-
-Object of type `Flow` obey a callable interface, see [Flow.jl Flow Operators](@ref)
-for more details.
+should be used with an explicit integration method.
 
 Example
 -------
+```julia
 julia> f(t, x, dxdt) = (dxdt[1] = x[1]; dxdt)
        F = flow(f, RK4(zeros(1)), TimeStepConstant(1e-3))
+```
 """
 flow(g, m::AbstractMethod, ts::AbstractTimeStepping) =
     flow(g, nothing, m, ts)
@@ -37,10 +33,8 @@ flow(g, m::AbstractMethod, ts::AbstractTimeStepping) =
     flow(g, A, m::AbstractMethod, ts::AbstractTimeStepping)
 
 Construct a flow operator associated to the vector field defined by a linear
-component `A` and a nonlinear part `g`. See [Flows.jl Dynamical Systems](@ref)
-for details on what interface the object `A` should provide. This
-method should be called with an implicit-explicit integration method `m`. See
-[`AbstractMethod`](@ref) for a list of available implicit-explicit methods.
+component `A` and a nonlinear part `g`. An implicit-explicit integration 
+method `m` should be provided. 
 """
 flow(g, A, m::AbstractMethod, ts::AbstractTimeStepping) =
      Flow(ts, m, System(g, A))
@@ -58,25 +52,21 @@ the calling interface:
 
 See [Flows.jl Call Dependencies](@ref) for more details on how to specify
 custom call dependencies. This method should be used with an explicit integrator.
-See  [Flows.jl Dynamical Systems](@ref) for details on what interface the
-objects coupled in `g` should provide.
 """
 flow(g::Coupled{N}, m::AbstractMethod, ts::AbstractTimeStepping) where {N} =
      flow(g, default_dep(N), m, ts)
 
 """
-    flow(g::Coupled{N}, spec::CallDependency{N}, m::AbstractMethod,
-                                                ts::AbstractTimeStepping) where {N}
+    flow(g::Coupled{N}, spec::CallDependency{N}, m::AbstractMethod, ts::AbstractTimeStepping) where {N}
 
-Similar to the method without `spec`, but specify a custom call dependency structure.
+Similar to the method without `spec`, but specifying a custom call dependency structure.
 """
 flow(g::Coupled{N}, spec::CallDependency{N}, m::AbstractMethod,
                                             ts::AbstractTimeStepping) where {N} =
      flow(g, couple(ntuple(i->nothing, N)...), spec, m, ts)
 
 """
-    flow(g::Coupled{N}, A::Coupled{N}, m::AbstractMethod,
-                                      ts::AbstractTimeStepping) where {N}
+    flow(g::Coupled{N}, A::Coupled{N}, m::AbstractMethod, ts::AbstractTimeStepping) where {N}
 
 Similar to previous methods, but also provide the linear part of the dynamical
 system. This method should be used with an implicit-explicit integrator.
@@ -86,9 +76,7 @@ flow(g::Coupled{N}, A::Coupled{N}, m::AbstractMethod,
     flow(g, A, default_dep(N), m, ts)
 
 """
-    flow(g::Coupled{N}, A::Coupled{N}, spec::CallDependency{N},
-                                          m::AbstractMethod,
-                                         ts::AbstractTimeStepping) where {N}
+    flow(g::Coupled{N}, A::Coupled{N}, spec::CallDependency{N}, m::AbstractMethod, ts::AbstractTimeStepping) where {N}
 
 Similar to previous methods, but provide a custom call dependency structure.
 This method should be used with an implicit-explicit integrator.
@@ -147,8 +135,7 @@ for more details on how to define and use `AbstractStorage` objects.
     _propagate!(I.meth, I.tstep, I.sys, Float64.(span), x, nothing, s, nothing)
 
 """
-    (I::Flow{TimeStepFromCache})(x, c::AbstractStageCache,
-                                 m::Union{Nothing, <:AbstractMonitor}=nothing)
+    (I::Flow{TimeStepFromCache})(x, c::AbstractStageCache, m::Union{Nothing, <:AbstractMonitor}=nothing)
 
 Map `x` forward/backward over a time span defined by the stage cache object `c`, 
 filling the monitor object `m` along the way. This method is primarily used to 
@@ -161,10 +148,7 @@ for more details on how to define and use `AbstractStorage` objects.
     _propagate!(I.meth, I.sys, x, c, m)
 
 """
-    (I::Flow{TimeStepFromStorage})(x,
-                                   s::AbstractStorage,
-                                   span::NTuple{2, Real},
-                                   m::Union{Nothing, <:AbstractMonitor}=nothing)
+    (I::Flow{TimeStepFromStorage})(x, s::AbstractStorage, span::NTuple{2, Real}, m::Union{Nothing, <:AbstractMonitor}=nothing)
 
 Map `x` forward/backward over a time span `(span[1], span[2])` using the nonlinear
 trajectory stored in `s` to drive linearised equations. An additional `Monitor` object
