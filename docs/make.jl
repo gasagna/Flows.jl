@@ -11,3 +11,7 @@ makedocs(sitename="Flows.jl",
                   "Available Methods"     => "available-methods.md",
                   "Full API"              => "api.md",
                   ])
+
+deploydocs(
+    repo = "github.com/gasagna/Flows.jl.git",
+)
