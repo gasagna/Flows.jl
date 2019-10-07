@@ -6,6 +6,9 @@ os:
 julia:
   - 1.2
 
+after_success:
+  - julia -e 'import Pkg; Pkg.add("Documenter")'
+
 jobs:
   include:
     - stage: "Documentation"
