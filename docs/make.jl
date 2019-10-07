@@ -8,10 +8,13 @@ makedocs(sitename="Flows.jl",
                   "Monitors"              => "monitors.md",
                   "Coupled systems"       => "coupled.md",
                   "Quadrature equations"  => "quadrature.md",
-                  "Available Methods"     => "available-methods.md",
+                  "Solution storages"     => "storage.md",
+                  "Advanced features"     => "advanced.md",
+                  "Examples"              => "examples.md",
+                  "Available methods"     => "available-methods.md",
                   "Full API"              => "api.md",
                   ])
 
-deploydocs(
-    repo = "github.com/gasagna/Flows.jl.git",
-)
+# deploydocs(
+    # repo = "github.com/gasagna/Flows.jl.git",
+# )

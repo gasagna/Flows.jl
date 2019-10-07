@@ -4,17 +4,24 @@ export AbstractTimeStepping,
        TimeStepFromCache,
        TimeStepFromStorage
 
-# ---------------------------------------------------------------------------- #
 # The mother of all time stepping schemes
 abstract type AbstractTimeStepping end
 
-# ---------------------------------------------------------------------------- #
-# When the time step depends on the solution
+"""
+    AbstractTimeStepFromHook
+
+Abstract type for time stepping schemes where the time step is determined at runtime.
+
+See [`Flows.jl Adaptive time stepping`](@ref)
+"""
 abstract type AbstractTimeStepFromHook <: AbstractTimeStepping end
 
-# ---------------------------------------------------------------------------- #
-# Constant time stepping
-mutable struct TimeStepConstant <: AbstractTimeStepping
+"""
+    TimeStepConstant(Δt::Real)
+
+Specify that integration should be performed with constant time step `Δt`.
+"""
+struct TimeStepConstant <: AbstractTimeStepping
     Δt::Float64
     function TimeStepConstant(Δt::Real)
         Δt > 0 || throw(ArgumentError("time step must be positive"))
@@ -22,12 +29,15 @@ mutable struct TimeStepConstant <: AbstractTimeStepping
     end
 end
 
-# ---------------------------------------------------------------------------- #
 # Provide time stepping based on a stage cache from a nonlinear solution
 struct TimeStepFromCache <: AbstractTimeStepping end
 
-# ---------------------------------------------------------------------------- #
-# Provide time stepping based on a storage from a nonlinear solution
+"""
+    TimeStepFromStorage(Δt::Real)
+
+Specify that integration should be performed with constant time step `Δt`, and 
+that an [`AbstractStorage`](@ref) will be required.
+"""
 struct TimeStepFromStorage <: AbstractTimeStepping 
     Δt::Float64
     function TimeStepFromStorage(Δt::Real)

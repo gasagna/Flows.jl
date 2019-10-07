@@ -1,15 +1,6 @@
 export Monitor, reset!
 
 # ///  Abstract type for all solution monitors ///
-"""
-    AbstractMonitor{T, X}
-
-Abstract type for all monitor objects.
-
-# Notes
-Loosely speaking, an `AbstractMonitor` is an object that monitors the evolution of the 
-solution of an ODE and is  at each time step 
-"""
 abstract type AbstractMonitor{T, X} end
 
 # ///// UTILS //////
@@ -34,7 +25,28 @@ mutable struct Monitor{T, X, S<:AbstractStorage{T, X}, F} <: AbstractMonitor{T, 
         new{T, X, S, F}(store, f, oneevery, savebetween, 0)
 end
 
-# Provide a sample of what will be pushed
+"""
+
+    Monitor(x, f::Base.Callable=identity, store::S=RAMStorage(f(x)); oneevery::Int=1, savebetween::Tuple{Real, Real}=(-Inf, Inf), sizehint::Int=0)
+
+
+Construct a `Monitor` object to record one observable quantity along a trajectory. 
+
+The argument `x` is an object of the same type used to represent the system's state, 
+while `f` is a callable object or function that calculates the observable from the state. 
+In other words, the quantity `f(x)` is monitored along a trajectory, and stored in 
+`store`, which defaults to a [`RAMStorage`](@ref) object. One sample every `onevery` 
+samples is stored.
+
+If required, only samples at times falling in the range specified by `savebetween` are 
+stored. Specifying the number of samples stored with the `sizehint` keyword argument
+may increase performance.
+
+A `Monitor` object can then be passed as an additional argument to a [`Flows.Flow`](@ref)
+object.
+
+See also [`reset!`](@ref), [`times`](@ref) and [`samples`](@ref).
+"""
 Monitor(x,
         f::Base.Callable=identity,
         store::S=RAMStorage(f(x));
@@ -54,10 +66,30 @@ Monitor(x,
     return nothing
 end
 
-# Reset storage
+"""
+    reset!(mon::Monitor, sizehint::Int=0)
+
+Reset the internal storage of a [`Monitor`](@ref) object `mon`.
+"""
 reset!(mon::Monitor, sizehint::Int=0) =
     (reset!(mon.store, sizehint); mon.count = 0; mon)
 
-# get times or samples
-times(mon::Monitor)   = times(mon.store)
+"""
+    times(mon::Monitor)
+
+Return the times at which samples of the observable have been stored. This is most 
+typically after each time step, in addition to the initial condition. The type of the 
+returned object depend on the internal storage. For [`RAMStorage`](@ref) storages, this
+is a standard `Vector`.
+"""
+times(mon::Monitor) = times(mon.store)
+
+"""
+    samples(mon::Monitor)
+
+Return samples of the observable that have been stored during a trajectory. This is most 
+typically after each time step, in addition to the initial condition. The type of the 
+returned object depend on the internal storage. For [`RAMStorage`](@ref) storages, this
+is a standard `Vector`.
+"""
 samples(mon::Monitor) = samples(mon.store)

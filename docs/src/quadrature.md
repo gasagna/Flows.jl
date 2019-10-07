@@ -70,3 +70,10 @@ where `x` is advanced forward in time from $t=0$ to $t=10$. Upon return `I[1]` c
     g_bar = samples(mon)./times(mon)
     ``` 
     where the first element is undefined.
+
+!!! note
+    The quadrature equation can typically be integrated explicitly, even if a semi-implicit scheme is required for the main dynamics. In this case, one can couple the stiff linear part, say `f_im`, with the `nothing` value, as
+    ```julia
+    F = flow(couple(f_ex, g), couple(f_im, nothing), CNRK2(couple(x, I)), TimeStepConstant(0.1))
+    ```
+    This signals that the quadrature `g` is advanced in time using on the explicit component of the semi-implicit scheme.

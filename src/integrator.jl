@@ -1,9 +1,6 @@
 export flow, InvalidSpanError
 
 # ---------------------------------------------------------------------------- #
-"""
-
-"""
 mutable struct Flow{TS<:AbstractTimeStepping, M<:AbstractMethod, S<:System}
     tstep::TS # the method used for time stepping
      meth::M  # the method, with storage, implementation and time stepping
@@ -18,13 +15,6 @@ Construct an object of type `Flow`, representing the numerical dicretisation
 of the time-forward flow operator associated to the vector field `g`, using the
 integration method `m`, with time stepping provided by `ts`. This method
 should be used with an explicit integration method.
-
-Example
--------
-```julia
-julia> f(t, x, dxdt) = (dxdt[1] = x[1]; dxdt)
-       F = flow(f, RK4(zeros(1)), TimeStepConstant(1e-3))
-```
 """
 flow(g, m::AbstractMethod, ts::AbstractTimeStepping) =
     flow(g, nothing, m, ts)

@@ -5,19 +5,7 @@ export Coupled, couple, couplecopy
 
 Couple together `N` objects and store them internally in a Julia `ntuple` of size `N`.
 
-`Coupled` objects have two purposes in this package. 
-
-  * First, it is sometimes necessary to integrate several dynamical systems in a 
-coupled fashion, such as, for instance, the integration of variational equations
-along with a nonlinear problem. Another example is the integration of a dynamical 
-system with the addition of a quadrature equation. `Flow` objects can be
-fed with `Coupled` objects and know how to coordinate the time stepping and manage 
-dependencies. 
-
-  * Second, in these cases one also needs to construct an integration method object 
-that preallocates a state vector coupling the states of each dynamical system.
-
-Coupled` objects are immutable, but their elements can be mutable, allowing the 
+Coupled` objects are immutable, but their elements must be mutable, allowing the 
 content to be modified. The individual elements of a `Coupled` object can be 
 accessed using the standard indexing notation, but the elements
 cannot be changed, i.e. there is no `Base.setindex!` defined for `Coupled` objects.
@@ -31,33 +19,6 @@ end
     couple(args...)
 
 Create a `Coupled` object from the sequence of arguments `args`. 
-
-# Examples
-```jldoctest
-using Flows
-
-# one dimensional linear system
-f(t, x, dxdt) = (dxdt .= x; dxdt)
-
-# quadrature equation to compute the integral of the state x
-q(t, x, dxdt, q, dqdt) = (dqdt[1] = sin(x[1]); dqdt)
-
-# define the coupled flow operator
-F = flow(couple(f, q),
-        RK4(couple(zeros(1), zeros(1))), 
-        TimeStepConstant(1e-3))
-
-# define an initial condition
-xq = couple([1.0], [0.0])
-
-# march forward to compute an approximation of the 
-# integral of sin(exp(x)) from 0 to 1, (see wolframalpha!)
-Q = last(F(xq, (0, 1)))[1]
-@assert abs(Q - 0.87495) < 1e-5
-
-# output
-
-```
 """
 couple(args...) = Coupled(args)
 
@@ -65,17 +26,6 @@ couple(args...) = Coupled(args)
     couplecopy(N::Int, x)
     
 Couple `N` copies of `x` together, created using `Base.deepcopy`.
-
-# Examples
-```jldoctest
-using Flows
-
-x = couplecopy(3, [1, 2, 3])
-@assert x[2] == [1, 2, 3]
-
-# output
-
-```
 """
 couplecopy(N::Int, x) = couple(ntuple(i->deepcopy(x), N)...)
 
@@ -83,16 +33,6 @@ couplecopy(N::Int, x) = couple(ntuple(i->deepcopy(x), N)...)
     Base.getindex(x::Coupled, i::Int)
 
 Return the `i`-th element of a `Coupled` object. 
-
-# Examples
-```jldoctest
-using Flows
-x = couple([23], [34])
-@assert x[2] == [34]
-
-# output
-
-```
 """
 Base.@propagate_inbounds function Base.getindex(x::Coupled{N}, i::Int) where {N}
     @boundscheck 1 ≤ i ≤ N || throw(BoundsError())
