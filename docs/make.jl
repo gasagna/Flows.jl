@@ -15,6 +15,6 @@ makedocs(sitename="Flows.jl",
                   "Full API"              => "api.md",
                   ])
 
-# deploydocs(
-    # repo = "github.com/gasagna/Flows.jl.git",
-# )
+deploydocs(
+    repo = "github.com/gasagna/Flows.jl.git",
+)
