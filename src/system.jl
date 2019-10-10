@@ -8,7 +8,7 @@ struct CallDependency{N, INFO} end
 # read-only data structure
 Base.getindex(::CallDependency{N, INFO}, i::Int) where {N, INFO} = INFO[i]
 
-# TODO: accept onyl a tuple of tuples of integers
+# TODO: accept only a tuple of tuples of integers
 function CallDependency(spec::Tuple...)
     N = length(spec)
     for el in spec

@@ -2,22 +2,21 @@ export RK4
 
 # ---------------------------------------------------------------------------- #
 # Classical fourth order Runge-Kutta
-struct RK4{X, MODE, ISADJOINT, NX} <: AbstractMethod{X, MODE, ISADJOINT, 4}
+struct RK4{X, MODE, NX} <: AbstractMethod{X, MODE, 4}
     store::NX
-    RK4{X, MODE, ISADJOINT}(store::NX) where {X, MODE, ISADJOINT, N, NX<:NTuple{N, X}} = 
-        new{X, MODE, ISADJOINT, NX}(store)
+    RK4{X, MODE}(store::NX) where {X, MODE, N, NX<:NTuple{N, X}} = 
+        new{X, MODE, NX}(store)
 end
 
-# outer constructor
-RK4(x::X) where {X} = 
-    RK4{X, NormalMode, false}(ntuple(i->similar(x), 5))
+"""
+    RK4(x::X, mode::AbstractMode=NormalMode())
 
-RK4(x::X, ::ContinuousMode, isadjoint::Bool=false) where {X} = 
-    RK4{X, ContinuousMode, isadjoint}(ntuple(i->similar(x), 6))
-
-RK4(x::X, ::DiscreteMode, isadjoint::Bool=false) where {X} = 
-    RK4{X, DiscreteMode, isadjoint}(ntuple(i->similar(x), 5))
-
+Constructs a `RK4` integration scheme object for integration with mode `mode`.
+"""
+function RK4(x::X, mode::MODE = NormalMode()) where {X, MODE<:AbstractMode}
+    N = mode isa ContinuousMode ? 6 : 5
+    return RK4{X, MODE}(ntuple(i->similar(x), N))
+end
 
 # ---------------------------------------------------------------------------- #
 # Perform time step and optionally push the four internal stages to a stage cache
@@ -49,22 +48,22 @@ end
 # ---------------------------------------------------------------------------- #
 # Continuous time stepping for linearised/adjoint equations with interpolation
 # from an `AbstractStorage` object for the evaluation of the linear operator.
-function step!(method::RK4{X, ContinuousMode, ISADJOINT},
+function step!(method::RK4{X, MODE},
                sys::System,
                t::Real,
                Δt::Real,
                x::X,
-               store::AbstractStorage) where {X, ISADJOINT}
+               store::AbstractStorage) where {X, MODE<:ContinuousMode}
     # aliases
     k1, k2, k3, k4, k5, y = method.store
 
     # modifier for the location of the interpolation
-    _m_ = ISADJOINT == true ? -1 : 1
+    _m_ = isadjoint(MODE) == true ? -1 : 1
 
     # stages
     y .= x                    ; sys(t,        store(k5, t       ), y, k1)
     y .= x .+ 0.5.*_m_.*Δt.*k1; sys(t + Δt/2, store(k5, t + Δt/2), y, k2)
-    y .= x .+ 0.5.*_m_.*Δt.*k2; sys(t + Δt/2, store(k5, t + Δt/2),  y, k3)
+    y .= x .+ 0.5.*_m_.*Δt.*k2; sys(t + Δt/2, store(k5, t + Δt/2), y, k3)
     y .= x .+      _m_.*Δt.*k3; sys(t + Δt,   store(k5, t + Δt  ), y, k4)
 
     # wrap up
@@ -76,17 +75,17 @@ end
 # ---------------------------------------------------------------------------- #
 # Forward linearised method takes x_{n} and overwrites it with x_{n+1}
 # Adjoint linearised method takes x_{n+1} and overwrites it with x_{n}
-function step!(method::RK4{X, DiscreteMode, ISADJOINT},
+function step!(method::RK4{X, MODE},
                sys::System,
                t::Real, # the time corresponding to x_{n}
                Δt::Real,
                x::X,
-               stages::NTuple{4, X}) where {X, ISADJOINT}
+               stages::NTuple{4, X}) where {X, MODE<:DiscreteMode}
     # aliases
     k1, k2, k3, k4, y = method.store
 
     # stages
-    if ISADJOINT
+    if isadjoint(MODE)
         y .= x               ; sys(t + Δt  , stages[4], y, k4)
         y .= x .+ 0.5.*Δt.*k4; sys(t + Δt/2, stages[3], y, k3)
         y .= x .+ 0.5.*Δt.*k3; sys(t + Δt/2, stages[2], y, k2)

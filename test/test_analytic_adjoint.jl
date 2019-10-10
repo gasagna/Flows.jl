@@ -52,7 +52,7 @@ end
     q0 = [0.0]
 
     # explicit integrator
-    method = RK4(q0, DiscreteMode(), true)
+    method = RK4(q0, DiscreteMode(true))
 
     # flow map (the system is self adjoint)
     ψ = flow(ExampleSystem(b, -1), method, TimeStepFromCache())

@@ -1,4 +1,3 @@
-# ---------------------------------------------------------------------------- #
 export CB3R2R2, CB3R2R3e, CB3R2R3c
 
 # ---------------------------------------------------------------------------- #
@@ -10,30 +9,22 @@ for (name, tab, NS) in zip((:CB3R2R2, :CB3R2R3e, :CB3R2R3c),
     @eval begin
 
         # type
-        struct $name{X, MODE, ISADJOINT, NX} <: AbstractMethod{X, MODE, ISADJOINT, $NS}
+        struct $name{X, MODE, NX} <: AbstractMethod{X, MODE, $NS}
             store::NX
-            $name{X, MODE, ISADJOINT}(store::NX) where {X, MODE, ISADJOINT, N, NX<:NTuple{N, X}} = 
-                new{X, MODE, ISADJOINT, NX}(store)
+            $name{X, MODE}(store::NX) where {X, MODE, N, NX<:NTuple{N, X}} = 
+                new{X, MODE, NX}(store)
         end
 
-        # outer constructor
-        $name(x::X) where {X} = 
-            $name{X, NormalMode, false}(ntuple(i->similar(x), 3))
-
-        $name(x::X, ::ContinuousMode, isadjoint::Bool=false) where {X} = 
-            $name{X, ContinuousMode, isadjoint}(ntuple(i->similar(x), 4))
-
-        $name(x::X, ::DiscreteMode, isadjoint::Bool=false) where {X} = 
-            $name{X, DiscreteMode, isadjoint}(ntuple(i->similar(x), 6))
+        function $name(x::X, mode::MODE = NormalMode()) where {X, MODE<:AbstractMode}
+            N = mode isa NormalMode     ? 3 :
+                mode isa ContinuousMode ? 4 : 6
+            return $name{X, MODE}(ntuple(i->similar(x), N))
+        end
 
         # required to cope with buggy julia deepcopy implementation
         function Base.deepcopy_internal(x::$name, dict::IdDict)
             if !( haskey(dict, x) )
-                if mode(x) isa NormalMode
-                    dict[x] = $name(x.store[1])
-                else
-                    dict[x] = $name(x.store[1], mode(x), isadjoint(x))
-                end
+                dict[x] = $name(x.store[1], mode(x))
             end
             return dict[x]
         end
@@ -78,18 +69,18 @@ for (name, tab, NS) in zip((:CB3R2R2, :CB3R2R3e, :CB3R2R3c),
         # ---------------------------------------------------------------------------- #
         # Continuous time stepping for linearised/adjoint equations with interpolation
         # from an `AbstractStorage` object for the evaluation of the linear operator.
-        function step!(method::$name{X, ContinuousMode, ISADJOINT},
+        function step!(method::$name{X, MODE},
                           sys::System,
                             t::Real,
                            Δt::Real,
                             x::X,
-                       store::AbstractStorage) where {X, ISADJOINT}
+                       store::AbstractStorage) where {X, MODE<:ContinuousMode}
             # hoist temporaries out
             y, z, w, u  = method.store
             tab = $tab
 
             # modifier for the location of the interpolation
-            _m_ = ISADJOINT == true ? -1 : 1
+            _m_ = isadjoint(MODE) == true ? -1 : 1
 
             # loop over stages
             @inbounds for k = 1:$NS
@@ -115,12 +106,12 @@ for (name, tab, NS) in zip((:CB3R2R2, :CB3R2R3e, :CB3R2R3c),
 
         # ---------------------------------------------------------------------------- #
         # Forward linearised method takes x_{n} and overwrites it with x_{n+1}
-        function step!(method::$name{X, DiscreteMode, false},
+        function step!(method::$name{X, MODE},
                           sys::System,
                             t::Real,
                            Δt::Real,
                             x::X,
-                       stages::NTuple{$NS, X}) where {X}
+                       stages::NTuple{$NS, X}) where {X, MODE<:DiscreteMode{false}}
             # hoist temporaries out
             y, z, w, v, s, u  = method.store
             tab = $tab
@@ -146,12 +137,12 @@ for (name, tab, NS) in zip((:CB3R2R2, :CB3R2R3e, :CB3R2R3c),
 
         # ---------------------------------------------------------------------------- #
         # Adjoint linearised method takes x_{n+1} and overwrites it with x_{n}
-        function step!(method::$name{X, DiscreteMode, true},
+        function step!(method::$name{X, MODE},
                           sys::System,
                             t::Real,
                            Δt::Real,
                             x::X,
-                       stages::NTuple{$NS, X}) where {X}
+                       stages::NTuple{$NS, X}) where {X, MODE<:DiscreteMode{true}}
 
             # hoist temporaries out
             y, z, w, v, s, u  = method.store
@@ -188,3 +179,21 @@ for (name, tab, NS) in zip((:CB3R2R2, :CB3R2R3e, :CB3R2R3c),
         end
     end
 end
+
+@doc """
+    CB3R2R2(x::X, mode::AbstractMode=NormalMode())
+
+Constructs a `CB3R2R2` integration scheme object for integration with mode `mode`.
+""" CB3R2R2
+
+@doc """
+    CB3R2R3e(x::X, mode::AbstractMode=NormalMode())
+
+Constructs a `CB3R2R3e` integration scheme object for integration with mode `mode`.
+""" CB3R2R3e
+
+@doc """
+    CB3R2R3c(x::X, mode::AbstractMode=NormalMode())
+
+Constructs a `CB3R2R3c` integration scheme object for integration with mode `mode`.
+""" CB3R2R3c

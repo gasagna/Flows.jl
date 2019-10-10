@@ -6,8 +6,8 @@
 
     # methods
     nl    = RK4(x0)
-    l_t   = RK4(x0, DiscreteMode())
-    l_adj = RK4(x0, DiscreteMode(), true)
+    l_t   = RK4(x0, DiscreteMode(false))
+    l_adj = RK4(x0, DiscreteMode(true))
 
     # stage cache
     scache = RAMStageCache(4, x0)
@@ -47,9 +47,9 @@ end
     # initial conditions
     x0 = Float64[15, 16, 20]
 
-    for (nl, l_t, l_adj, NS) in [(CB3R2R2( x0),  CB3R2R2(x0, DiscreteMode()),  CB3R2R2(x0, DiscreteMode(), true),  3),
-                                 (CB3R2R3e(x0), CB3R2R3e(x0, DiscreteMode()), CB3R2R3e(x0, DiscreteMode(), true), 4),
-                                 (CB3R2R3c(x0), CB3R2R3c(x0, DiscreteMode()), CB3R2R3c(x0, DiscreteMode(), true), 4)]
+    for (nl, l_t, l_adj, NS) in [(CB3R2R2( x0),  CB3R2R2(x0, DiscreteMode(false)),  CB3R2R2(x0, DiscreteMode(true)),  3),
+                                 (CB3R2R3e(x0), CB3R2R3e(x0, DiscreteMode(false)), CB3R2R3e(x0, DiscreteMode(true)), 4),
+                                 (CB3R2R3c(x0), CB3R2R3c(x0, DiscreteMode(false)), CB3R2R3c(x0, DiscreteMode(true)), 4)]
 
         # stage cache
         scache = RAMStageCache(NS, x0)
@@ -93,8 +93,8 @@ end
 
     # methods
     nl    = CNRK2(x0)
-    l_t   = CNRK2(x0, DiscreteMode())
-    l_adj = CNRK2(x0, DiscreteMode(), true)
+    l_t   = CNRK2(x0, DiscreteMode(false))
+    l_adj = CNRK2(x0, DiscreteMode(true))
 
     # stage cache
     scache = RAMStageCache(2, x0)
@@ -140,11 +140,11 @@ end
     # complex step
     ϵ = 1e-100
 
-    for (nl, l_t, NS, _g_nl, _g_t, _A) in [(     RK4(x0),      RK4(real.(x0), DiscreteMode()), 4, Lorenz(0), LorenzTan(0), nothing),
-                                           (   CNRK2(x0),    CNRK2(real.(x0), DiscreteMode()), 2, Lorenz(1), LorenzTan(1), A),
-                                           ( CB3R2R2(x0),  CB3R2R2(real.(x0), DiscreteMode()), 3, Lorenz(1), LorenzTan(1), A),
-                                           (CB3R2R3e(x0), CB3R2R3e(real.(x0), DiscreteMode()), 4, Lorenz(1), LorenzTan(1), A),
-                                           (CB3R2R3c(x0), CB3R2R3c(real.(x0), DiscreteMode()), 4, Lorenz(1), LorenzTan(1), A)]
+    for (nl, l_t, NS, _g_nl, _g_t, _A) in [(     RK4(x0),      RK4(real.(x0), DiscreteMode(false)), 4, Lorenz(0), LorenzTan(0), nothing),
+                                           (   CNRK2(x0),    CNRK2(real.(x0), DiscreteMode(false)), 2, Lorenz(1), LorenzTan(1), A),
+                                           ( CB3R2R2(x0),  CB3R2R2(real.(x0), DiscreteMode(false)), 3, Lorenz(1), LorenzTan(1), A),
+                                           (CB3R2R3e(x0), CB3R2R3e(real.(x0), DiscreteMode(false)), 4, Lorenz(1), LorenzTan(1), A),
+                                           (CB3R2R3c(x0), CB3R2R3c(real.(x0), DiscreteMode(false)), 4, Lorenz(1), LorenzTan(1), A)]
 
         for i = 1:3
             x0 = [9.1419853, 1.648665, 35.21793] + im*[0.0, 0.0, 0.0]
@@ -191,11 +191,11 @@ end
     # initial conditions
     x0 = Float64[9.1419853, 1.648665, 35.21793]
 
-    for (nl, l_t, l_a, NS, _g_nl, _g_t, _g_a, _A) in [(     RK4(x0),      RK4(x0, DiscreteMode()),      RK4(x0, DiscreteMode(), true), 4, Lorenz(0), LorenzTan(0), LorenzAdj(0), nothing),
-                                                      (   CNRK2(x0),    CNRK2(x0, DiscreteMode()),    CNRK2(x0, DiscreteMode(), true), 2, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
-                                                      ( CB3R2R2(x0),  CB3R2R2(x0, DiscreteMode()),  CB3R2R2(x0, DiscreteMode(), true), 3, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
-                                                      (CB3R2R3e(x0), CB3R2R3e(x0, DiscreteMode()), CB3R2R3e(x0, DiscreteMode(), true), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
-                                                      (CB3R2R3c(x0), CB3R2R3c(x0, DiscreteMode()), CB3R2R3c(x0, DiscreteMode(), true), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A)]
+    for (nl, l_t, l_a, NS, _g_nl, _g_t, _g_a, _A) in [(     RK4(x0),      RK4(x0, DiscreteMode(false)),      RK4(x0, DiscreteMode(true)), 4, Lorenz(0), LorenzTan(0), LorenzAdj(0), nothing),
+                                                      (   CNRK2(x0),    CNRK2(x0, DiscreteMode(false)),    CNRK2(x0, DiscreteMode(true)), 2, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
+                                                      ( CB3R2R2(x0),  CB3R2R2(x0, DiscreteMode(false)),  CB3R2R2(x0, DiscreteMode(true)), 3, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
+                                                      (CB3R2R3e(x0), CB3R2R3e(x0, DiscreteMode(false)), CB3R2R3e(x0, DiscreteMode(true)), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A),
+                                                      (CB3R2R3c(x0), CB3R2R3c(x0, DiscreteMode(false)), CB3R2R3c(x0, DiscreteMode(true)), 4, Lorenz(1), LorenzTan(1), LorenzAdj(1), A)]
 
 
         # stage cache
@@ -265,7 +265,7 @@ end
     ϕ = flow(Lorenz(0), RK4(x0), TimeStepConstant(1e-2))
 
     # linearised propagator and adjoint
-    ψ  = flow(LorenzTan(0), RK4(x0, DiscreteMode()), TimeStepFromCache())
+    ψ  = flow(LorenzTan(0), RK4(x0, DiscreteMode(false)), TimeStepFromCache())
 
     # propagate nonlinear operator
     ϕ(copy(x0), (0, 10), reset!(scache))
@@ -324,7 +324,7 @@ end
 
     # linearised propagator and adjoint
     monψ = Monitor(x0, x->x[2])
-    ψ  = flow(LorenzTan(0), RK4(x0, DiscreteMode()), TimeStepFromCache())
+    ψ  = flow(LorenzTan(0), RK4(x0, DiscreteMode(false)), TimeStepFromCache())
 
     # propagate nonlinear operator and fill cache
     ϕ(copy(x0), (0, 1), reset!(scache))

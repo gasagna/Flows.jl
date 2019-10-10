@@ -1,24 +1,27 @@
 export CB4R3R4
 
-# type def
-struct CB4R3R4{X, MODE, ISADJOINT, NX} <: AbstractMethod{X, MODE, ISADJOINT, 6}
+# type definition
+struct CB4R3R4{X, MODE, NX} <: AbstractMethod{X, MODE, 6}
     store::NX
-    CB4R3R4{X, MODE, ISADJOINT}(store::NX) where {X, MODE, ISADJOINT, N, NX<:NTuple{N, X}} = 
-        new{X, MODE, ISADJOINT, NX}(store)
+    CB4R3R4{X, MODE}(store::NX) where {X, MODE, N, NX<:NTuple{N, X}} = 
+        new{X, MODE, NX}(store)
 end
 
-# outer constructor
-CB4R3R4(x::X) where {X} = 
-    CB4R3R4{X, NormalMode, false}(ntuple(i->similar(x), 4))
+"""
+    CB4R3R4(x::X, mode::AbstractMode=NormalMode())
 
-CB4R3R4(x::X, ::ContinuousMode, isadjoint::Bool=false) where {X} = 
-    CB4R3R4{X, ContinuousMode, isadjoint}(ntuple(i->similar(x), 5))
+Constructs a `CB4R3R4` integration scheme object for integration with mode `mode`.
+"""
+function CB4R3R4(x::X, mode::MODE = NormalMode()) where {X, MODE<:AbstractMode}
+    N = mode isa NormalMode ? 4 : 5
+    return CB4R3R4{X, MODE}(ntuple(i->similar(x), N))
+end
 
-# required to cope with nuggy julia deepcopy implementation
+# required to cope with buggy julia deepcopy implementation
 function Base.deepcopy_internal(x::CB4R3R4,
                              dict::IdDict)
     if !( haskey(dict, x) )
-        dict[x] = CB4R3R4(x.store[1], mode(x), isadjoint(x))
+        dict[x] = CB4R3R4(x.store[1], mode(x))
     end
     return dict[x]
 end
@@ -69,19 +72,19 @@ end
 # ---------------------------------------------------------------------------- #
 # Continuous time stepping for linearised/adjoint equations with interpolation
 # from an `AbstractStorage` object for the evaluation of the linear operator.
-function step!(method::CB4R3R4{X, ISADJOINT},
+function step!(method::CB4R3R4{X, MODE},
                   sys::System,
                     t::Real,
                    Δt::Real,
                     x::X,
-                store::AbstractStorage) where {X, ISADJOINT}
+                store::AbstractStorage) where {X, MODE<:ContinuousMode}
 
     # hoist temporaries out
     y, zᴵ, zᴱ, w, u   = method.store
     tab = CB4
 
     # modifier for the location of the interpolation
-    _m_ = ISADJOINT == true ? -1 : 1
+    _m_ = isadjoint(MODE) == true ? -1 : 1
 
     # loop over stages
     @inbounds for k = 1:6

@@ -237,7 +237,7 @@ end
 
 # ---------------------------------------------------------------------------- #
 # PROPAGATION BASED ON SYSTEMS HOOK: ONLY FOR STATE EQUATIONS
-function _propagate!(method::AbstractMethod{Z, NormalMode},
+function _propagate!(method::AbstractMethod{Z, MODE},
                        hook::AbstractTimeStepFromHook,
                      system::System,
                        span::NTuple{2, Real},
@@ -245,6 +245,7 @@ function _propagate!(method::AbstractMethod{Z, NormalMode},
                       cache::C,
                       store::S,
                         mon::M) where {Z,
+                                       MODE<:NormalMode,
                                        S<:Union{Nothing, AbstractStorage},
                                        M<:Union{Nothing, AbstractMonitor},
                                        C<:Union{Nothing, AbstractStageCache}}
@@ -292,11 +293,11 @@ end
 
 # ---------------------------------------------------------------------------- #
 # TIME STEPPING BASED ON CACHED STAGES, ONLY FOR LINEARISED EQUATIONS
-function _propagate!(method::AbstractMethod{Z, DiscreteMode, ISADJOINT},
+function _propagate!(method::AbstractMethod{Z, MODE},
                      system::System,
                           z::Z,
                       cache::AbstractStageCache,
-                        mon::M) where {Z, ISADJOINT,
+                        mon::M) where {Z, MODE<:DiscreteMode,
                                        M<:Union{Nothing, AbstractMonitor}}
     # checks
     nstages(method) == nstages(cache) ||
@@ -308,7 +309,7 @@ function _propagate!(method::AbstractMethod{Z, DiscreteMode, ISADJOINT},
     xs  = cache.xs
 
     # integrate forward or backward based on type of linear equation
-    if ISADJOINT == false
+    if isadjoint(MODE) == false
         # store final state in monitors. Note cache does not contain final T.
         M <: AbstractMonitor && push!(mon, ts[1], z)
 
@@ -334,13 +335,15 @@ end
 
 # ---------------------------------------------------------------------------- #
 # TIME STEPPING BASED ON STORAGE FOR CONTINUOS ADJOINT/TANGENT EQUATIONS
-function _propagate!(method::AbstractMethod{Z, ContinuousMode},
+function _propagate!(method::AbstractMethod{Z, MODE},
                    stepping::TimeStepFromStorage,
                      system::System,
                        span::NTuple{2, Any},
                           z::Z,
                       store::AbstractStorage,
-                        mon::M) where {Z, M<:Union{Nothing, AbstractMonitor}}
+                        mon::M) where {Z, 
+                                       MODE<:ContinuousMode, 
+                                       M<:Union{Nothing, AbstractMonitor}}
 
     # Define integration times and time steps. The adjoint case,
     # where span[1] > span[2], is handled automatically here by
