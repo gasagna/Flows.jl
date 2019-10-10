@@ -9,20 +9,20 @@ where $t$ is time and $\mathbf{x}$ is the state, an element of some space $\math
 
 The operator $\mathcal{L}$ is linear and time invariant and contains stiff terms that are advanced implictly in time. The function $\mathbf{f}(t, \mathbf{x}(t))$ is a nonlinear term that is advanced using an explicit scheme. This notation is purely operational: if the dynamical system does not have any stiff terms and can be advanced using an explicit scheme, all terms can be lumped into the function $\mathbf{f}(t, \mathbf{x}(t))$.
 
-In many situations one requires the flow of the vector field $\mathbf{f}$, the nonlinear operator $\mathbf{\Phi}^t : \mathcal{X} \mapsto \mathcal{X}$ mapping the state $\mathbf{x}_0$ at $t=t_0$ to its forward-in-time image $\mathbf{x}(t)$. Mathematically, this operation is
+In many situations in dynamical systems theory, one requires the flow of the vector field $\mathbf{f}$, the nonlinear operator $\mathbf{\Phi}^t : \mathcal{X} \mapsto \mathcal{X}$ mapping the state $\mathbf{x}_0$ at $t=t_0$ to its forward-in-time image $\mathbf{x}(t)$. Mathematically, this operation is
 ```math
-\mathbf{x}(t) = \mathbf{\Phi}^{t-t_0}(\mathbf{x}_0).
+\mathbf{x}(t) = \mathbf{\Phi}^{t-t_0} \mathbf{x}_0.
 ```
 
-The structure of this package, and the API it provides, is entirely based satisfy this flow interface, where a `Flow` object is constructed that acts as the time discrete version of $\Phi$.
+The structure of this package, and the API it provides, is entirely based on satisfying this flow interface, where a [`Flow`](@ref) object is constructed that acts as the time discrete version of $\mathbf{\Phi}$.
 
-## What you need to do
-To define a flow operator, the user needs to define Julia code for the state object $\mathbf{x}$, for the dynamical system $\mathbf{f}$, and then specify what integration scheme will be used to advance the state in time.
+## User interface
+To construct a [`Flow`](@ref) object, the user needs to write Julia code for the state object $\mathbf{x}$ and for the right-hand-side $\mathbf{f}$, in addition to specifing what integration scheme will be used to advance the state in time.
 
 ### Defining state objects
-To satisfy the above interface, the package works transparently on state objects `x` of arbitrary types, say objects of some user defined Julia type `X` that maps to their mathematical equivalent $\mathcal{X}$ and which may provide some advanced interface. 
+The package works transparently on state objects `x` of arbitrary Julia type, say objects of some user defined Julia type `X` that might loosely map to their mathematical equivalent $\mathcal{X}$ and which may provide some advanced API. 
 
-State objects represented by a standard Julia `AbstractArray` object (of any dimension) work out-of-the-box. However, the requirement of expressing computations with object of type `AbstractArray`, or even just `Vector`, can be quite restrictive in practice and would not leverage the multiple dispatch capabilities of Julia. As an example, consider solving a PDE over a one-dimensional domain using a Fourier-Galerkin method. The user might wish to define a `SpectralField` type representing fields, with a custom API for, e.g., computing the derivative field.
+State objects represented by a standard Julia `AbstractArray`s (of any dimension) work out-of-the-box. However, the requirement of expressing computations with object of type `AbstractArray`, or even just `Vector`, can be quite restrictive in practice and would not leverage the multiple dispatch capabilities of Julia. As an example, consider solving a time dependent partial differential equation over a one-dimensional domain using a Fourier-Galerkin method. The user might wish to define a `SpectralField` type representing fields, with a custom API for, e.g., computing the derivative field. 
 ```julia
 struct SpectralField{T<:AbstractFloat}
     data::Vector{Complex{T}}
@@ -32,27 +32,25 @@ ddx(u::SpectralField) = # some definitions
 
 ```
 
-To work with the package, objects of type `X` should satisfy the following requirements:
+To work with the package, user types should satisfy these two requirements:
 
-  * support the broadcasting with the dot notation for algebraic expressions including scalars and objects of the same type. For instance, notation like `x .= 3.0.*y .+ 4.0.*z` for three elements `x`, `y` and `z` of type `X` should be supported. 
+  * support dot-broadcasting in in-place algebraic expressions including scalars and objects of the same type. For instance, notation like `x .= 3.0.*y .+ 4.0.*z` for three elements `x`, `y` and `z` of the user type should be supported.
  
   * provide methods for `Base.similar(x)` and `Base.copy(x)`.
 
-Internally, the package makes extensive use of the dot notation, e.g. when updating cache objects during a time step. The mutability restriction prevents having, e.g., immutable `StaticArrays` objects as state vectors, which would probably lead to faster code on small problems. This is less important for the typical applications of this package, e.g. turbulent flow simulations where the state is generally given by multiple large three-dimensional arrays and having mutable objects is quite important for performance.
+Internally, the package makes extensive use of the dot notation, when updating cache objects during a time step. The restriction prevents having immutable `StaticArrays` objects as state objects, which would probably lead to faster code on small problems. This is less important for the intended applications of this package, i.e. turbulent flow simulations where the state is generally given by multiple large three-dimensional arrays and having mutable objects is important for performance.
 
-### Defining the dynamical system
-Given a state `x` as an object of type `X`, the steps required to specify the dynamical system depend on whether an explicit or semi-implicit integration method is used.
+### Defining the right hand side
+Given a state `x` as an object of type `X`, the steps required to specify the right hand side depend on whether an explicit or semi-implicit integration method is used.
 
 For explicit methods, a dynamical system is specified by a Julia function or some other callable object that has a method with signature
 ```julia
 f(t::Real, x::X, dxdt::X) where {X}
 ```
-This function is supposed to operate in place, should modify the content of the third argument `dxdt` with the time derivative at `x`, and additionally, time `t` for non-autonomous systems. Modifying the content of the second argument in the body of this function is undefined behaviour. 
+This function is supposed to operate in place and should modify the content of the third argument `dxdt` with the time derivative at `x`, and if needed, time `t`. Modifying the content of the second argument in the body of this function is undefined behaviour. 
 
 !!! example 
-    This example shows how to define a custom type implementing the Lorenz equations. 
-
-    First a custom type is defined with one field the parameter $\rho$.
+    Consider defining a custom type implementing the right-hand-side of the Lorenz equations. A Julia type is defined with one field for the parameter $\rho$:
     ```julia
     struct Lorenz 
         ρ::Float64
@@ -60,7 +58,7 @@ This function is supposed to operate in place, should modify the content of the 
     end
     ```
 
-    Then, the type is made callable by defining the following method.
+    Then, the type is made callable by defining the following method:
     ```julia
     function (eq::Lorenz)(t, u, dudt)
         x, y, z = u
@@ -73,30 +71,30 @@ This function is supposed to operate in place, should modify the content of the 
 
     Note how this function returns the argument that has been modified. This is not required by the package API, but can be useful in other situations.
 
-The semi-implicit methods that are currently implemented assume that the stiff term is linear and given by an time-invariant operator $\mathcal{L}$. To define this term, the user must define a Julia type `A` with a method for the `LinearAlgebra` function `mul!` with signature
+The semi-implicit methods that are currently implemented assume that the stiff term is linear and given by an time-invariant operator $\mathcal{L}$. To define this term, the user must define a Julia type, say `A`, with a method for the `LinearAlgebra` function `mul!`, with signature
 ```julia
-LinearAlgebra.mul!(out::X, A, x::X).
+LinearAlgebra.mul!(out::X, a::A, x::X)
 ```
-which computes the action of `A` on `x` and stores it in `out`. Modifying the content of `x` is undefined behaviour. 
+which computes the action of `a` on `x` and stores it in `out`. Modifying the content of `x` is undefined behaviour. 
 
-In addition, the object `A` should define a method for the function `Flows.ImcA`, provided by this package, with signature
+In addition, the type `A` should have a method for the function `Flows.ImcA`, provided by this package, with signature
 ```julia
-Flows.ImcA(A, c::Real, y::X, z::X)
+Flows.ImcA(a::A, c::Real, y::X, z::X)
 ```
 to solves the linear system 
 ```math
-    (A - c I)z = y
+    (a - c I)z = y
 ```
 for some right hand side `y` of type `X` and a scalar `c` and stores the result in `z`, again of type `X`.
 
 
 ### Defining the integration scheme
-Performing a time step typically requires temporary objects for intermediate computations, e.g. the internal stages of a Runge-Kutta method. In this package, these temporary objects are pre-allocated by creating an helper object, an instance of one of the concrete subtypes of `AbstractMethod` provided by the package. 
+Performing a time step typically requires temporary objects for intermediate computations, e.g. the internal stages of a Runge-Kutta method. In this package, these temporary objects are pre-allocated by creating an helper object, an instance of one of the concrete subtypes of `AbstractMethod` provided by the package (see [Available integration schemes](@ref)).
 
 All constructors of such helper objects have the same signature and require a single argument of type `X`. This argument is used internally in the constructor to to pre-allocate as many similar `similar` objects as needed for the intermediate computations in the time step. 
 
 !!! example 
-    As an example, consider using the classical fourth-order Runge-Kutta method to integrate the Lorenz equations defined above. The state vector is implemented using a standard Julia `Vector` of three elements.
+    Consider using the classical fourth-order Runge-Kutta method to integrate the Lorenz equations defined above. The state vector is implemented using a standard Julia `Vector` of three elements, and the helper object is constructed by
     ```julia
     method = RK4(zeros(3))
     ```

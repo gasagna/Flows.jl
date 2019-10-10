@@ -6,15 +6,16 @@ makedocs(sitename="Flows.jl",
          pages = ["Home"                  => "index.md",
                   "Quick Start"           => "quickstart.md",
                   "Monitors"              => "monitors.md",
+                  "Available methods"     => "available-methods.md",
+                #   "Time stepping schemes" => "time-stepping.md",
                   "Coupled systems"       => "coupled.md",
                   "Quadrature equations"  => "quadrature.md",
-                  "Solution storages"     => "storage.md",
-                  "Advanced features"     => "advanced.md",
                   "Examples"              => "examples.md",
-                  "Available methods"     => "available-methods.md",
+                  "Advanced features"     => "advanced.md",
                   "Full API"              => "api.md",
+                  #   "Solution storages"     => "storage.md",
                   ])
 
-deploydocs(
-    repo = "github.com/gasagna/Flows.jl.git",
-)
+# deploydocs(
+    # repo = "github.com/gasagna/Flows.jl.git",
+# )

@@ -30,7 +30,7 @@ A possible strategy to solve this problem is to first solve the first differenti
     where $\mathbf{f}_\mathbf{x}$ is the jacobian of $\mathbf{f}$.
 
 ## Approach
-The fundamental tool provided by this package to address this need is the `couple` function, accepting two or more arguments and returning a `Coupled` object. This is a compact representation akin to a Julia `Tuple` object (internally, it is a shallow wrapper to a tuple) and thus behaves similar to it. For instance
+The fundamental tool provided by this package to address this need is the [`couple`](@ref) function, accepting two or more arguments and returning a [`Coupled`](@ref) object. This is a compact representation akin to a Julia `Tuple` object (internally, it is a shallow wrapper to a tuple) and thus behaves similar to it. For instance
 ```julia
 julia> z = couple(Int[1, 2, 3], Float64[0, 4])
 2-element Coupled{2,Tuple{Array{Int64,1},Array{Float64,1}}}:
@@ -43,7 +43,7 @@ Int[1, 2, 3]
 julia> length(z) # it has a length
 2
 ```
-One feature of `Coupled` objects is that they support Julia's dot notation and operations are forwarded down to each of the internal components. For instance, code such as 
+One feature of [`Coupled`](@ref) objects is that they support Julia's dot notation and operations are forwarded down to each of the internal components. For instance, code such as 
 ```julia
 julia> z1 = couple(Int[1, 2, 3], Float64[0, 4]);
 julia> z2 = couple(Int[2, 4, 5], Float64[1, 2]);
@@ -53,6 +53,9 @@ julia> z1 .= z2 .* 2
  [2.0, 4.0]
 ```
 works as expected, where arithmetic operations are forwarded to the two components. The utility of this behaviour is that the arithmetic operations arising in the computation of a time step, e.g. during internal stages of a Runge-Kutta method, are forwarded to all components.
+
+!!! note
+    Despite supporting the dot-broadcasting notation, its usage is provate and should not be relied upon in user code.
 
 ## Example
 Assume that we want to solve the problem 
@@ -71,11 +74,11 @@ g(t, x, dxdt, y, dydt)
 ``` 
 Note the definition of the second function, and how it maps to the original problem.
 
-Assume that an explicit fourth-order Runge-Kutta method, provided by this package's `RK4` is used to advance the system. Two steps are neeeded. First, we couple together the Julia functions representing the two components by defining
+Assume that an explicit fourth-order Runge-Kutta method, provided by this package's [`RK4`](@ref) type is used to advance the system. Two steps are neeeded. First, we couple together the Julia functions representing the two components by defining
 ```julia
 h = couple(f, g)
 ```
-Second, we define a composite `RK4` method object with 
+Second, we define a composite [`RK4`](@ref) method object with 
 ```julia
 m = RK4(couple(zeros(3), zeros(2)))
 ```

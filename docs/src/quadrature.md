@@ -16,11 +16,11 @@ This can be achieved by adding a pure quadrature equation, i.e. augmenting the d
 \end{array}
 \right.
 ```
-is integrated from $0$ to $T$ with initial condition $I(0) = 0$. It is easy to see that the final condition $I(T)$  is the numerical approximation of the integral above. 
+is integrated from $0$ to $T$ with initial condition $I(0) = 0$. It is easy to see that the final condition $I(T)$  is the numerical approximation of the integral above. This package's implementation of this feature relies on the ability to march coupled systems of equations (see [Flows.jl Coupled systems](@ref)).
 
-The usefulness of this approach is that the integral is obtained without doing much, at the end of the solution. In addition, the order of accuracy of the integration methods used to advance the coupled state is the order of accuracy of the estimation of the integral above.
+The usefulness of this approach is that the integral is obtained without doing much, at the end of the integration. In addition, the order of accuracy of the integration methods used to advance the coupled state is the order of accuracy of the estimation of the integral above.
 
-## Example
+## Approach
 As an example let us compute the integral of the function 
 ```math
 g(\mathbf{x}) = x_1^2
@@ -29,7 +29,7 @@ for a system with three degrees of freedom arranged in a standard Julia `Vector`
 ```julia
 g(t, x, dxdt, I, dIdt) = (dIdt[1] = x[1]^2; return dIdt)
 ```
-Note the structure of the signature.
+Note the structure of the signature, which is characteristic of coupled systems (see [Coupled systems](@ref)).
 
 We then define some initial conditions, making sure `I[1]` is initially set to 
 zero.
@@ -37,13 +37,13 @@ zero.
 x = Float64[1.0, 3.0, 4.0]
 I = Float64[0.0]
 ```
-Note that because the augmented state must be mutable, the extra quadrature variable must be stored in a mutable container, a `Vector`. In fact, one can calculate the integral of as many functions as desired, just define the function `g` above to fill as many components of `dIdt` as required.
+Note that because the state must be mutable, the extra quadrature variable must be stored in a mutable container, a one element `Vector`. In fact, one can calculate the integral of as many functions as desired, just define the function `g` above to fill as many components of `dIdt` as required.
 
-We then define a flow operator, by coupling the right hand side of the differential equation (assume it is defined by a julia function `f`) and the additional quadrature equation
+We then define a [`Flows.Flow`](@ref) operator, by coupling the right hand side of the differential equation (assume it is defined by a julia function `f`) and the additional quadrature equation
 ```julia
 F = flow(couple(f, g), RK4(couple(x, I)), TimeStepConstant(0.1))
 ```
-Note how the state and the quadrature variables are coupled toghether and passed to the `RK4` constructor. This makes sure that the temporary objects in the Runge-Kutta scheme are consistent with the extra degree of freedom.
+Note how the state and the quadrature variables are coupled toghether and passed to the [`RK4`](@ref) constructor. This makes sure that the temporary objects in the Runge-Kutta scheme are consistent with the extra degree of freedom.
 
 The flow operator can be now called with
 ```julia
@@ -76,4 +76,4 @@ where `x` is advanced forward in time from $t=0$ to $t=10$. Upon return `I[1]` c
     ```julia
     F = flow(couple(f_ex, g), couple(f_im, nothing), CNRK2(couple(x, I)), TimeStepConstant(0.1))
     ```
-    This signals that the quadrature `g` is advanced in time using on the explicit component of the semi-implicit scheme.
+    where [`CNRK2`](@ref) is used as an example. The value `nothing` signals that the quadrature `g` is advanced in time using on the explicit component of the semi-implicit scheme.

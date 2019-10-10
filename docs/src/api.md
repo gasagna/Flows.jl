@@ -1,7 +1,6 @@
-# Flows.jl API
+# Full public API
 
-# The Flow operator
-
+## Flow operator API
 The basic building block of this package is the [`Flows.Flow`](@ref) object, a discrete approximation of the flow of a dynamical system. Here is a list of possible constructors.
 ```@docs
 flow
@@ -12,8 +11,7 @@ Objects of type `Flow` satisfy a callable interface, with additional arguments p
 Flows.Flow
 ```
 
-# Monitor objects
-
+## Monitor API
 ```@docs
 Monitor
 reset!
@@ -21,7 +19,7 @@ times
 samples
 ```
 
-# Coupled objects
+## Coupled API
 ```@docs
 Coupled
 couple
@@ -31,7 +29,7 @@ similar
 size
 ```
 
-# Storage objects
+## Storage API
 ```@docs
 RAMStorage
 period
@@ -39,12 +37,18 @@ isperiodic
 timespan
 ```
 
-# Semi-implicit methods
+## Integration methods API
 ```@docs
+RK4
+CNRK2
+CB3R2R2
+CB3R2R3c
+CB3R2R3e
+CB4R3R4
 ImcA!
 ```
 
-# Time Stepping
+## Time Stepping API
 ```@docs
 TimeStepConstant
 TimeStepFromStorage
