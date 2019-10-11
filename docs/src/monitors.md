@@ -58,6 +58,11 @@ returns a `Vector` containing the times whan the samples are taken. This can be 
     ```
     so that `samples(mon)` returns a vector of `Tuple`s.
 
+## Monitors as callback functions
+Despite its name, a [`Monitor`](@ref) can be used to affect and modify the system state. The restriction is, of course, that any action can have effect at the end of every time step, or every `oneevery` time steps (see [`Monitor`](@ref) for usage of this keyword). For instance, one can define a monitor that normalises its input every 10 time steps by:
+```julia
+mon = Monitor(zeros(5), x->(x ./= norm(x)); oneevery=10)
+```
 
 ## Advanced usage
 The behaviour of `Monitor` object can be customised more finely. Consult the [Monitor API](@ref) page for more details.
