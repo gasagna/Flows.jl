@@ -18,11 +18,13 @@ mutable struct Monitor{T, X, S<:AbstractStorage{T, X}, F} <: AbstractMonitor{T, 
        oneevery::Int                     # save every ... time steps
     savebetween::Tuple{Float64, Float64} # save only between these two times 
           count::Int                     # how many items we have in the store
+      skipfirst::Bool                    # skip the first sample?
     Monitor(store::S,
                 f::F,
                 oneevery::Int, 
-                savebetween::Tuple{Real, Real}) where {T, X, S<:AbstractStorage{T, X}, F} =
-        new{T, X, S, F}(store, f, oneevery, savebetween, 0)
+                savebetween::Tuple{Real, Real},
+                skipfirst::Bool) where {T, X, S<:AbstractStorage{T, X}, F} =
+        new{T, X, S, F}(store, f, oneevery, savebetween, 0, skipfirst)
 end
 
 """
@@ -52,14 +54,17 @@ Monitor(x,
         store::S=RAMStorage(f(x));
         oneevery::Int=1,
         savebetween::Tuple{Real, Real}=(-Inf, Inf),
+        skipfirst::Bool=false,
         sizehint::Int=0) where {S<:AbstractStorage} =
-    Monitor(reset!(store, sizehint), f, oneevery, savebetween)
+    Monitor(reset!(store, sizehint), f, oneevery, savebetween, skipfirst)
 
 # Add sample and time to the storage
 @inline function Base.push!(mon::Monitor, t::Real, x, force::Bool=false)
     if force == true || (mon.count % mon.oneevery == 0)
         if isbetween(t, mon.savebetween...)
-            push!(mon.store, t, mon.f(x))
+            if !(mon.count == 0 && mon.skipfirst)
+                push!(mon.store, t, mon.f(x))
+            end
         end
     end
     mon.count += 1

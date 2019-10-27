@@ -164,3 +164,12 @@ end
     push!(m, 3, [0.0])
     @test length(times(m)) == 2
 end
+
+@testset "skipfirst                            " begin
+    m = Monitor([0.0], copy; skipfirst=true)
+    push!(m, 0, [0.0])
+    push!(m, 1, [0.0])
+    push!(m, 2, [0.0])
+    push!(m, 3, [0.0])
+    @test times(m) == [1, 2, 3]
+end
