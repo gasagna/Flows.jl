@@ -5,7 +5,7 @@ using Flows
 using Test
 
 @testset "test monitor type                      " begin
-    m = Monitor(0, string)
+    m = Monitor(0, (t, x)->string(x))
     push!(m, 0.0, 0)
     @test times(m)   == [0.0]
     @test samples(m) == ["0"]
@@ -24,7 +24,7 @@ end
         ϕ = flow(g, RK4(x), TimeStepConstant(0.1))
 
         # define monitor
-        mon = Monitor(x, x->x[1]; oneevery=3)
+        mon = Monitor(x, (t, x)->x[1]; oneevery=3)
 
         # make sure we save the last step too
         ϕ(x, (0, 1), mon)
@@ -47,7 +47,7 @@ end
         end
 
         # define monitor
-        mon = Monitor(x, x->x[1]; oneevery=3)
+        mon = Monitor(x, (t, x)->x[1]; oneevery=3)
 
         # make sure we save the last step too
         ϕ(x, store, (0, 1), mon)
@@ -57,7 +57,7 @@ end
 
 @testset "test monitor content                   " begin
 	# store every push
-    m = Monitor([1.0], x->x[1]^2)
+    m = Monitor([1.0], (t, x)->x[1]^2)
 
     push!(m, 0.0, [0.0])
     push!(m, 0.1, [1.0])
@@ -68,7 +68,7 @@ end
     @test samples(m) == [0.0, 1.0, 4.0, 9.0]
 
     # skip one sample
-    m = Monitor([1.0], x->x[1]^2; oneevery=2)
+    m = Monitor([1.0], (t, x)->x[1]^2; oneevery=2)
 
     push!(m, 0.0, [0.0])
     push!(m, 0.1, [1.0])
@@ -112,7 +112,7 @@ end
     scheme = CB3R2R3e(Float64[0.0])
 
     # monitors
-    m = Monitor([1.0], x->x[1]^2; sizehint=10000)
+    m = Monitor([1.0], (t, x)->x[1]^2; sizehint=10000)
 
     # forward map
     ϕ = flow(g, A, scheme, TimeStepConstant(0.01))
@@ -141,7 +141,7 @@ end
 end
 
 @testset "reset monitors                         " begin
-    m = Monitor([1.0], x->x[1]^2)
+    m = Monitor([1.0], (t, x)->x[1]^2)
 
     push!(m, 0.0, [0.0])
     push!(m, 0.1, [1.0])
@@ -157,7 +157,7 @@ end
 end
 
 @testset "savebetween                            " begin
-    m = Monitor([0.0], copy; savebetween=(1, 2))
+    m = Monitor([0.0], (t, x)->copy(x); savebetween=(1, 2))
     push!(m, 0, [0.0])
     push!(m, 1, [0.0])
     push!(m, 2, [0.0])
@@ -166,7 +166,7 @@ end
 end
 
 @testset "skipfirst                            " begin
-    m = Monitor([0.0], copy; skipfirst=true)
+    m = Monitor([0.0], (t, x)->copy(x); skipfirst=true)
     push!(m, 0, [0.0])
     push!(m, 1, [0.0])
     push!(m, 2, [0.0])

@@ -212,8 +212,8 @@ end
         ϕ(copy(x0), (0, 5), reset!(scache))
 
         # also make sure monitor are good
-        mon_tan = Monitor(x0, copy)
-        mon_adj = Monitor(x0, copy)
+        mon_tan = Monitor(x0, (t, x)->copy(x))
+        mon_adj = Monitor(x0, (t, x)->copy(x))
 
         # propagate linear operators forward/backward
         y0 = Float64[1, 2, 3]
@@ -316,14 +316,14 @@ end
     val_a = q0[1]
 
     # now compute the same by storing the entire solution
-    monϕ = Monitor(x0, x->x[1])
+    monϕ = Monitor(x0, (t, x)->x[1])
     ϕ = flow(Lorenz(0), RK4(x0), TimeStepConstant(1e-3))
 
     # stage cache
     scache = RAMStageCache(4, x0)
 
     # linearised propagator and adjoint
-    monψ = Monitor(x0, x->x[2])
+    monψ = Monitor(x0, (t, x)->x[2])
     ψ  = flow(LorenzTan(0), RK4(x0, DiscreteMode(false)), TimeStepFromCache())
 
     # propagate nonlinear operator and fill cache

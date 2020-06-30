@@ -51,7 +51,7 @@ See also [`reset!`](@ref), [`times`](@ref) and [`samples`](@ref).
 """
 Monitor(x,
         f::Base.Callable=identity,
-        store::S=RAMStorage(f(x));
+        store::S=RAMStorage(f(0.0, x));
         oneevery::Int=1,
         savebetween::Tuple{Real, Real}=(-Inf, Inf),
         skipfirst::Bool=false,
@@ -63,7 +63,7 @@ Monitor(x,
     if force == true || (mon.count % mon.oneevery == 0)
         if isbetween(t, mon.savebetween...)
             if !(mon.count == 0 && mon.skipfirst)
-                push!(mon.store, t, mon.f(x))
+                push!(mon.store, t, mon.f(t, x))
             end
         end
     end

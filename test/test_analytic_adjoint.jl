@@ -36,7 +36,7 @@ end
     ψ = flow(ExampleSystem(b, 0), method, TimeStepConstant(1e-3))
 
     # get solution and fill the cache used later for the adjoint calculations
-    mon = Monitor(x0, x->x[1])
+    mon = Monitor(x0, (t, x)->x[1])
     cache = RAMStageCache(4, x0)
     ψ(copy(x0), (0, T), cache)
     ψ(copy(x0), (0, T), mon)

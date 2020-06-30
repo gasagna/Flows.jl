@@ -15,7 +15,7 @@ g(t, x, ẋ) = (ẋ .= -1; ẋ)
     ϕ = flow(g, scheme, TestFromHook())
 
     # monitor
-    mon = Monitor(zeros(1), x->x[1])
+    mon = Monitor(zeros(1), (t, x)->x[1])
 
     # FORWARD INTEGRATION
     # run
@@ -40,7 +40,7 @@ end
     ϕ = flow(g, scheme, TimeStepConstant(0.5))
 
     # monitor
-    mon = Monitor(zeros(1), x->x[1])
+    mon = Monitor(zeros(1), (t, x)->x[1])
 
     # FORWARD INTEGRATION
     # run

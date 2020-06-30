@@ -41,7 +41,7 @@ end
     x, q = Float64[0.0], Float64[0.0, 0.0, 0.0]
 
     # monitor first quadrature equation
-    mon = Monitor(couple(x, q), copy)
+    mon = Monitor(couple(x, q), (t, x)->copy(x))
 
     # integration method
     for (method, order, value, _g, _A) in [(RK4(     couple(x, q)), 4, 6.2,  gfull, nothing),
