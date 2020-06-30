@@ -102,3 +102,22 @@ ImcA!(sys::System{1, DEPS, GT, AT}, c::Real, y, z) where {DEPS, GT, AT} =
         return z
     end
 end
+
+# ~ Implicit part III ~
+# Since we treat the quadrature fully explicitly, the solution of
+# (I-cA)z = y for the quadrature part is simply z = y, because the
+# component of A associated to this part is zero and the state
+# and quadrature parts are decoupled.
+ImcA_mul!(sys::System{1, DEPS, GT, AT}, c::Real, y, z) where {DEPS, GT, AT} =
+    ((AT isa Nothing ? (z .= y) : ImcA_mul!(sys.A, c, y, z)); z)
+
+@generated function ImcA_mul!(sys::System{N, DEPS, Coupled{N, GT}, Coupled{N, AT}},
+                                c::Real,
+                                y::Coupled{N},
+                                z::Coupled{N}) where {N, DEPS, GT, AT}
+    return quote 
+        Base.Cartesian.@nexprs $N i->($(AT.parameters)[i] == Nothing ?
+                (z[i] .= y[i]) : ImcA_mul!(sys.A[i], c, y[i], z[i]))
+        return z
+    end
+end
