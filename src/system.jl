@@ -47,7 +47,7 @@ System(g::Coupled{N}, A::Coupled{N}, DEPS::CallDependency{N}) where {N} =
         for d in DEPS[i]
             append!(tup.args, (:(z[$d]), :(dzdt[$d]), ))
         end
-        push!(expr.args, :(sys.g[$i](t, $(tup)...)))
+        push!(expr.args, :(sys.g[$(Val(i))](t, $(tup)...)))
     end
     return expr
 end

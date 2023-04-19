@@ -40,6 +40,12 @@ Base.@propagate_inbounds function Base.getindex(x::Coupled{N}, i::Int) where {N}
     return val
 end
 
+""" Type stable indexing. Mostly used in `System`. """
+@inline function Base.getindex(x::Coupled{N}, ::Val{I}) where {N, I}
+    @inbounds val = x.args[I]
+    return val
+end
+
 """
     Base.similar(x::Coupled)
 
